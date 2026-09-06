@@ -44,7 +44,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
   2. Adicionar as colunas `rider_public_token` na tabela `shows` e `person_id` na tabela `cast_members`.
   3. Adicionar as colunas `is_reimbursed boolean DEFAULT false` e `reimbursed_at timestamptz` na tabela `documents`.
   4. Criar constraints (`UNIQUE`, `CHECK`), chaves estrangeiras e índices de performance descritos em `data-model.md`.
-  5. Habilitar RLS em todas as tabelas com políticas para administradores autenticados e permissões pontuais para os tokens públicos.
+  5. Habilitar RLS em todas as tabelas com políticas estritas para administradores autenticados (a permissão pontual do token público é validada pela Server Function, sem grants diretos no papel anon).
   6. Incluir rotina de migração/backfill para povoar `people` a partir dos nomes existentes em `cast_members`.
 - **Verificação técnica:** Script SQL com sintaxe PostgreSQL rigorosa e validação de schema.
 - **Tradução em linguagem simples:** "O banco de dados recebeu a estrutura para guardar pessoas uma só vez com seus contatos e Chave Pix, definir exigências por pessoa e show, controlar o pagamento de reembolsos e armazenar o rider técnico."
