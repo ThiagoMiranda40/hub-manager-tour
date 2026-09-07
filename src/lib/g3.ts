@@ -99,6 +99,15 @@ export type ShowRiderItem = {
   physical_divergence_note?: string | null;
 };
 
+export type RiderGroupBalance = {
+  total: number;
+  confirmed: number;
+  exceptions: number;
+  pending: number;
+  isComplete: boolean;
+  hasExceptions: boolean;
+};
+
 export type RiderBalance = {
   total: number;
   confirmed: number;
@@ -107,6 +116,12 @@ export type RiderBalance = {
   pct: number;
   isComplete: boolean;
   hasExceptions: boolean;
+  /** RF-11: Contadores segregados para itens inegociáveis */
+  mandatory: RiderGroupBalance;
+  /** RF-11: Contadores segregados para itens desejáveis */
+  desirable: RiderGroupBalance;
+  /** RF-11: Flag que indica se existe item inegociável em aberto ou com exceção */
+  hasMandatoryPendingOrException: boolean;
 };
 
 export type MemberRequirementStatus = {
@@ -235,7 +250,7 @@ export function computeMemberRequirementStatus(
   };
 }
 
-/** Calcula o balanço do rider técnico do show */
+/** Calcula o balanço do rider técnico do show segregando itens inegociáveis e desejáveis (RF-11) */
 export function computeRiderBalance(
   items: { status: string; is_mandatory?: boolean }[],
 ): RiderBalance {
@@ -244,8 +259,33 @@ export function computeRiderBalance(
   const exceptions = items.filter((i) => i.status === "exception").length;
   const pending = items.filter((i) => i.status === "pending" || !i.status).length;
   const pct = total > 0 ? Math.round((confirmed / total) * 100) : 0;
-  const isComplete = total > 0 && pending === 0;
   const hasExceptions = exceptions > 0;
+
+  const mandatoryItems = items.filter((i) => Boolean(i.is_mandatory));
+  const desirableItems = items.filter((i) => !i.is_mandatory);
+
+  const calcGroup = (group: { status: string }[]): RiderGroupBalance => {
+    const gTotal = group.length;
+    const gConfirmed = group.filter((i) => i.status === "confirmed").length;
+    const gExceptions = group.filter((i) => i.status === "exception").length;
+    const gPending = group.filter((i) => i.status === "pending" || !i.status).length;
+    return {
+      total: gTotal,
+      confirmed: gConfirmed,
+      exceptions: gExceptions,
+      pending: gPending,
+      isComplete: gTotal > 0 && gPending === 0 && gExceptions === 0,
+      hasExceptions: gExceptions > 0,
+    };
+  };
+
+  const mandatory = calcGroup(mandatoryItems);
+  const desirable = calcGroup(desirableItems);
+
+  // TC-11.1 (Bloqueio de conclusão):
+  // Se houver ao menos um inegociável pendente ou em exceção, o rider geral não pode ser considerado completo
+  const hasMandatoryPendingOrException = mandatory.pending > 0 || mandatory.exceptions > 0;
+  const isComplete = total > 0 && pending === 0 && !hasMandatoryPendingOrException;
 
   return {
     total,
@@ -255,7 +295,60 @@ export function computeRiderBalance(
     pct,
     isComplete,
     hasExceptions,
+    mandatory,
+    desirable,
+    hasMandatoryPendingOrException,
   };
+}
+
+/**
+ * Ordena itens do rider técnico aplicando as regras do RF-11:
+ * 1. Itens inegociáveis pendentes antes de desejáveis pendentes (TC-11.3)
+ * 2. Itens pendentes antes de itens já resolvidos
+ * 3. Itens em exceção (inegociáveis antes de desejáveis)
+ * 4. Itens confirmados
+ * 5. Posição original (position) preservada como critério de desempate
+ */
+export function sortRiderItemsByPriority<
+  T extends { is_mandatory?: boolean; status: string; position?: number },
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const isPendingA = a.status === "pending" || !a.status;
+    const isPendingB = b.status === "pending" || !b.status;
+
+    // Se ambos forem pendentes: inegociáveis primeiro (TC-11.3)
+    if (isPendingA && isPendingB) {
+      const mandA = Boolean(a.is_mandatory);
+      const mandB = Boolean(b.is_mandatory);
+      if (mandA !== mandB) {
+        return mandA ? -1 : 1;
+      }
+      return (a.position ?? 0) - (b.position ?? 0);
+    }
+    // Apenas um é pendente: pendente vem primeiro
+    if (isPendingA !== isPendingB) {
+      return isPendingA ? -1 : 1;
+    }
+
+    const isExcA = a.status === "exception";
+    const isExcB = b.status === "exception";
+    // Se ambos forem exceção: inegociáveis primeiro (mais crítico)
+    if (isExcA && isExcB) {
+      const mandA = Boolean(a.is_mandatory);
+      const mandB = Boolean(b.is_mandatory);
+      if (mandA !== mandB) {
+        return mandA ? -1 : 1;
+      }
+      return (a.position ?? 0) - (b.position ?? 0);
+    }
+    // Apenas um é exceção
+    if (isExcA !== isExcB) {
+      return isExcA ? -1 : 1;
+    }
+
+    // Se ambos tiverem o mesmo status (ex: ambos confirmados), segue position
+    return (a.position ?? 0) - (b.position ?? 0);
+  });
 }
 
 /** Aplica presets de exigências em lote de forma estritamente idempotente */

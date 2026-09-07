@@ -9,6 +9,7 @@ import {
   formatDateBR,
   formatDocumentDescription,
   reorderRiderItems,
+  sortRiderItemsByPriority,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -347,5 +348,145 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     // Índices fora dos limites -> não altera
     expect(reorderRiderItems(items, -1, 2)).toEqual(items);
     expect(reorderRiderItems(items, 1, 99)).toEqual(items);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // RF-11: Priorização e Segregação de Itens Inegociáveis vs Desejáveis
+  // ───────────────────────────────────────────────────────────────────────────
+  it("TC-11.1 & TC-11.4: bloqueio de conclusão e contadores segregados (RF-11)", () => {
+    // Cenário: 3 desejáveis confirmados e 1 inegociável pendente
+    const itemsPartial = [
+      { id: "des-1", status: "confirmed", is_mandatory: false },
+      { id: "des-2", status: "confirmed", is_mandatory: false },
+      { id: "des-3", status: "confirmed", is_mandatory: false },
+      { id: "mand-1", status: "pending", is_mandatory: true },
+    ];
+
+    const balancePartial = computeRiderBalance(itemsPartial);
+
+    // TC-11.1: Mesmo com todos desejáveis confirmados, NÃO pode indicar completo se inegociável estiver pendente
+    expect(balancePartial.isComplete).toBe(false);
+    expect(balancePartial.hasMandatoryPendingOrException).toBe(true);
+
+    // TC-11.4: Contadores segregados em mandatory e desirable
+    expect(balancePartial.mandatory).toEqual({
+      total: 1,
+      confirmed: 0,
+      exceptions: 0,
+      pending: 1,
+      isComplete: false,
+      hasExceptions: false,
+    });
+    expect(balancePartial.desirable).toEqual({
+      total: 3,
+      confirmed: 3,
+      exceptions: 0,
+      pending: 0,
+      isComplete: true,
+      hasExceptions: false,
+    });
+
+    // Cenário: Inegociável em exceção também bloqueia conclusão geral
+    const itemsException = [
+      { id: "des-1", status: "confirmed", is_mandatory: false },
+      { id: "mand-1", status: "exception", is_mandatory: true },
+    ];
+    const balanceException = computeRiderBalance(itemsException);
+    expect(balanceException.isComplete).toBe(false);
+    expect(balanceException.hasMandatoryPendingOrException).toBe(true);
+    expect(balanceException.mandatory.hasExceptions).toBe(true);
+
+    // Cenário: Todos inegociáveis confirmados e desejáveis confirmados -> completo!
+    const itemsAllConfirmed = [
+      { id: "des-1", status: "confirmed", is_mandatory: false },
+      { id: "mand-1", status: "confirmed", is_mandatory: true },
+    ];
+    const balanceAll = computeRiderBalance(itemsAllConfirmed);
+    expect(balanceAll.isComplete).toBe(true);
+    expect(balanceAll.hasMandatoryPendingOrException).toBe(false);
+    expect(balanceAll.mandatory.isComplete).toBe(true);
+    expect(balanceAll.desirable.isComplete).toBe(true);
+  });
+
+  it("TC-11.3: ordenação priorizada (inegociáveis pendentes antes de desejáveis pendentes)", () => {
+    const items = [
+      { id: "des-conf", status: "confirmed", is_mandatory: false, position: 0 },
+      { id: "des-pend", status: "pending", is_mandatory: false, position: 1 },
+      { id: "mand-conf", status: "confirmed", is_mandatory: true, position: 2 },
+      { id: "mand-pend", status: "pending", is_mandatory: true, position: 3 },
+      { id: "des-exc", status: "exception", is_mandatory: false, position: 4 },
+      { id: "mand-exc", status: "exception", is_mandatory: true, position: 5 },
+    ];
+
+    const sorted = sortRiderItemsByPriority(items);
+
+    // Ordem esperada:
+    // 1º: mand-pend (Inegociável pendente)
+    // 2º: des-pend (Desejável pendente)
+    // 3º: mand-exc (Inegociável em exceção - severidade mais crítica)
+    // 4º: des-exc (Desejável em exceção)
+    // 5º e 6º: confirmados mantendo position relativa (des-conf pos 0, mand-conf pos 2)
+    expect(sorted.map((i) => i.id)).toEqual([
+      "mand-pend",
+      "des-pend",
+      "mand-exc",
+      "des-exc",
+      "des-conf",
+      "mand-conf",
+    ]);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // BVA & Casos Limite: Fronteiras de Cálculo e Ordenação do Rider
+  // ───────────────────────────────────────────────────────────────────────────
+  it("BVA: casos limites de lista vazia, status indefinido e riders homogêneos", () => {
+    // 1. Lista de itens vazia
+    const emptyBalance = computeRiderBalance([]);
+    expect(emptyBalance.total).toBe(0);
+    expect(emptyBalance.isComplete).toBe(false);
+    expect(emptyBalance.hasMandatoryPendingOrException).toBe(false);
+    expect(emptyBalance.mandatory.total).toBe(0);
+    expect(emptyBalance.desirable.total).toBe(0);
+    expect(sortRiderItemsByPriority([])).toEqual([]);
+
+    // 2. Itens sem status ou com status vazio -> tratados como pending
+    const itemsUndefinedStatus = [
+      { id: "i-1", status: "", is_mandatory: true },
+      { id: "i-2", status: "pending", is_mandatory: false },
+    ];
+    const balanceUndef = computeRiderBalance(itemsUndefinedStatus);
+    expect(balanceUndef.pending).toBe(2);
+    expect(balanceUndef.mandatory.pending).toBe(1);
+    expect(balanceUndef.desirable.pending).toBe(1);
+    expect(balanceUndef.isComplete).toBe(false);
+
+    // 3. Rider 100% desejável (sem itens inegociáveis cadastrados)
+    const onlyDesirable = [
+      { id: "d-1", status: "confirmed", is_mandatory: false },
+      { id: "d-2", status: "confirmed", is_mandatory: false },
+    ];
+    const balanceOnlyDesirable = computeRiderBalance(onlyDesirable);
+    expect(balanceOnlyDesirable.mandatory.total).toBe(0);
+    expect(balanceOnlyDesirable.desirable.total).toBe(2);
+    expect(balanceOnlyDesirable.isComplete).toBe(true);
+
+    // 4. Rider 100% inegociável com 1 exceção -> bloqueia conclusão
+    const onlyMandatoryWithException = [
+      { id: "m-1", status: "confirmed", is_mandatory: true },
+      { id: "m-2", status: "exception", is_mandatory: true },
+    ];
+    const balanceOnlyMandatory = computeRiderBalance(onlyMandatoryWithException);
+    expect(balanceOnlyMandatory.isComplete).toBe(false);
+    expect(balanceOnlyMandatory.hasMandatoryPendingOrException).toBe(true);
+    expect(balanceOnlyMandatory.mandatory.hasExceptions).toBe(true);
+
+    // 5. Ordenação quando todos já estão confirmados (preserva position)
+    const allDone = [
+      { id: "p-3", status: "confirmed", is_mandatory: false, position: 3 },
+      { id: "p-1", status: "confirmed", is_mandatory: true, position: 1 },
+      { id: "p-2", status: "confirmed", is_mandatory: false, position: 2 },
+    ];
+    const sortedAllDone = sortRiderItemsByPriority(allDone);
+    expect(sortedAllDone.map((i) => i.id)).toEqual(["p-1", "p-2", "p-3"]);
   });
 });

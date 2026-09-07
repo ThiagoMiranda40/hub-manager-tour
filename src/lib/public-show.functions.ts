@@ -178,3 +178,106 @@ export const submitDocument = createServerFn({ method: "POST" })
     if (insertError) throw new Error(insertError.message);
     return { ok: true };
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// T-10: Funções do Servidor para Página Pública de Confirmação do Rider (/r/$token)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getPublicRider = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => z.object({ token: z.string().min(4) }).parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Localiza o show pelo token exclusivo do rider
+    const { data: show, error: showErr } = await supabaseAdmin
+      .from("shows")
+      .select("id, city, venue, show_date, artist_id, artists(name)")
+      .eq("rider_public_token", data.token)
+      .maybeSingle();
+
+    if (showErr) throw new Error(showErr.message);
+    if (!show) return null;
+
+    // Busca os itens do rider do show ordenados por posição
+    const { data: items, error: itemsErr } = await supabaseAdmin
+      .from("show_rider_items")
+      .select(
+        "id, category, item_name, specification, quantity, is_mandatory, position, status, exception_note, confirmed_by_venue_at",
+      )
+      .eq("show_id", show.id)
+      .order("position", { ascending: true });
+
+    if (itemsErr) throw new Error(itemsErr.message);
+
+    return {
+      show: {
+        id: show.id as string,
+        city: show.city as string,
+        venue: (show.venue as string | null) ?? null,
+        show_date: show.show_date as string,
+        artist: (show.artists as { name: string } | null)?.name ?? null,
+      },
+      items: (items ?? []).map((item) => ({
+        id: item.id as string,
+        category: item.category as string,
+        item_name: item.item_name as string,
+        specification: (item.specification as string | null) ?? null,
+        quantity: Number(item.quantity) || 1,
+        is_mandatory: Boolean(item.is_mandatory),
+        position: Number(item.position) || 0,
+        status: (item.status as "pending" | "confirmed" | "exception") || "pending",
+        exception_note: (item.exception_note as string | null) ?? null,
+        confirmed_by_venue_at: (item.confirmed_by_venue_at as string | null) ?? null,
+      })),
+    };
+  });
+
+export const updatePublicRiderItem = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        token: z.string().min(4),
+        itemId: z.string().uuid(),
+        status: z.enum(["confirmed", "exception", "pending"]),
+        exceptionNote: z.string().max(1000).optional().nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. Localiza o show pelo token de rider
+    const { data: show, error: showErr } = await supabaseAdmin
+      .from("shows")
+      .select("id")
+      .eq("rider_public_token", data.token)
+      .maybeSingle();
+
+    if (showErr) throw new Error(showErr.message);
+    if (!show) throw new Error("Link de rider inválido ou expirado.");
+
+    // 2. Blindagem de segurança anti-IDOR/BOLA (A01:2025):
+    // Obrigatoriamente WHERE id = itemId AND show_id = show.id
+    const nowIso = new Date().toISOString();
+    const updatePayload = {
+      status: data.status,
+      confirmed_by_venue_at: nowIso,
+      exception_note: data.status === "exception" ? data.exceptionNote?.trim() || null : null,
+    };
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from("show_rider_items")
+      .update(updatePayload)
+      .eq("id", data.itemId)
+      .eq("show_id", show.id) // << Validação composta anti-IDOR / BOLA estrita
+      .select("id, status, exception_note, confirmed_by_venue_at")
+      .maybeSingle();
+
+    if (updateErr) throw new Error(updateErr.message);
+    if (!updated) {
+      throw new Error("Item do rider não pertence a este evento. Operação negada.");
+    }
+
+    return { ok: true, item: updated, savedAt: nowIso };
+  });
+

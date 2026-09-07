@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as ShowsIdRouteImport } from './routes/shows.$id'
 import { Route as ShowsIdFichaRouteImport } from './routes/shows.$id_.ficha'
 
@@ -42,6 +43,11 @@ const PTokenRoute = PTokenRouteImport.update({
   path: '/p/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RTokenRoute = RTokenRouteImport.update({
+  id: '/r/$token',
+  path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShowsIdRoute = ShowsIdRouteImport.update({
   id: '/shows/$id',
   path: '/shows/$id',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
   '/p/$token': typeof PTokenRoute
+  '/r/$token': typeof RTokenRoute
   '/shows/$id': typeof ShowsIdRoute
   '/shows/$id/ficha': typeof ShowsIdFichaRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
   '/p/$token': typeof PTokenRoute
+  '/r/$token': typeof RTokenRoute
   '/shows/$id': typeof ShowsIdRoute
   '/shows/$id/ficha': typeof ShowsIdFichaRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
   '/p/$token': typeof PTokenRoute
+  '/r/$token': typeof RTokenRoute
   '/shows/$id': typeof ShowsIdRoute
   '/shows/$id_/ficha': typeof ShowsIdFichaRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/people'
     | '/settings'
     | '/p/$token'
+    | '/r/$token'
     | '/shows/$id'
     | '/shows/$id/ficha'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/people'
     | '/settings'
     | '/p/$token'
+    | '/r/$token'
     | '/shows/$id'
     | '/shows/$id/ficha'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/people'
     | '/settings'
     | '/p/$token'
+    | '/r/$token'
     | '/shows/$id'
     | '/shows/$id_/ficha'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   PeopleRoute: typeof PeopleRoute
   SettingsRoute: typeof SettingsRoute
   PTokenRoute: typeof PTokenRoute
+  RTokenRoute: typeof RTokenRoute
   ShowsIdRoute: typeof ShowsIdRoute
   ShowsIdFichaRoute: typeof ShowsIdFichaRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/r/$token': {
+      id: '/r/$token'
+      path: '/r/$token'
+      fullPath: '/r/$token'
+      preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shows/$id': {
       id: '/shows/$id'
       path: '/shows/$id'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   PeopleRoute: PeopleRoute,
   SettingsRoute: SettingsRoute,
   PTokenRoute: PTokenRoute,
+  RTokenRoute: RTokenRoute,
   ShowsIdRoute: ShowsIdRoute,
   ShowsIdFichaRoute: ShowsIdFichaRoute,
 }
