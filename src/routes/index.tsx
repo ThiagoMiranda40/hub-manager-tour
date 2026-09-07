@@ -646,11 +646,7 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
         finalTourId = createdTour.id;
       }
 
-      // 3. Gera tokens públicos seguros
-      const publicToken = crypto.randomUUID().replace(/-/g, "").slice(0, 18);
-      const riderPublicToken = crypto.randomUUID().replace(/-/g, "").slice(0, 18);
-
-      // 4. Insere show em shows
+      // 3. Insere show em shows (public_token e rider_public_token gerados pelo valor padrão no banco)
       const { data: createdShow, error: showError } = await supabase
         .from("shows")
         .insert({
@@ -660,16 +656,16 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
           city: city.trim(),
           show_date: date,
           venue: venue.trim() || null,
-          public_token: publicToken,
-          rider_public_token: riderPublicToken,
         })
-        .select("id")
+        .select("id, public_token, rider_public_token")
         .single();
 
       if (showError) throw new Error(`Erro ao cadastrar show: ${showError.message}`);
       const showId = createdShow.id;
 
-      // 5. T-06: Pré-popula elenco com as pessoas sugeridas selecionadas
+      const warnings: string[] = [];
+
+      // 4. T-06: Pré-popula elenco com as pessoas sugeridas selecionadas
       if (selectedPersonIds.length > 0) {
         const castRows = selectedPersonIds.map((personId) => {
           const person = suggestedPeople.find((p) => p.id === personId);
@@ -685,17 +681,21 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
         const { error: castError } = await supabase.from("cast_members").insert(castRows);
         if (castError) {
           console.error("Aviso: falha ao inserir elenco sugerido:", castError.message);
+          warnings.push("O elenco sugerido não pôde ser pré-populado automaticamente.");
         }
       }
 
-      // 6. T-06: Instancia itens de rider clonando o rider padrão daquele artista
-      const { data: templates } = await supabase
+      // 5. T-06: Instancia itens de rider clonando o rider padrão daquele artista
+      const { data: templates, error: tmplError } = await supabase
         .from("artist_rider_template_items")
         .select("*")
         .eq("artist_id", finalArtistId)
         .order("position");
 
-      if (templates && templates.length > 0) {
+      if (tmplError) {
+        console.error("Aviso: falha ao consultar rider padrão:", tmplError.message);
+        warnings.push("O rider padrão não pôde ser consultado para clonagem.");
+      } else if (templates && templates.length > 0) {
         const riderRows = templates.map((tmpl) => ({
           user_id: userId,
           show_id: showId,
@@ -713,11 +713,21 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
         const { error: riderError } = await supabase.from("show_rider_items").insert(riderRows);
         if (riderError) {
           console.error("Aviso: falha ao clonar rider técnico padrão:", riderError.message);
+          warnings.push("Os itens do rider padrão não puderam ser clonados automaticamente.");
         }
       }
+
+      return { showId, warnings };
     },
-    onSuccess: () => {
-      toast.success("Show cadastrado com sucesso! Elenco e rider técnico foram inicializados.");
+    onSuccess: ({ warnings }) => {
+      if (warnings.length > 0) {
+        toast.warning(
+          `Show criado com ressalvas: ${warnings.join(" ")} Eles deverão ser adicionados manualmente na prancheta.`,
+          { duration: 8000 },
+        );
+      } else {
+        toast.success("Show cadastrado com sucesso! Elenco e rider técnico foram inicializados.");
+      }
       onDone();
     },
     onError: (e: Error) => setError(e.message),
