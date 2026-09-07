@@ -31,12 +31,15 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement via dot notation)
   // Fall back to process.env for SSR (server-side rendering)
+  // Public fallback for environments without build-time env injection (e.g. Cloudflare preview branches)
   const SUPABASE_URL =
     import.meta.env.VITE_SUPABASE_URL ||
-    (typeof process !== 'undefined' ? process.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'] : undefined);
+    (typeof process !== 'undefined' ? process.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'] : undefined) ||
+    'https://jsspaiotohaqtrpstbnx.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY =
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    (typeof process !== 'undefined' ? process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined);
+    (typeof process !== 'undefined' ? process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined) ||
+    'sb_publishable_ltSfqXK9P8FzlxPLUvC-Bg_xIhKjCQM';
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
