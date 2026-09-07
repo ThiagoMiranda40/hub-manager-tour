@@ -35,7 +35,7 @@ export function AppShell({
               Agenda
             </Link>
             <Link
-              to={"/people" as any}
+              to="/people"
               className="rounded-md px-2.5 py-1.5 transition-nocturne hover:text-foreground hover:bg-accent/40 touch-nav"
               activeProps={{ className: "text-foreground font-semibold bg-accent/60" }}
             >
