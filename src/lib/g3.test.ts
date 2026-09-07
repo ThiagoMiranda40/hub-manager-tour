@@ -530,5 +530,26 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     ];
     const sortedAllDone = sortRiderItemsByPriority(allDone);
     expect(sortedAllDone.map((i) => i.id)).toEqual(["p-1", "p-2", "p-3"]);
+
+    // 6. BVA Modo Palco: lista vazia retorna array vazio
+    expect(sortStageRiderItems([])).toEqual([]);
+
+    // 7. BVA Modo Palco: itens sem physical_check (undefined/null) tratados como unchecked
+    const stageItemsNullCheck = [
+      { id: "s-1", status: "confirmed", is_mandatory: false, position: 1 },
+      { id: "s-2", status: "confirmed", is_mandatory: true, position: 2 },
+    ];
+    const sortedStageNull = sortStageRiderItems(stageItemsNullCheck);
+    expect(sortedStageNull.map((i) => i.id)).toEqual(["s-2", "s-1"]);
+
+    // 8. BVA Modo Palco: múltiplos itens divergentes priorizam inegociáveis e preservam position relativa
+    const allDivergent = [
+      { id: "div-des-2", status: "confirmed", is_mandatory: false, physical_check: "divergent", position: 2 },
+      { id: "div-mand-2", status: "confirmed", is_mandatory: true, physical_check: "divergent", position: 2 },
+      { id: "div-des-1", status: "confirmed", is_mandatory: false, physical_check: "divergent", position: 1 },
+      { id: "div-mand-1", status: "confirmed", is_mandatory: true, physical_check: "divergent", position: 1 },
+    ];
+    const sortedAllDiv = sortStageRiderItems(allDivergent);
+    expect(sortedAllDiv.map((i) => i.id)).toEqual(["div-mand-1", "div-mand-2", "div-des-1", "div-des-2"]);
   });
 });
