@@ -15,7 +15,13 @@ export const getPublicShow = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!show) return null;
 
-    const [{ data: cast }, { data: roles }, { data: docTypes }] = await Promise.all([
+    const [
+      { data: cast },
+      { data: roles },
+      { data: docTypes },
+      { data: requirements },
+      { data: documents },
+    ] = await Promise.all([
       supabaseAdmin.from("cast_members").select("id, name, role").eq("show_id", show.id).order("name"),
       supabaseAdmin.from("cast_roles").select("id, name").eq("user_id", show.user_id),
       supabaseAdmin
@@ -23,6 +29,15 @@ export const getPublicShow = createServerFn({ method: "GET" })
         .select("id, name, reimbursable, position")
         .eq("user_id", show.user_id)
         .order("position"),
+      supabaseAdmin
+        .from("show_requirements")
+        .select("id, cast_member_id, document_type_id, required, deadline_date")
+        .eq("show_id", show.id),
+      supabaseAdmin
+        .from("documents")
+        .select("id, cast_member_id, doc_type, file_name, created_at")
+        .eq("show_id", show.id)
+        .order("created_at", { ascending: false }),
     ]);
 
     const roleName = (value: string) =>
@@ -46,6 +61,20 @@ export const getPublicShow = createServerFn({ method: "GET" })
         name: t.name as string,
         reimbursable: t.reimbursable as boolean,
       })),
+      requirements: (requirements ?? []).map((r) => ({
+        id: r.id as string,
+        castMemberId: r.cast_member_id as string,
+        docTypeId: r.document_type_id as string,
+        required: r.required as boolean,
+        deadlineDate: (r.deadline_date as string | null) ?? null,
+      })),
+      documents: (documents ?? []).map((d) => ({
+        id: d.id as string,
+        castMemberId: d.cast_member_id as string,
+        docTypeId: d.doc_type as string,
+        fileName: (d.file_name as string | null) ?? null,
+        createdAt: d.created_at as string,
+      })),
     };
   });
 
@@ -63,7 +92,7 @@ export const submitDocument = createServerFn({ method: "POST" })
         filePath: z.string().min(3),
         fileName: z.string().max(200).optional(),
         note: z.string().max(500).optional(),
-        amount: z.number().nonnegative().max(9999999).optional(),
+        amount: z.number().positive("O valor deve ser maior que zero").max(9999999).optional(),
         isReimbursement: z.boolean().optional(),
       })
       .parse(data),
