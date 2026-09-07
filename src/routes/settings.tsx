@@ -17,6 +17,7 @@ import {
   Check,
   X,
   Sparkles,
+  HelpCircle,
 } from "lucide-react";
 import {
   RIDER_CATEGORIES,
@@ -697,15 +698,24 @@ function RiderCatalogSection({
                 </div>
 
                 <div className="sm:col-span-2 flex items-end pb-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={newIsMandatory}
-                      onChange={(e) => setNewIsMandatory(e.target.checked)}
-                      className="size-4 accent-[#9184d9] rounded"
-                    />
-                    <span className="text-xs font-mono">Mandatório</span>
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={newIsMandatory}
+                        onChange={(e) => setNewIsMandatory(e.target.checked)}
+                        className="size-4 accent-[#9184d9] rounded"
+                      />
+                      <span className="text-xs font-mono">Inegociável</span>
+                    </label>
+                    <span
+                      className="inline-flex text-muted-foreground/70 hover:text-muted-foreground cursor-help transition-colors"
+                      title="Item inegociável: a casa de show precisa fornecer, sem alternativa aceitável. Desligado, o item é desejável — pode ser negociado ou substituído sem inviabilizar o show."
+                      aria-label="Item inegociável: a casa de show precisa fornecer, sem alternativa aceitável. Desligado, o item é desejável — pode ser negociado ou substituído sem inviabilizar o show."
+                    >
+                      <HelpCircle className="size-3.5" />
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -867,7 +877,7 @@ function RiderCatalogSection({
 
                             {item.is_mandatory ? (
                               <span className="text-[10px] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-2 py-0.5 rounded font-medium">
-                                Mandatório
+                                Inegociável
                               </span>
                             ) : (
                               <span className="text-[10px] font-mono border border-line text-muted-foreground px-2 py-0.5 rounded">
@@ -998,15 +1008,24 @@ function EditRiderItemForm({
         </div>
 
         <div className="sm:col-span-2 flex items-end pb-2">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isMandatory}
-              onChange={(e) => setIsMandatory(e.target.checked)}
-              className="size-4 accent-[#9184d9] rounded"
-            />
-            <span className="text-xs font-mono">Mandatório</span>
-          </label>
+          <div className="flex items-center gap-1.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isMandatory}
+                onChange={(e) => setIsMandatory(e.target.checked)}
+                className="size-4 accent-[#9184d9] rounded"
+              />
+              <span className="text-xs font-mono">Inegociável</span>
+            </label>
+            <span
+              className="inline-flex text-muted-foreground/70 hover:text-muted-foreground cursor-help transition-colors"
+              title="Item inegociável: a casa de show precisa fornecer, sem alternativa aceitável. Desligado, o item é desejável — pode ser negociado ou substituído sem inviabilizar o show."
+              aria-label="Item inegociável: a casa de show precisa fornecer, sem alternativa aceitável. Desligado, o item é desejável — pode ser negociado ou substituído sem inviabilizar o show."
+            >
+              <HelpCircle className="size-3.5" />
+            </span>
+          </div>
         </div>
       </div>
 
