@@ -6,6 +6,7 @@ import {
   computeRiderBalance,
   applyRequirementPreset,
   cleanPixKeyForCopy,
+  formatDateBR,
   formatDocumentDescription,
   type ShowRequirement,
   type ShowRiderItem,
@@ -305,5 +306,20 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
         file_name: null,
       }),
     ).toBe("arquivo");
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Teste: Formatação de data no padrão brasileiro DD/MM/AAAA (formatDateBR)
+  // ───────────────────────────────────────────────────────────────────────────
+  it("formata datas no padrão brasileiro DD/MM/AAAA sem sofrer distorção de fuso horário", () => {
+    // Caso padrão exigido na spec
+    expect(formatDateBR("2026-11-28")).toBe("28/11/2026");
+
+    // Outros casos (começo e meio de ano)
+    expect(formatDateBR("2026-01-05")).toBe("05/01/2026");
+    expect(formatDateBR("2026-09-07")).toBe("07/09/2026");
+
+    // Strings vazias ou inválidas
+    expect(formatDateBR("")).toBe("");
   });
 });

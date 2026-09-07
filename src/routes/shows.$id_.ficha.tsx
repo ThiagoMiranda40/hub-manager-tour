@@ -4,7 +4,13 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
-import { computeShowProgress, formatBRL, formatDocumentDescription, labelFrom } from "@/lib/g3";
+import {
+  computeShowProgress,
+  formatBRL,
+  formatDateBR,
+  formatDocumentDescription,
+  labelFrom,
+} from "@/lib/g3";
 
 export const Route = createFileRoute("/shows/$id_/ficha")({
   head: () => ({
@@ -66,7 +72,7 @@ function FichaProducao() {
   useEffect(() => {
     if (!show) return;
     const artistName = show.artists?.name?.trim() || "Sem Artista";
-    const showDate = show.show_date;
+    const showDate = formatDateBR(show.show_date);
     document.title = `Relatório de Produção — ${artistName} — ${showDate}`;
 
     return () => {
@@ -136,7 +142,7 @@ function FichaProducao() {
             <h1 className="mt-2 text-4xl leading-none">{show.artists?.name ?? "SEM ARTISTA"}</h1>
             <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
               <Info label="Tour" value={show.tours?.name ?? "Show avulso"} />
-              <Info label="Data" value={show.show_date} />
+              <Info label="Data" value={formatDateBR(show.show_date)} />
               <Info label="Cidade" value={show.city} />
               <Info label="Local" value={show.venue ?? "—"} />
             </dl>

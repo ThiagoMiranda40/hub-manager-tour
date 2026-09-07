@@ -403,6 +403,14 @@ export function formatShowDate(date: string) {
   return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).toUpperCase();
 }
 
+/** Formata data ISO (YYYY-MM-DD) para o formato padrão brasileiro DD/MM/AAAA */
+export function formatDateBR(date: string): string {
+  if (!date) return "";
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) return date;
+  return `${day}/${month}/${year}`;
+}
+
 export function formatWeekday(date: string) {
   const dt = parseDate(date);
   return dt.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "").toUpperCase();
