@@ -173,6 +173,8 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 ## T-10 — Página Pública de Confirmação do Rider com Auto-Save e Impressão Local
 - **Depende de:** T-04, T-06, T-09
 - **Arquivos afetados:**
+  - `[MODIFY] src/lib/g3.ts`
+  - `[MODIFY] src/lib/g3.test.ts`
   - `[NEW] src/routes/r.$token.tsx`
   - `src/routeTree.gen.ts`
 - **Fazer:**
@@ -184,6 +186,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
      - Clicar de volta em "Confirmar" reverte o status imediatamente.
   4. Adicionar botão "Imprimir Cópia de Atendimento" que abre visão limpa sem botões para a equipe técnica do teatro.
   5. Blindagem de segurança anti-IDOR/BOLA (A01:2025): a Server Function de mutação deve exigir obrigatoriamente a validação composta `WHERE id = itemId AND show_id = show.id`, impedindo que uma casa com token altere itens de outro show.
+  6. Aplicar RF-11: consumir os contadores segregados (inegociável/desejável) de computeRiderBalance e exibir dois indicadores separados, com itens inegociáveis pendentes ordenados antes dos desejáveis.
 - **Verificação técnica:** `npx tsc --noEmit && npm run build`
 - **Tradução em linguagem simples:** "A casa de show confirma item a item pelo celular com salvamento automático e proteção de segurança garantindo que ninguém consiga alterar dados de outro evento."
 
@@ -199,6 +202,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
      - Visualização em cards amplos otimizados para toque de polegar em smartphone (altura >= 48px).
      - Botões grandes: "OK Recebido" (verde) e "Divergência" (alerta) para auditoria presencial em ambiente com pouca luz.
   2. Atualizar a rota `shows.$id_.ficha.tsx` para impressão A4 incorporando a nova estrutura de pessoas e o balanço do rider técnico.
+  3. Aplicar RF-11: no Modo Palco, itens inegociáveis pendentes/em divergência aparecem destacados e ordenados antes dos desejáveis.
 - **Verificação técnica:** `npm test && npx tsc --noEmit && npm run build`
 - **Tradução em linguagem simples:** "No dia do show, a equipe no palco usa o celular com botões grandes de polegar para checar se o equipamento entregue bate com o prometido. A Ficha de Produção A4 foi atualizada com os novos dados."
 

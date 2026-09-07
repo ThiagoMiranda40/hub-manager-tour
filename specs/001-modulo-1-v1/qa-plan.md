@@ -189,6 +189,16 @@ Aplicando **Particionamento de Equivalência (EP)**, **Análise de Valor Limite 
 
 ---
 
+### RF-11: Priorização de Itens Inegociáveis
+
+#### Casos Derivados
+- **TC-11.1 (Bloqueio de conclusão):** Rider com todos os desejáveis confirmados e 1 inegociável pendente -> status geral não pode indicar "completo".
+- **TC-11.2 (Severidade de exceção):** Exceção em item inegociável exibe alerta visualmente distinto (mais crítico) de exceção em item desejável.
+- **TC-11.3 (Ordenação):** Lista com itens pendentes dos dois tipos exibe inegociáveis pendentes antes dos desejáveis pendentes.
+- **TC-11.4 (Contadores segregados):** Tela exibe dois contadores separados, nunca um percentual único misturando os dois grupos.
+
+---
+
 ## 4. Cartas de Teste Exploratório (Session-Based Test Charters)
 
 As sessões exploratórias focam no comportamento dinâmico que testes automatizados não captam com facilidade (percepção visual, usabilidade em luz baixa, comportamento em conexões instáveis de turnê).

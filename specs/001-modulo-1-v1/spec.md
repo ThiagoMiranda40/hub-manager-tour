@@ -177,6 +177,29 @@ para eliminar digitação manual de número de voo, hotel, valor de nota ou chec
 
 ---
 
+### RF-11 — Priorização de Itens Inegociáveis no Balanço do Rider Técnico
+> Adendo pós-T-09 (07/09/2026): requisito identificado durante revisão da T-09, antes da execução de T-10/T-11.
+
+Como produtor ou casa de show acompanhando o rider técnico de um evento,  
+quero que itens inegociáveis e desejáveis sejam tratados com peso diferente no status geral,  
+para identificar de forma imediata se um risco real (item inegociável) está pendente, sem confundir com pendências de baixo impacto.
+
+**Critério de aceite:**
+- **Dado** um rider com itens inegociáveis e desejáveis,  
+  **quando** todos os desejáveis estiverem confirmados mas houver ao menos um inegociável pendente ou em exceção,  
+  **então** o status geral do rider não pode ser exibido como "completo"/"tudo confirmado".
+- **Dado** um item marcado como inegociável,  
+  **quando** ele for sinalizado como exceção pela casa de show,  
+  **então** o alerta exibido tem severidade visualmente distinta (mais crítica) de uma exceção em item desejável.
+- **Dado** uma listagem de itens do rider (aba Rider Técnico do show, e página pública /r/[token]),  
+  **quando** houver itens pendentes de ambos os tipos,  
+  **então** os itens inegociáveis pendentes aparecem antes dos desejáveis pendentes na ordem de exibição.
+- **Dado** o cálculo de progresso do rider,  
+  **quando** exibido ao usuário,  
+  **então** existem dois contadores separados — inegociáveis e desejáveis — em vez de um único percentual combinado.
+
+---
+
 ## Requisitos Não-Funcionais
 
 ### RNF-01 — Usabilidade Mobile e Feedback Visual de Toque (:active)
