@@ -42,6 +42,48 @@ export type ShowRequirement = {
   deadline_date?: string | null;
 };
 
+export const RIDER_CATEGORIES = [
+  { id: "backline", label: "Backline" },
+  { id: "som", label: "Som" },
+  { id: "iluminacao", label: "Iluminação" },
+  { id: "camarim", label: "Camarim" },
+  { id: "outros", label: "Outros" },
+] as const;
+
+export type RiderCategory = (typeof RIDER_CATEGORIES)[number]["id"];
+
+export type ArtistRiderTemplateItem = {
+  id: string;
+  user_id?: string;
+  artist_id: string;
+  category: RiderCategory | string;
+  item_name: string;
+  specification?: string | null | undefined;
+  quantity: number;
+  is_mandatory: boolean;
+  position: number;
+  created_at?: string;
+};
+
+/** Reordena array de itens recalculando posições sequenciais (0..N-1) */
+export function reorderRiderItems<T extends { id: string; position: number }>(
+  items: T[],
+  fromIndex: number,
+  toIndex: number,
+): T[] {
+  if (fromIndex < 0 || fromIndex >= items.length || toIndex < 0 || toIndex >= items.length) {
+    return items;
+  }
+  const result = [...items];
+  const [moved] = result.splice(fromIndex, 1);
+  if (!moved) return items;
+  result.splice(toIndex, 0, moved);
+  return result.map((item, idx) => ({
+    ...item,
+    position: idx,
+  }));
+}
+
 export type ShowRiderItem = {
   id: string;
   status: "pending" | "confirmed" | "exception" | string;

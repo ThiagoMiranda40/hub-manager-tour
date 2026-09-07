@@ -8,6 +8,7 @@ import {
   cleanPixKeyForCopy,
   formatDateBR,
   formatDocumentDescription,
+  reorderRiderItems,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -321,5 +322,30 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
 
     // Strings vazias ou inválidas
     expect(formatDateBR("")).toBe("");
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Teste: Reordenação de itens do Rider Padrão (reorderRiderItems)
+  // ───────────────────────────────────────────────────────────────────────────
+  it("reordena itens do rider mantendo posições sequenciais íntegras", () => {
+    const items = [
+      { id: "item-1", position: 0, name: "Item A" },
+      { id: "item-2", position: 1, name: "Item B" },
+      { id: "item-3", position: 2, name: "Item C" },
+    ];
+
+    // Move Item B para cima (índice 1 para 0)
+    const movedUp = reorderRiderItems(items, 1, 0);
+    expect(movedUp.map((i) => i.id)).toEqual(["item-2", "item-1", "item-3"]);
+    expect(movedUp.map((i) => i.position)).toEqual([0, 1, 2]);
+
+    // Move Item B para baixo (índice 1 para 2)
+    const movedDown = reorderRiderItems(items, 1, 2);
+    expect(movedDown.map((i) => i.id)).toEqual(["item-1", "item-3", "item-2"]);
+    expect(movedDown.map((i) => i.position)).toEqual([0, 1, 2]);
+
+    // Índices fora dos limites -> não altera
+    expect(reorderRiderItems(items, -1, 2)).toEqual(items);
+    expect(reorderRiderItems(items, 1, 99)).toEqual(items);
   });
 });
