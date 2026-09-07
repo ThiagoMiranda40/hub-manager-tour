@@ -407,3 +407,12 @@ export function formatWeekday(date: string) {
   const dt = parseDate(date);
   return dt.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "").toUpperCase();
 }
+
+/** Remove pontuação de CPF e telefone para transferência limpa via Pix (RF-01 / RF-05 / TC-05.1) */
+export function cleanPixKeyForCopy(key: string, type?: string | null): string {
+  if (!key) return "";
+  if (type === "cpf" || type === "phone") {
+    return key.replace(/\D/g, "");
+  }
+  return key.trim();
+}

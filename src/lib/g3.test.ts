@@ -5,6 +5,7 @@ import {
   formatShowProgressSummary,
   computeRiderBalance,
   applyRequirementPreset,
+  cleanPixKeyForCopy,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -215,6 +216,22 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     const result2 = applyRequirementPreset(result1, memberIds, docTypeIds, "show-123");
     expect(result2.length).toBe(20);
     expect(result2).toEqual(result1);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Teste TC-05.1: Limpeza de chave Pix para cópia
+  // ───────────────────────────────────────────────────────────────────────────
+  it("TC-05.1: limpa pontuação de CPF e telefone para cópia de chave Pix", () => {
+    // CPF com pontuação -> apenas números
+    expect(cleanPixKeyForCopy("123.456.789-00", "cpf")).toBe("12345678900");
+    // Telefone com formatação -> apenas dígitos
+    expect(cleanPixKeyForCopy("+55 (11) 99999-9999", "phone")).toBe("5511999999999");
+    // E-mail -> mantém texto limpo
+    expect(cleanPixKeyForCopy("  artista@hubtour.com  ", "email")).toBe("artista@hubtour.com");
+    // EVP / Aleatória -> mantém UUID limpo
+    expect(cleanPixKeyForCopy(" 123e4567-e89b-12d3-a456-426614174000 ", "random")).toBe("123e4567-e89b-12d3-a456-426614174000");
+    // Vazio -> retorna string vazia
+    expect(cleanPixKeyForCopy("", "cpf")).toBe("");
   });
 
   // ───────────────────────────────────────────────────────────────────────────
