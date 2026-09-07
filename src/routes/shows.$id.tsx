@@ -628,7 +628,7 @@ function ShowDetail() {
                   params={{ id }}
                   className="border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation"
                 >
-                  Ficha A4
+                  Relatório de Produção
                 </Link>
                 <button
                   onClick={() => {
@@ -1718,7 +1718,7 @@ function ShowDetail() {
                     params={{ id }}
                     className="border border-line px-4 py-2 font-mono text-xs uppercase tracking-wider hover:bg-accent rounded-lg flex items-center gap-2 active:scale-[0.97]"
                   >
-                    <FileText className="size-4" /> Visualizar Ficha de Produção A4
+                    <FileText className="size-4" /> Visualizar Relatório de Produção
                   </Link>
                   <button
                     type="button"

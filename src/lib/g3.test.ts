@@ -6,6 +6,7 @@ import {
   computeRiderBalance,
   applyRequirementPreset,
   cleanPixKeyForCopy,
+  formatDocumentDescription,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -251,5 +252,58 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(progress.received).toBe(1);
     expect(progress.pendingPeople).toBe(1);
     expect(progress.members).toBe(2);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Teste: Descrição de documento no Relatório de Produção (formatDocumentDescription)
+  // ───────────────────────────────────────────────────────────────────────────
+  it("prioriza a observação (note) do documento e cai para o nome do arquivo quando ausente", () => {
+    // Cenário 1: Com observação -> exibe a observação
+    expect(
+      formatDocumentDescription({
+        note: "Voo GOL 1234, 28/11 18h",
+        file_name: "Invoice-0504D1C1-0023 (1).pdf",
+      }),
+    ).toBe("Voo GOL 1234, 28/11 18h");
+
+    // Cenário 2: Outra observação com espaços ao redor -> exibe note com trim
+    expect(
+      formatDocumentDescription({
+        note: "  Almoço no aeroporto  ",
+        file_name: "recibo_scan.jpg",
+      }),
+    ).toBe("Almoço no aeroporto");
+
+    // Cenário 3: Sem observação (null) -> cai para o nome do arquivo
+    expect(
+      formatDocumentDescription({
+        note: null,
+        file_name: "passagem_la3271.pdf",
+      }),
+    ).toBe("passagem_la3271.pdf");
+
+    // Cenário 4: Sem observação (undefined) -> cai para o nome do arquivo
+    expect(
+      formatDocumentDescription({
+        note: undefined,
+        file_name: "voucher_hotel_ibis.pdf",
+      }),
+    ).toBe("voucher_hotel_ibis.pdf");
+
+    // Cenário 5: Observação vazia ou apenas espaços -> cai para o nome do arquivo
+    expect(
+      formatDocumentDescription({
+        note: "   ",
+        file_name: "comprovante_uber.pdf",
+      }),
+    ).toBe("comprovante_uber.pdf");
+
+    // Cenário 6: Sem observação e sem nome de arquivo -> fallback para 'arquivo'
+    expect(
+      formatDocumentDescription({
+        note: null,
+        file_name: null,
+      }),
+    ).toBe("arquivo");
   });
 });

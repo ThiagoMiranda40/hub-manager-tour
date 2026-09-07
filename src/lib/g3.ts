@@ -416,3 +416,14 @@ export function cleanPixKeyForCopy(key: string, type?: string | null): string {
   }
   return key.trim();
 }
+
+/**
+ * Retorna a descrição para exibição de um documento no relatório ou lista.
+ * Prioriza a observação (note) preenchida pelo integrante; caso não exista, usa o nome do arquivo.
+ */
+export function formatDocumentDescription(d: {
+  note?: string | null | undefined;
+  file_name?: string | null | undefined;
+}): string {
+  return d.note?.trim() || d.file_name || "arquivo";
+}

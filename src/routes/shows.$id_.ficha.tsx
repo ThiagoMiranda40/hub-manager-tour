@@ -4,21 +4,21 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
-import { computeShowProgress, formatBRL, labelFrom } from "@/lib/g3";
+import { computeShowProgress, formatBRL, formatDocumentDescription, labelFrom } from "@/lib/g3";
 
 export const Route = createFileRoute("/shows/$id_/ficha")({
   head: () => ({
     meta: [
-      { title: "Ficha de produção — Hub Manager Tour" },
+      { title: "Relatório de Produção — Hub Manager Tour" },
       {
         name: "description",
         content:
-          "Ficha de produção do show: elenco por função, documentos recebidos por tipo e resumo de reembolsos, pronta para impressão.",
+          "Relatório de Produção do show: elenco por função, documentos recebidos por tipo e resumo de reembolsos, pronto para impressão.",
       },
-      { property: "og:title", content: "Ficha de produção — Hub Manager Tour" },
+      { property: "og:title", content: "Relatório de Produção — Hub Manager Tour" },
       {
         property: "og:description",
-        content: "Resumo imprimível do show: elenco, documentos e reembolsos.",
+        content: "Relatório imprimível do show: elenco, documentos e reembolsos.",
       },
     ],
   }),
@@ -119,7 +119,7 @@ function FichaProducao() {
       ) : (
         <article className="print-sheet">
           <header className="border-b-2 border-foreground pb-4">
-            <p className="label-mono">Ficha de produção · Hub Manager Tour</p>
+            <p className="label-mono">Relatório de Produção · Hub Manager Tour</p>
             <h1 className="mt-2 text-4xl leading-none">{show.artists?.name ?? "SEM ARTISTA"}</h1>
             <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
               <Info label="Tour" value={show.tours?.name ?? "Show avulso"} />
@@ -197,7 +197,7 @@ function FichaProducao() {
                         <tr key={d.id} className="border-b border-line">
                           <td className="w-1/3 py-2 pr-3">{memberName(d.cast_member_id)}</td>
                           <td className="py-2 pr-3 font-mono text-[11px] break-all">
-                            {d.file_name ?? "arquivo"}
+                            {formatDocumentDescription(d)}
                           </td>
                           <td className="w-32 py-2 text-right font-mono text-[11px]">
                             {d.amount != null ? formatBRL(Number(d.amount)) : "—"}
