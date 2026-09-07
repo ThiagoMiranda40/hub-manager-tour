@@ -283,9 +283,14 @@ export function computeRiderBalance(
   const desirable = calcGroup(desirableItems);
 
   // TC-11.1 (Bloqueio de conclusão):
-  // Se houver ao menos um inegociável pendente ou em exceção, o rider geral não pode ser considerado completo
+  // RF-11: Se houver itens inegociáveis, a conclusão depende estritamente deles (desejável pendente não bloqueia o show).
+  // Se não houver itens inegociáveis configurados, exige que todos os itens estejam confirmados (sem pendências ou exceções).
   const hasMandatoryPendingOrException = mandatory.pending > 0 || mandatory.exceptions > 0;
-  const isComplete = total > 0 && pending === 0 && !hasMandatoryPendingOrException;
+  const isComplete =
+    total > 0 &&
+    (mandatory.total > 0
+      ? !hasMandatoryPendingOrException
+      : pending === 0 && exceptions === 0);
 
   return {
     total,

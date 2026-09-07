@@ -406,6 +406,18 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(balanceAll.hasMandatoryPendingOrException).toBe(false);
     expect(balanceAll.mandatory.isComplete).toBe(true);
     expect(balanceAll.desirable.isComplete).toBe(true);
+
+    // Cenário: todos os inegociáveis confirmados, mas 1 desejável ainda pendente
+    // -> deve ser considerado completo, pois desejável não bloqueia o show
+    const itemsMandatoryDoneDesirablePending = [
+      { id: "mand-1", status: "confirmed", is_mandatory: true },
+      { id: "des-1", status: "pending", is_mandatory: false },
+    ];
+    const balance = computeRiderBalance(itemsMandatoryDoneDesirablePending);
+    expect(balance.isComplete).toBe(true);
+    expect(balance.hasMandatoryPendingOrException).toBe(false);
+    expect(balance.mandatory.isComplete).toBe(true);
+    expect(balance.desirable.isComplete).toBe(false); // grupo desejável em si não está completo, mas isso não trava o geral
   });
 
   it("TC-11.3: ordenação priorizada (inegociáveis pendentes antes de desejáveis pendentes)", () => {
