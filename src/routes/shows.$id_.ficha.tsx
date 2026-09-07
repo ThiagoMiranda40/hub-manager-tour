@@ -60,9 +60,22 @@ function FichaProducao() {
     },
   });
 
+  const show = data?.show;
+
+  // Atualiza dinamicamente o título do documento para sugestão ao imprimir / salvar em PDF
+  useEffect(() => {
+    if (!show) return;
+    const artistName = show.artists?.name?.trim() || "Sem Artista";
+    const showDate = show.show_date;
+    document.title = `Relatório de Produção — ${artistName} — ${showDate}`;
+
+    return () => {
+      document.title = "Relatório de Produção — Hub Manager Tour";
+    };
+  }, [show]);
+
   if (loading || !session) return null;
 
-  const show = data?.show;
   const cast = data?.cast ?? [];
   const docs = data?.docs ?? [];
   const progress = computeShowProgress(cast, docs, docTypes);
