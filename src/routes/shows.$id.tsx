@@ -34,6 +34,7 @@ import {
   computeShowProgress,
   computeMemberRequirementStatus,
   computeRiderBalance,
+  sortStageRiderItems,
   cleanPixKeyForCopy,
   formatBRL,
   initials,
@@ -91,6 +92,11 @@ function ShowDetail() {
   const [copiedCastLink, setCopiedCastLink] = useState(false);
   const [copiedRiderLink, setCopiedRiderLink] = useState(false);
   const [copiedPixDocId, setCopiedPixDocId] = useState<string | null>(null);
+
+  // Modo Palco Mobile (RF-08 & RF-11)
+  const [isStageMode, setIsStageMode] = useState(false);
+  const [divergenceNoteEditingId, setDivergenceNoteEditingId] = useState<string | null>(null);
+  const [divergenceNoteText, setDivergenceNoteText] = useState("");
 
   const { roles, docTypes } = useCatalog(!!session);
 
@@ -193,6 +199,21 @@ function ShowDetail() {
   );
 
   const riderBalance = useMemo(() => computeRiderBalance(riderItems), [riderItems]);
+
+  // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco
+  const stageRiderItems = useMemo(
+    () => sortStageRiderItems(riderItems),
+    [riderItems],
+  );
+
+  const stageStats = useMemo(() => {
+    const conformed = riderItems.filter((i) => i.physical_check === "conformed").length;
+    const divergent = riderItems.filter((i) => i.physical_check === "divergent").length;
+    const unchecked = riderItems.filter(
+      (i) => !i.physical_check || i.physical_check === "unchecked",
+    ).length;
+    return { conformed, divergent, unchecked };
+  }, [riderItems]);
 
   const reimbursableDocs = useMemo(() => docs.filter((d) => d.is_reimbursement), [docs]);
   const withAmount = useMemo(
@@ -473,6 +494,44 @@ function ShowDetail() {
       toast.success("Documento excluído com sucesso");
     },
     onError: (e: Error) => setActionError(e.message),
+  });
+
+  // Modo Palco (RF-08 & RF-11): Atualização de conferência física (OK Conforme / Divergência)
+  const updatePhysicalCheck = useMutation({
+    mutationFn: async ({
+      itemId,
+      status,
+      note,
+    }: {
+      itemId: string;
+      status: "unchecked" | "conformed" | "divergent";
+      note?: string | null;
+    }) => {
+      const { error } = await supabase
+        .from("show_rider_items")
+        .update({
+          physical_check: status,
+          physical_divergence_note: note ?? null,
+        })
+        .eq("id", itemId)
+        .eq("show_id", id);
+
+      if (error) throw new Error(error.message);
+      return { itemId, status };
+    },
+    onSuccess: ({ status }) => {
+      qc.invalidateQueries({ queryKey: ["show", id] });
+      setDivergenceNoteEditingId(null);
+      setDivergenceNoteText("");
+      if (status === "conformed") {
+        toast.success("Item conferido e confirmado no palco!");
+      } else if (status === "divergent") {
+        toast.warning("Divergência registrada na ficha técnica do show.");
+      } else {
+        toast.info("Conferência física do item desmarcada.");
+      }
+    },
+    onError: (e: Error) => toast.error(`Erro ao registrar conferência no palco: ${e.message}`),
   });
 
   // Exclusão completa do show
@@ -1320,83 +1379,422 @@ function ShowDetail() {
                 </div>
               </div>
 
-              {/* Lista dos Itens do Rider do Show */}
-              <div className="border border-line rounded-xl overflow-hidden bg-card">
-                <div className="border-b border-line px-5 py-3.5 bg-accent/20">
+              {/* Controles de Visualização: Modo Palco vs Visão Padrão */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
                   <span className="label-mono font-medium text-foreground">
                     Itens de Palco e Camarim ({riderItems.length})
                   </span>
+                  {stageStats.conformed > 0 ? (
+                    <span className="font-mono text-[11px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full font-medium">
+                      {stageStats.conformed}/{riderItems.length} conferidos no palco
+                    </span>
+                  ) : null}
+                  {stageStats.divergent > 0 ? (
+                    <span className="font-mono text-[11px] text-amber-500 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full font-medium">
+                      {stageStats.divergent} divergência(s)
+                    </span>
+                  ) : null}
                 </div>
 
-                {riderItems.length === 0 ? (
-                  <div className="p-10 text-center">
-                    <Layers className="size-10 mx-auto text-muted-foreground/50" />
-                    <p className="mt-3 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                      Nenhum item de rider neste show
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      O rider padrão do artista pode ser configurado em Configurações para ser
-                      carregado automaticamente nos próximos shows.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-line">
-                    {riderItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-accent/10 transition-colors"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs uppercase px-2 py-0.5 border border-line bg-accent/30 rounded">
-                              {item.category}
-                            </span>
-                            <span className="font-medium text-sm">{item.item_name}</span>
-                            <span className="font-mono text-xs text-muted-foreground">
-                              x{item.quantity}
-                            </span>
-                            {item.is_mandatory ? (
-                              <span className="text-[10px] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded">
-                                Mandatório
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded">
-                                Desejável
-                              </span>
-                            )}
-                          </div>
-                          {item.specification ? (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {item.specification}
-                            </p>
-                          ) : null}
-                          {item.exception_note ? (
-                            <div className="mt-1.5 flex items-start gap-1 text-xs text-purple-700 dark:text-purple-300 bg-purple-500/10 p-2 rounded">
-                              <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
-                              <span>
-                                <strong>Nota da casa:</strong> {item.exception_note}
-                              </span>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <StatusBadge
-                            status={
-                              item.status === "confirmed"
-                                ? "confirmed"
-                                : item.status === "exception"
-                                  ? "exception"
-                                  : "pending"
-                            }
-                            size="sm"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsStageMode((v) => !v)}
+                    className={cn(
+                      "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-120 touch-manipulation active:scale-[0.97]",
+                      isStageMode
+                        ? "bg-[#9184d9] text-white shadow-lg shadow-[#9184d9]/25 ring-2 ring-[#9184d9]/50"
+                        : "border border-line bg-secondary/80 hover:bg-secondary text-foreground",
+                    )}
+                  >
+                    <Smartphone className="size-4" />
+                    <span>{isStageMode ? "Sair do Modo Palco" : "Modo Palco (Conferência)"}</span>
+                  </button>
+                </div>
               </div>
+
+              {isStageMode ? (
+                /* ─────────────────────────────────────────────────────────────
+                   MODO PALCO MOBILE (RF-08 & RF-11)
+                   Cards amplos, contraste para luz baixa, botões ≥ 48px
+                   ───────────────────────────────────────────────────────────── */
+                <div className="space-y-4">
+                  {/* Painel do Modo Palco */}
+                  <div className="p-4 sm:p-5 rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-100 shadow-md">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="size-2.5 rounded-full bg-[#9184d9] animate-pulse" />
+                          <h4 className="font-bold text-sm sm:text-base text-white tracking-wide">
+                            Modo Palco · Conferência Física Presencial
+                          </h4>
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-400">
+                          Interface otimizada para iluminação baixa e toque amplo de polegar no smartphone (≥ 48px).
+                          Audite o equipamento entregue no palco antes da passagem de som.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-mono">
+                        <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300">
+                          {stageStats.unchecked} a conferir
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 font-bold">
+                          {stageStats.conformed} OK
+                        </span>
+                        {stageStats.divergent > 0 ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/40 text-amber-400 font-bold">
+                            {stageStats.divergent} divergência(s)
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lista de Cards do Modo Palco Ordenados pelo RF-11 */}
+                  {stageRiderItems.length === 0 ? (
+                    <div className="p-10 text-center border border-line rounded-2xl bg-card">
+                      <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                        Nenhum item cadastrado no rider
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {stageRiderItems.map((item) => {
+                        const isMandatoryUrgent =
+                          Boolean(item.is_mandatory) &&
+                          (item.physical_check === "divergent" || item.status === "pending");
+                        const isConformed = item.physical_check === "conformed";
+                        const isDivergent = item.physical_check === "divergent";
+                        const isEditingDivergence = divergenceNoteEditingId === item.id;
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={cn(
+                              "p-4 sm:p-5 rounded-2xl border transition-all duration-150 space-y-3",
+                              isMandatoryUrgent
+                                ? "border-destructive/70 bg-destructive/10 ring-1 ring-destructive/40"
+                                : isConformed
+                                  ? "border-emerald-500/50 bg-emerald-950/20"
+                                  : isDivergent
+                                    ? "border-amber-500/50 bg-amber-950/20"
+                                    : "border-zinc-800 bg-zinc-900/90 hover:border-zinc-700",
+                            )}
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="space-y-1 flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium">
+                                    {item.category}
+                                  </span>
+
+                                  {item.is_mandatory ? (
+                                    <span className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded border border-destructive/50 bg-destructive/20 text-destructive font-bold">
+                                      Inegociável
+                                    </span>
+                                  ) : (
+                                    <span className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-400">
+                                      Desejável
+                                    </span>
+                                  )}
+
+                                  {isMandatoryUrgent ? (
+                                    <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-destructive text-white font-bold animate-pulse">
+                                      Atenção Prioritária
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                <div className="flex items-baseline gap-2 pt-0.5">
+                                  <h5 className="text-base sm:text-lg font-bold text-white">
+                                    {item.item_name}
+                                  </h5>
+                                  <span className="font-mono text-sm font-bold text-zinc-400">
+                                    x{item.quantity}
+                                  </span>
+                                </div>
+
+                                {item.specification ? (
+                                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                                    {item.specification}
+                                  </p>
+                                ) : null}
+
+                                {/* Status vindo da Casa de Show */}
+                                <div className="pt-1 text-xs">
+                                  {item.status === "confirmed" ? (
+                                    <span className="inline-flex items-center gap-1.5 text-emerald-400 font-mono text-[11px]">
+                                      <CheckCircle2 className="size-3.5" />
+                                      Confirmado pelo espaço
+                                    </span>
+                                  ) : item.status === "exception" ? (
+                                    <div className="p-2 rounded-lg bg-purple-950/60 border border-purple-500/30 text-purple-300 text-xs mt-1">
+                                      <strong>Exceção da casa:</strong> {item.exception_note || "Sem detalhe"}
+                                    </div>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 text-amber-400/90 font-mono text-[11px]">
+                                      <Clock className="size-3.5" />
+                                      Pendente de resposta da casa
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Badge de conferência física atual */}
+                              <div>
+                                {isConformed ? (
+                                  <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                                    ✓ Conforme no Palco
+                                  </span>
+                                ) : isDivergent ? (
+                                  <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                                    ⚠ Divergência Registrada
+                                  </span>
+                                ) : (
+                                  <span className="font-mono text-xs px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                    A conferir
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Exibição ou Formulário de Divergência Física */}
+                            {item.physical_divergence_note && !isEditingDivergence ? (
+                              <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs flex items-start justify-between gap-2">
+                                <div>
+                                  <span className="font-bold font-mono uppercase text-[10px] text-amber-400 block">
+                                    Divergência Presencial:
+                                  </span>
+                                  <p className="mt-0.5">{item.physical_divergence_note}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDivergenceNoteEditingId(item.id);
+                                    setDivergenceNoteText(item.physical_divergence_note || "");
+                                  }}
+                                  className="text-[11px] font-mono underline hover:text-white"
+                                >
+                                  Editar
+                                </button>
+                              </div>
+                            ) : null}
+
+                            {isEditingDivergence ? (
+                              <div className="p-3 rounded-xl bg-zinc-950 border border-amber-500/50 space-y-2">
+                                <label className="label-mono text-[10px] text-amber-400 font-semibold block">
+                                  Observação da Divergência (Áudio/Texto):
+                                </label>
+                                <textarea
+                                  value={divergenceNoteText}
+                                  onChange={(e) => setDivergenceNoteText(e.target.value)}
+                                  placeholder="Descreva o que divergiu no palco (ex: modelo diferente, avaria, voltagem incorreta)..."
+                                  rows={2}
+                                  className="w-full text-xs p-2.5 rounded-lg bg-zinc-900 border border-zinc-700 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                  autoFocus
+                                />
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setDivergenceNoteEditingId(null);
+                                      setDivergenceNoteText("");
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-400 hover:text-white border border-zinc-700"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updatePhysicalCheck.mutate({
+                                        itemId: item.id,
+                                        status: "divergent",
+                                        note: divergenceNoteText.trim(),
+                                      });
+                                    }}
+                                    disabled={updatePhysicalCheck.isPending}
+                                    className="px-4 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider font-semibold bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-[0.97]"
+                                  >
+                                    Salvar Divergência
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {/* Botões Grandes de Toque de Polegar (TC-08.1 >= 48px, TC-08.2 active:scale-[0.97]) */}
+                            <div className="grid grid-cols-2 gap-3 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updatePhysicalCheck.mutate({
+                                    itemId: item.id,
+                                    status: "conformed",
+                                    note: null,
+                                  });
+                                }}
+                                disabled={updatePhysicalCheck.isPending}
+                                className={cn(
+                                  "min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-120 touch-manipulation active:scale-[0.97]",
+                                  isConformed
+                                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/40 ring-2 ring-emerald-400"
+                                    : "bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300",
+                                )}
+                              >
+                                <CheckCircle2 className="size-4" />
+                                <span>{isConformed ? "Recebido Conforme ✓" : "OK Recebido"}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isDivergent) {
+                                    setDivergenceNoteEditingId(item.id);
+                                    setDivergenceNoteText(item.physical_divergence_note || "");
+                                  } else {
+                                    setDivergenceNoteEditingId(item.id);
+                                    setDivergenceNoteText("");
+                                  }
+                                }}
+                                disabled={updatePhysicalCheck.isPending}
+                                className={cn(
+                                  "min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-120 touch-manipulation active:scale-[0.97]",
+                                  isDivergent
+                                    ? "bg-amber-600 text-white shadow-lg shadow-amber-900/40 ring-2 ring-amber-400"
+                                    : "bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/40 text-amber-300",
+                                )}
+                              >
+                                <AlertTriangle className="size-4" />
+                                <span>{isDivergent ? "Editar Divergência" : "Divergência"}</span>
+                              </button>
+                            </div>
+
+                            {/* Desfazer / Desmarcar conferência */}
+                            {item.physical_check && item.physical_check !== "unchecked" ? (
+                              <div className="text-right pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updatePhysicalCheck.mutate({
+                                      itemId: item.id,
+                                      status: "unchecked",
+                                      note: null,
+                                    });
+                                  }}
+                                  className="text-[11px] font-mono text-zinc-500 hover:text-zinc-300 underline"
+                                >
+                                  Desmarcar conferência física
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Lista Padrão dos Itens do Rider do Show */
+                <div className="border border-line rounded-xl overflow-hidden bg-card">
+                  <div className="border-b border-line px-5 py-3.5 bg-accent/20">
+                    <span className="label-mono font-medium text-foreground">
+                      Itens de Palco e Camarim ({riderItems.length})
+                    </span>
+                  </div>
+
+                  {riderItems.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <Layers className="size-10 mx-auto text-muted-foreground/50" />
+                      <p className="mt-3 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                        Nenhum item de rider neste show
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        O rider padrão do artista pode ser configurado em Configurações para ser
+                        carregado automaticamente nos próximos shows.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-line">
+                      {riderItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-accent/10 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs uppercase px-2 py-0.5 border border-line bg-accent/30 rounded">
+                                {item.category}
+                              </span>
+                              <span className="font-medium text-sm">{item.item_name}</span>
+                              <span className="font-mono text-xs text-muted-foreground">
+                                x{item.quantity}
+                              </span>
+                              {item.is_mandatory ? (
+                                <span className="text-[10px] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium">
+                                  Inegociável
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded">
+                                  Desejável
+                                </span>
+                              )}
+                            </div>
+                            {item.specification ? (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {item.specification}
+                              </p>
+                            ) : null}
+                            {item.exception_note ? (
+                              <div className="mt-1.5 flex items-start gap-1 text-xs text-purple-700 dark:text-purple-300 bg-purple-500/10 p-2 rounded">
+                                <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                                <span>
+                                  <strong>Nota da casa:</strong> {item.exception_note}
+                                </span>
+                              </div>
+                            ) : null}
+                            {item.physical_divergence_note ? (
+                              <div className="mt-1.5 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 p-2 rounded">
+                                <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                                <span>
+                                  <strong>Divergência no palco:</strong> {item.physical_divergence_note}
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {item.physical_check === "conformed" ? (
+                              <span className="font-mono text-[10px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold">
+                                Palco: OK ✓
+                              </span>
+                            ) : item.physical_check === "divergent" ? (
+                              <span
+                                className="font-mono text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-semibold"
+                                title={item.physical_divergence_note || ""}
+                              >
+                                Palco: Divergência ⚠
+                              </span>
+                            ) : null}
+
+                            <StatusBadge
+                              status={
+                                item.status === "confirmed"
+                                  ? "confirmed"
+                                  : item.status === "exception"
+                                    ? "exception"
+                                    : "pending"
+                              }
+                              size="sm"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : null}
 

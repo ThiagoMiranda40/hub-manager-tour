@@ -10,6 +10,7 @@ import {
   formatDocumentDescription,
   reorderRiderItems,
   sortRiderItemsByPriority,
+  sortStageRiderItems,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -445,6 +446,35 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
       "des-exc",
       "des-conf",
       "mand-conf",
+    ]);
+  });
+
+  it("TC-08.1 / TC-11.3: ordenação e priorização no Modo Palco (divergências e inegociáveis primeiro)", () => {
+    const items = [
+      { id: "i-conformed-des", status: "confirmed", is_mandatory: false, physical_check: "conformed", position: 0 },
+      { id: "i-unchecked-mand", status: "confirmed", is_mandatory: true, physical_check: "unchecked", position: 1 },
+      { id: "i-div-des", status: "confirmed", is_mandatory: false, physical_check: "divergent", position: 2 },
+      { id: "i-div-mand", status: "confirmed", is_mandatory: true, physical_check: "divergent", position: 3 },
+      { id: "i-unchecked-des-pend", status: "pending", is_mandatory: false, physical_check: "unchecked", position: 4 },
+      { id: "i-conformed-mand", status: "confirmed", is_mandatory: true, physical_check: "conformed", position: 5 },
+    ];
+
+    const sorted = sortStageRiderItems(items);
+
+    // Ordem esperada no palco:
+    // 1º: i-div-mand (divergência física inegociável - risco crítico no palco)
+    // 2º: i-div-des (divergência física desejável)
+    // 3º: i-unchecked-mand (não conferido inegociável)
+    // 4º: i-unchecked-des-pend (não conferido desejável)
+    // 5º: i-conformed-mand (já conferido inegociável)
+    // 6º: i-conformed-des (já conferido desejável)
+    expect(sorted.map((i) => i.id)).toEqual([
+      "i-div-mand",
+      "i-div-des",
+      "i-unchecked-mand",
+      "i-unchecked-des-pend",
+      "i-conformed-mand",
+      "i-conformed-des",
     ]);
   });
 

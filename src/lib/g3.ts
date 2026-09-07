@@ -356,6 +356,61 @@ export function sortRiderItemsByPriority<
   });
 }
 
+/**
+ * Ordena itens do rider para conferência física no Modo Palco (RF-08 & RF-11):
+ * 1. Itens com divergência física no palco vêm primeiro (inegociáveis antes de desejáveis).
+ * 2. Itens ainda não conferidos (unchecked) vêm a seguir:
+ *    - Inegociáveis antes de desejáveis (RF-11)
+ *    - Dentro do mesmo grupo, itens com status pendente antes de confirmados pela casa
+ * 3. Itens já conferidos conforme (conformed) vêm por último (inegociáveis antes de desejáveis, respeitando position).
+ */
+export function sortStageRiderItems<
+  T extends {
+    is_mandatory?: boolean;
+    status: string;
+    physical_check?: string;
+    position?: number;
+  },
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    // 1. Divergência física tem maior prioridade de atenção
+    const isDivA = a.physical_check === "divergent";
+    const isDivB = b.physical_check === "divergent";
+    if (isDivA && isDivB) {
+      const mandA = Boolean(a.is_mandatory);
+      const mandB = Boolean(b.is_mandatory);
+      if (mandA !== mandB) return mandA ? -1 : 1;
+      return (a.position ?? 0) - (b.position ?? 0);
+    }
+    if (isDivA !== isDivB) return isDivA ? -1 : 1;
+
+    // 2. Não conferidos (unchecked) vêm antes de conformed
+    const isUncheckedA = a.physical_check === "unchecked" || !a.physical_check;
+    const isUncheckedB = b.physical_check === "unchecked" || !b.physical_check;
+    if (isUncheckedA && isUncheckedB) {
+      // Inegociáveis primeiro (RF-11)
+      const mandA = Boolean(a.is_mandatory);
+      const mandB = Boolean(b.is_mandatory);
+      if (mandA !== mandB) return mandA ? -1 : 1;
+
+      // Status pendente da casa antes de confirmado
+      const isPendA = a.status === "pending" || !a.status;
+      const isPendB = b.status === "pending" || !b.status;
+      if (isPendA !== isPendB) return isPendA ? -1 : 1;
+
+      return (a.position ?? 0) - (b.position ?? 0);
+    }
+    if (isUncheckedA !== isUncheckedB) return isUncheckedA ? -1 : 1;
+
+    // 3. Conformed (conferidos conforme)
+    const mandA = Boolean(a.is_mandatory);
+    const mandB = Boolean(b.is_mandatory);
+    if (mandA !== mandB) return mandA ? -1 : 1;
+
+    return (a.position ?? 0) - (b.position ?? 0);
+  });
+}
+
 /** Aplica presets de exigências em lote de forma estritamente idempotente */
 export function applyRequirementPreset(
   existingRequirements: ShowRequirement[],
