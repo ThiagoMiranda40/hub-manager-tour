@@ -20,8 +20,11 @@ import {
   HelpCircle,
   Moon,
   Sun,
+  PanelTop,
+  PanelLeft,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { useNavigationMode } from "@/hooks/useNavigationMode";
 import {
   RIDER_CATEGORIES,
   reorderRiderItems,
@@ -57,6 +60,7 @@ function SettingsPage() {
   const qc = useQueryClient();
   const { roles, docTypes } = useCatalog(!!session);
   const { setTheme, isDark } = useTheme();
+  const { setMode: setNavMode, isHeader: isNavHeader, isSidebar: isNavSidebar } = useNavigationMode();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -150,6 +154,46 @@ function SettingsPage() {
             >
               <Moon className="h-3.5 w-3.5" />
               Escuro
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Seção de Estilo de Navegação (RF-13) */}
+      <div className="mt-4 border border-line bg-card p-5 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="label-mono">Navegação da Plataforma</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Escolha entre o cabeçalho superior tradicional e a barra lateral (sidebar) recolhível em telas desktop e tablet (acima de 640px). Em telas móveis, o menu hambúrguer é utilizado automaticamente.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setNavMode("header")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-mono uppercase tracking-wider transition-nocturne cursor-pointer touch-feedback",
+                isNavHeader
+                  ? "border-primary bg-primary text-primary-foreground font-semibold"
+                  : "border-line bg-background text-muted-foreground hover:text-foreground hover:bg-accent/40"
+              )}
+            >
+              <PanelTop className="h-3.5 w-3.5" />
+              Cabeçalho
+            </button>
+            <button
+              type="button"
+              onClick={() => setNavMode("sidebar")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-mono uppercase tracking-wider transition-nocturne cursor-pointer touch-feedback",
+                isNavSidebar
+                  ? "border-primary bg-primary text-primary-foreground font-semibold"
+                  : "border-line bg-background text-muted-foreground hover:text-foreground hover:bg-accent/40"
+              )}
+            >
+              <PanelLeft className="h-3.5 w-3.5" />
+              Barra Lateral
             </button>
           </div>
         </div>
