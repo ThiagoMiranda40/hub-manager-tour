@@ -160,7 +160,7 @@ function SettingsPage() {
       </div>
 
       {/* Seção de Estilo de Navegação (RF-13) */}
-      <div className="mt-4 border border-line bg-card p-5 rounded-lg">
+      <div className="mt-4 hidden sm:block border border-line bg-card p-5 rounded-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="label-mono">Navegação da Plataforma</div>
