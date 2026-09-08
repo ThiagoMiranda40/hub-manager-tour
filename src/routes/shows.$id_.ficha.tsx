@@ -105,6 +105,20 @@ function FichaProducao() {
   });
 
   const show = data?.show;
+  const cast = data?.cast ?? [];
+  const docs = data?.docs ?? [];
+  const requirements = data?.requirements ?? [];
+  const riderItems = data?.riderItems ?? [];
+  const people = data?.people ?? [];
+
+  const peopleMap = useMemo(() => {
+    const list = data?.people ?? [];
+    const map = new Map<string, (typeof list)[number]>();
+    for (const p of list) {
+      map.set(p.id, p);
+    }
+    return map;
+  }, [data?.people]);
 
   // Atualiza dinamicamente o título do documento para sugestão ao imprimir / salvar em PDF
   useEffect(() => {
@@ -119,20 +133,6 @@ function FichaProducao() {
   }, [show]);
 
   if (loading || !session) return null;
-
-  const cast = data?.cast ?? [];
-  const docs = data?.docs ?? [];
-  const requirements = data?.requirements ?? [];
-  const riderItems = data?.riderItems ?? [];
-  const people = data?.people ?? [];
-
-  const peopleMap = useMemo(() => {
-    const map = new Map<string, (typeof people)[number]>();
-    for (const p of people) {
-      map.set(p.id, p);
-    }
-    return map;
-  }, [people]);
 
   const effectiveRequirements = requirements.length > 0 ? requirements : docTypes;
   const progress = computeShowProgress(cast, docs, effectiveRequirements);
