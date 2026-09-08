@@ -36,19 +36,20 @@ export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
 
   const applyTheme = useCallback((newTheme: Theme, persist = true) => {
-    setThemeState(newTheme);
+    const validTheme: Theme = newTheme === "dark" ? "dark" : "light";
+    setThemeState(validTheme);
     if (typeof window !== "undefined") {
       if (persist) {
         try {
-          localStorage.setItem("theme", newTheme);
+          localStorage.setItem("theme", validTheme);
         } catch (_) {}
       }
-      if (newTheme === "dark") {
+      if (validTheme === "dark") {
         document.documentElement.classList.add("dark");
       } else {
         document.documentElement.classList.remove("dark");
       }
-      window.dispatchEvent(new CustomEvent("hub-theme-changed", { detail: newTheme }));
+      window.dispatchEvent(new CustomEvent("hub-theme-changed", { detail: validTheme }));
     }
   }, []);
 
@@ -85,7 +86,11 @@ export function useTheme() {
     // Sincronizar instâncias simultâneas na mesma página
     const handleCustomChange = (e: Event) => {
       const customEvent = e as CustomEvent<Theme>;
-      if (customEvent.detail && customEvent.detail !== theme) {
+      if (
+        customEvent.detail &&
+        (customEvent.detail === "dark" || customEvent.detail === "light") &&
+        customEvent.detail !== theme
+      ) {
         setThemeState(customEvent.detail);
       }
     };
