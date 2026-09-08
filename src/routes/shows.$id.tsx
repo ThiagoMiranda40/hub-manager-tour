@@ -534,6 +534,79 @@ function ShowDetail() {
     onError: (e: Error) => toast.error(`Erro ao registrar conferência no palco: ${e.message}`),
   });
 
+  // Clonagem do rider padrão do artista em show vazio
+  const cloneArtistRider = useMutation({
+    mutationFn: async () => {
+      if (!session?.user?.id) throw new Error("Usuário não autenticado.");
+      if (!show?.artist_id) {
+        throw new Error("Este show não possui um artista vinculado.");
+      }
+
+      // Regra de segurança 1: Reconsultar show_rider_items diretamente no banco (proteção contra race conditions)
+      const { count, error: countErr } = await supabase
+        .from("show_rider_items")
+        .select("id", { count: "exact", head: true })
+        .eq("show_id", id);
+
+      if (countErr) {
+        throw new Error(`Falha ao verificar itens existentes: ${countErr.message}`);
+      }
+
+      if (count != null && count > 0) {
+        throw new Error("O show já possui itens de rider cadastrados. A clonagem em lote só é permitida em shows vazios.");
+      }
+
+      // Regra de segurança 2: Consultar catálogo padrão do artista
+      const { data: templates, error: tmplError } = await supabase
+        .from("artist_rider_template_items")
+        .select("*")
+        .eq("artist_id", show.artist_id)
+        .order("position");
+
+      if (tmplError) {
+        throw new Error(`Falha ao consultar rider padrão: ${tmplError.message}`);
+      }
+
+      if (!templates || templates.length === 0) {
+        throw new Error("O artista ainda não tem rider padrão cadastrado em Configurações.");
+      }
+
+      // Mapeamento de linhas de rider padrão para o show (mesma lógica da criação de show)
+      const riderRows = templates.map((tmpl) => ({
+        user_id: session.user.id,
+        show_id: id,
+        template_item_id: tmpl.id,
+        category: tmpl.category,
+        item_name: tmpl.item_name,
+        specification: tmpl.specification,
+        quantity: tmpl.quantity,
+        is_mandatory: tmpl.is_mandatory,
+        position: tmpl.position,
+        status: "pending",
+        physical_check: "unchecked",
+      }));
+
+      const { error: insertError } = await supabase.from("show_rider_items").insert(riderRows);
+      if (insertError) {
+        throw new Error(`Falha ao inserir itens do rider: ${insertError.message}`);
+      }
+
+      return { count: riderRows.length };
+    },
+    onSuccess: ({ count }) => {
+      qc.invalidateQueries({ queryKey: ["show", id] });
+      toast.success(
+        count === 1
+          ? "1 item de rider clonado do catálogo padrão."
+          : `${count} itens de rider clonados do catálogo padrão.`,
+      );
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      qc.invalidateQueries({ queryKey: ["show", id] });
+    },
+  });
+
   // Exclusão completa do show
   const deleteShow = useMutation({
     mutationFn: async () => {
@@ -1705,15 +1778,26 @@ function ShowDetail() {
                   </div>
 
                   {riderItems.length === 0 ? (
-                    <div className="p-10 text-center">
+                    <div className="p-10 text-center flex flex-col items-center">
                       <Layers className="size-10 mx-auto text-muted-foreground/50" />
                       <p className="mt-3 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                         Nenhum item de rider neste show
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="mt-1 text-sm text-muted-foreground max-w-md">
                         O rider padrão do artista pode ser configurado em Configurações para ser
                         carregado automaticamente nos próximos shows.
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => cloneArtistRider.mutate()}
+                        disabled={cloneArtistRider.isPending}
+                        className="mt-5 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                      >
+                        <Sparkles className="size-4" />
+                        {cloneArtistRider.isPending
+                          ? "Clonando Rider Padrão..."
+                          : "Clonar Rider Padrão do Artista Agora"}
+                      </button>
                     </div>
                   ) : (
                     <div className="divide-y divide-line">
