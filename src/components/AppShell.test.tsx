@@ -94,6 +94,8 @@ describe("T-15 / RF-13: AppShell Adaptive Navigation Component", () => {
 
     // Cabeçalho desktop visível e sidebar oculta
     expect(html).toContain("header class=\"hidden sm:block sticky top-0");
+    // Botão de alternância rápida de navegação presente ao lado de ThemeToggle
+    expect(html).toContain('title="Alternar para barra lateral"');
   });
 
   it("TC-13.1: renderiza barra lateral (sidebar) expandida com 240px quando navigation_mode=sidebar", () => {
@@ -111,6 +113,8 @@ describe("T-15 / RF-13: AppShell Adaptive Navigation Component", () => {
     expect(html).toContain("title=\"Recolher barra lateral (76px)\"");
     expect(html).toContain("logo-completo-fundo-claro.png");
     expect(html).toContain("Conteúdo Sidebar");
+    // Botão rápido para voltar ao cabeçalho no rodapé
+    expect(html).toContain('title="Alternar para cabeçalho superior"');
   });
 
   it("TC-13.2: renderiza barra lateral recolhida com 76px e marca-simbolo quando sidebar_collapsed=true", () => {
@@ -127,6 +131,9 @@ describe("T-15 / RF-13: AppShell Adaptive Navigation Component", () => {
     expect(html).toContain("w-[76px]");
     expect(html).toContain("marca-simbolo-colorido.png");
     expect(html).toContain("title=\"Expandir barra lateral (240px)\"");
+    // Ambos os botões rápidos (NavModeToggle e ThemeToggle) presentes e centralizados
+    expect(html).toContain('title="Alternar para cabeçalho superior"');
+    expect(html).toContain('title="Alternar para tema escuro"');
   });
 
   it("TC-13.5: sempre renderiza a barra móvel com botão de menu hambúrguer para telas menores que 640px", () => {

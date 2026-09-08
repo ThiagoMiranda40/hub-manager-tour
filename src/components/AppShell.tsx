@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NavModeToggle } from "@/components/NavModeToggle";
 import { useNavigationMode } from "@/hooks/useNavigationMode";
 import { cn } from "@/lib/utils";
 
@@ -219,18 +220,21 @@ export function AppShell({
               </nav>
             </div>
 
-            {/* Rodapé da Sidebar: Alternador de Tema + Sessão + Sair (RF-12 & RF-13) */}
+            {/* Rodapé da Sidebar: Alternador de Modo e Tema + Sessão + Sair (RF-12 & RF-13) */}
             <div className="border-t border-line p-3 space-y-3">
               <div
                 className={cn(
                   "flex items-center",
-                  isCollapsed ? "justify-center" : "justify-between px-1"
+                  isCollapsed ? "justify-center gap-1.5" : "justify-between px-1"
                 )}
               >
                 {!isCollapsed ? (
-                  <span className="label-mono text-[10px] text-muted-foreground">Tema</span>
+                  <span className="label-mono text-[10px] text-muted-foreground">Preferências</span>
                 ) : null}
-                <ThemeToggle />
+                <div className="flex items-center gap-1.5">
+                  <NavModeToggle className={isCollapsed ? "size-8 p-0" : undefined} />
+                  <ThemeToggle className={isCollapsed ? "size-8 p-0" : undefined} />
+                </div>
               </div>
 
               {!isCollapsed && email ? (
@@ -307,6 +311,7 @@ export function AppShell({
                 ))}
               </nav>
               <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                <NavModeToggle />
                 <ThemeToggle />
                 {email ? (
                   <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">

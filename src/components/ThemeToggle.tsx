@@ -3,7 +3,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 interface ThemeToggleProps {
-  className?: string;
+  className?: string | undefined;
 }
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
