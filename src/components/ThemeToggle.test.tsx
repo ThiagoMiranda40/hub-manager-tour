@@ -75,4 +75,14 @@ describe("ThemeToggle Component (RF-12)", () => {
     expect(html).toContain('aria-label="Ativar tema claro"');
     expect(html).toContain("<svg");
   });
+
+  it("garante type='button' para prevenir submissão acidental de formulários pais", () => {
+    const html = renderToStaticMarkup(<ThemeToggle />);
+    expect(html).toContain('type="button"');
+  });
+
+  it("aplica classes adicionais repassadas via prop className", () => {
+    const html = renderToStaticMarkup(<ThemeToggle className="custom-test-class" />);
+    expect(html).toContain("custom-test-class");
+  });
 });

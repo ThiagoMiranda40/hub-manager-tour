@@ -90,4 +90,34 @@ describe("T-14 / RF-12: Lógica de Detecção e Persistência de Tema", () => {
     classList.add("dark");
     expect(getInitialTheme()).toBe("dark");
   });
+
+  it("partição inválida: rejeita valores inválidos no localStorage e faz fallback para prefers-color-scheme", () => {
+    storage["theme"] = "invalid-theme-value";
+    mediaMatches = true;
+    expect(getInitialTheme()).toBe("dark");
+
+    mediaMatches = false;
+    expect(getInitialTheme()).toBe("light");
+  });
+
+  it("resiliência: trata exceção no localStorage (ex: SecurityError em modo privado restrito)", () => {
+    globalThis.localStorage.getItem = () => {
+      throw new Error("SecurityError: Access denied");
+    };
+    mediaMatches = true;
+    expect(getInitialTheme()).toBe("dark");
+  });
+
+  it("resiliência: trata exceção ou ausência no matchMedia", () => {
+    globalThis.window.matchMedia = () => {
+      throw new Error("Not supported");
+    };
+    expect(getInitialTheme()).toBe("light");
+  });
+
+  it("SSR: retorna 'light' de forma segura quando window é undefined", () => {
+    // @ts-expect-error simulando ambiente SSR
+    delete globalThis.window;
+    expect(getInitialTheme()).toBe("light");
+  });
 });
