@@ -18,7 +18,10 @@ import {
   X,
   Sparkles,
   HelpCircle,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 import {
   RIDER_CATEGORIES,
   reorderRiderItems,
@@ -53,6 +56,7 @@ function SettingsPage() {
   const { session, loading } = useSession();
   const qc = useQueryClient();
   const { roles, docTypes } = useCatalog(!!session);
+  const { setTheme, isDark } = useTheme();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,11 +109,51 @@ function SettingsPage() {
   return (
     <AppShell email={session.user.email}>
       <p className="label-mono">(e) Configurações</p>
-      <h1 className="mt-3 text-4xl leading-none sm:text-5xl">Listas do sistema</h1>
+      <h1 className="mt-3 text-4xl leading-none sm:text-5xl">Configurações do sistema</h1>
       <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-        Funções do elenco e tipos de documento são livres. Tipos marcados como obrigatórios são
-        os únicos que contam como pendência de cada pessoa.
+        Personalize a aparência do sistema, as funções do elenco e os tipos de documento. Tipos
+        marcados como obrigatórios contam como pendência de cada pessoa.
       </p>
+
+      {/* Seção de Aparência e Tema do Sistema */}
+      <div className="mt-8 border border-line bg-card p-5 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="label-mono">Aparência da Plataforma</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Escolha entre o tema claro e o tema escuro (Nocturne). A preferência é salva e aplicada imediatamente em todo o sistema.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTheme("light")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-mono uppercase tracking-wider transition-nocturne cursor-pointer touch-feedback",
+                !isDark
+                  ? "border-primary bg-primary text-primary-foreground font-semibold"
+                  : "border-line bg-background text-muted-foreground hover:text-foreground hover:bg-accent/40"
+              )}
+            >
+              <Sun className="h-3.5 w-3.5" />
+              Claro
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("dark")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-mono uppercase tracking-wider transition-nocturne cursor-pointer touch-feedback",
+                isDark
+                  ? "border-primary bg-primary text-primary-foreground font-semibold"
+                  : "border-line bg-background text-muted-foreground hover:text-foreground hover:bg-accent/40"
+              )}
+            >
+              <Moon className="h-3.5 w-3.5" />
+              Escuro
+            </button>
+          </div>
+        </div>
+      </div>
 
       {error ? (
         <p className="mt-4 border border-destructive px-3 py-2 font-mono text-[11px] text-destructive">

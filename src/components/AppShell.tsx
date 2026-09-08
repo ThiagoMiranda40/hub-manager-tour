@@ -1,6 +1,7 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function AppShell({
   children,
@@ -60,7 +61,8 @@ export function AppShell({
               Configurações
             </Link>
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
             {email ? (
               <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">
                 {email}

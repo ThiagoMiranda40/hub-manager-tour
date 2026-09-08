@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPublicShow, submitDocument } from "@/lib/public-show.functions";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ALLOWED_EXTENSIONS, MAX_UPLOAD_BYTES, formatShowDate, initials } from "@/lib/g3";
 import { cn } from "@/lib/utils";
 
@@ -241,7 +242,10 @@ function PublicUpload() {
   // TC-04.4: Estado de Token Inválido com mensagem amigável e sem vazamento técnico
   if (!data || !data.show) {
     return (
-      <div className="grid min-h-screen place-items-center px-4 py-12 text-center bg-background">
+      <div className="relative grid min-h-screen place-items-center px-4 py-12 text-center bg-background">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
         <div className="max-w-md border border-line bg-card p-8 rounded-2xl shadow-sm">
           <div className="mx-auto grid size-12 place-items-center rounded-xl bg-amber-500/15 text-amber-500 mb-4">
             <AlertTriangle className="size-6" />
@@ -280,7 +284,8 @@ function PublicUpload() {
               className="h-9 sm:h-11 w-auto object-contain hidden dark:block"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <span className="text-[11px] font-mono uppercase tracking-wider text-[#9184d9] font-medium bg-[#9184d9]/10 px-2.5 py-1 rounded-full">
               📱 Acesso de Elenco
             </span>

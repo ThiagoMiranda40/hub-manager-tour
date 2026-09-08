@@ -26,6 +26,7 @@ import {
 } from "@/lib/g3";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/Skeleton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/r/$token")({
   head: () => ({
@@ -219,7 +220,10 @@ function PublicRiderPage() {
 
   if (error || !show) {
     return (
-      <main className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <main className="relative min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
         <div className="max-w-md w-full border border-destructive/30 bg-destructive/5 p-6 rounded-2xl text-center space-y-4">
           <AlertTriangle className="size-12 text-destructive mx-auto" />
           <h1 className="text-lg font-semibold text-foreground">Link de Rider Inválido ou Expirado</h1>
@@ -273,7 +277,7 @@ function PublicRiderPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 print:hidden">
+          <div className="flex items-center gap-2.5 sm:gap-3 print:hidden">
             {/* Indicador de Auto-Save em Tempo Real */}
             <div className="text-right">
               {updateMutation.isPending ? (
@@ -293,6 +297,9 @@ function PublicRiderPage() {
                 </div>
               )}
             </div>
+
+            {/* Alternador de tema claro/escuro */}
+            <ThemeToggle />
 
             {/* Botão de Impressão da Cópia de Atendimento */}
             <button
