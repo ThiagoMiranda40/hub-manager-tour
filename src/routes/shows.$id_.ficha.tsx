@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   computeShowProgress,
   computeMemberRequirementStatus,
@@ -179,13 +180,16 @@ function FichaProducao() {
         >
           ← Voltar para o show
         </Link>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="bg-foreground px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-background transition-colors hover:bg-signal active:scale-[0.97] active:opacity-90 duration-120 touch-manipulation"
-        >
-          Imprimir / Exportar PDF
-        </button>
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="bg-foreground px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-background transition-colors hover:bg-signal active:scale-[0.97] active:opacity-90 duration-120 touch-manipulation cursor-pointer"
+          >
+            Imprimir / Exportar PDF
+          </button>
+        </div>
       </div>
 
       {!show ? (
