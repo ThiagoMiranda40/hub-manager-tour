@@ -481,8 +481,7 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
   // ───────────────────────────────────────────────────────────────────────────
   // BVA & Casos Limite: Fronteiras de Cálculo e Ordenação do Rider
   // ───────────────────────────────────────────────────────────────────────────
-  it("BVA: casos limites de lista vazia, status indefinido e riders homogêneos", () => {
-    // 1. Lista de itens vazia
+  it("BVA: sortRiderItemsByPriority com lista vazia", () => {
     const emptyBalance = computeRiderBalance([]);
     expect(emptyBalance.total).toBe(0);
     expect(emptyBalance.isComplete).toBe(false);
@@ -490,8 +489,10 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(emptyBalance.mandatory.total).toBe(0);
     expect(emptyBalance.desirable.total).toBe(0);
     expect(sortRiderItemsByPriority([])).toEqual([]);
+  });
 
-    // 2. Itens sem status ou com status vazio -> tratados como pending
+  it("BVA: sortRiderItemsByPriority com status indefinido/vazio", () => {
+    // Itens sem status ou com status vazio -> tratados como pending
     const itemsUndefinedStatus = [
       { id: "i-1", status: "", is_mandatory: true },
       { id: "i-2", status: "pending", is_mandatory: false },
@@ -502,7 +503,7 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(balanceUndef.desirable.pending).toBe(1);
     expect(balanceUndef.isComplete).toBe(false);
 
-    // 3. Rider 100% desejável (sem itens inegociáveis cadastrados)
+    // Rider 100% desejável (sem itens inegociáveis cadastrados)
     const onlyDesirable = [
       { id: "d-1", status: "confirmed", is_mandatory: false },
       { id: "d-2", status: "confirmed", is_mandatory: false },
@@ -512,7 +513,7 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(balanceOnlyDesirable.desirable.total).toBe(2);
     expect(balanceOnlyDesirable.isComplete).toBe(true);
 
-    // 4. Rider 100% inegociável com 1 exceção -> bloqueia conclusão
+    // Rider 100% inegociável com 1 exceção -> bloqueia conclusão
     const onlyMandatoryWithException = [
       { id: "m-1", status: "confirmed", is_mandatory: true },
       { id: "m-2", status: "exception", is_mandatory: true },
@@ -522,7 +523,7 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(balanceOnlyMandatory.hasMandatoryPendingOrException).toBe(true);
     expect(balanceOnlyMandatory.mandatory.hasExceptions).toBe(true);
 
-    // 5. Ordenação quando todos já estão confirmados (preserva position)
+    // Ordenação quando todos já estão confirmados (preserva position)
     const allDone = [
       { id: "p-3", status: "confirmed", is_mandatory: false, position: 3 },
       { id: "p-1", status: "confirmed", is_mandatory: true, position: 1 },
@@ -530,19 +531,22 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     ];
     const sortedAllDone = sortRiderItemsByPriority(allDone);
     expect(sortedAllDone.map((i) => i.id)).toEqual(["p-1", "p-2", "p-3"]);
+  });
 
-    // 6. BVA Modo Palco: lista vazia retorna array vazio
+  it("BVA: sortStageRiderItems com lista vazia", () => {
     expect(sortStageRiderItems([])).toEqual([]);
+  });
 
-    // 7. BVA Modo Palco: itens sem physical_check (undefined/null) tratados como unchecked
+  it("BVA: sortStageRiderItems trata physical_check ausente como unchecked", () => {
     const stageItemsNullCheck = [
       { id: "s-1", status: "confirmed", is_mandatory: false, position: 1 },
       { id: "s-2", status: "confirmed", is_mandatory: true, position: 2 },
     ];
     const sortedStageNull = sortStageRiderItems(stageItemsNullCheck);
     expect(sortedStageNull.map((i) => i.id)).toEqual(["s-2", "s-1"]);
+  });
 
-    // 8. BVA Modo Palco: múltiplos itens divergentes priorizam inegociáveis e preservam position relativa
+  it("BVA: sortStageRiderItems com múltiplos itens divergentes preserva prioridade e position", () => {
     const allDivergent = [
       { id: "div-des-2", status: "confirmed", is_mandatory: false, physical_check: "divergent", position: 2 },
       { id: "div-mand-2", status: "confirmed", is_mandatory: true, physical_check: "divergent", position: 2 },
