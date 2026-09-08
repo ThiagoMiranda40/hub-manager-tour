@@ -238,24 +238,39 @@ function PublicRiderPage() {
       {/* Cabeçalho do Rider Público (Fixo / Print Otimizado) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <header className="border-b border-line bg-card/60 backdrop-blur-md sticky top-0 z-20 print:static print:bg-transparent print:border-none">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#9184d9] font-semibold">
-                Hub Manager Tour · Rider Técnico
-              </span>
-              <span className="text-[10px] text-muted-foreground print:hidden">·</span>
-              <span className="text-[10px] text-muted-foreground print:hidden">Acesso Convidado</span>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center">
+              <img
+                src="/branding/logo-completo-fundo-claro.png"
+                alt="Hub Manager Tour"
+                className="h-9 sm:h-11 w-auto object-contain dark:hidden"
+              />
+              <img
+                src="/branding/logo-card-fundo-escuro.png"
+                alt="Hub Manager Tour"
+                className="h-9 sm:h-11 w-auto object-contain hidden dark:block"
+              />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5">
-              {show.artist || "Artista não especificado"}
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {show.city} {show.venue ? `· ${show.venue}` : ""} ·{" "}
-              <span className="font-mono font-medium text-foreground">
-                {formatDateBR(show.show_date)}
-              </span>
-            </p>
+            <div className="h-7 w-px bg-line hidden sm:block" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[#9184d9] font-semibold">
+                  Rider Técnico
+                </span>
+                <span className="text-[10px] text-muted-foreground print:hidden">·</span>
+                <span className="text-[10px] text-muted-foreground print:hidden">Acesso Convidado</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5">
+                {show.artist || "Artista não especificado"}
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {show.city} {show.venue ? `· ${show.venue}` : ""} ·{" "}
+                <span className="font-mono font-medium text-foreground">
+                  {formatDateBR(show.show_date)}
+                </span>
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 print:hidden">

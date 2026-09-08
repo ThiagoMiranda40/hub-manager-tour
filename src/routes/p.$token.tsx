@@ -266,12 +266,25 @@ function PublicUpload() {
   return (
     <div className="mx-auto min-h-screen max-w-lg px-4 py-8 sm:py-12 space-y-8">
       {/* Cabeçalho do Show (Direção Nocturne Responsiva) */}
-      <header className="border-b border-line pb-6">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-[#9184d9] font-medium bg-[#9184d9]/10 px-2 py-0.5 rounded-full">
-            📱 Acesso do Integrante
-          </span>
-          <span className="text-[11px] font-mono text-muted-foreground">sem cadastro</span>
+      <header className="border-b border-line pb-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center">
+            <img
+              src="/branding/logo-completo-fundo-claro.png"
+              alt="Hub Manager Tour"
+              className="h-9 sm:h-11 w-auto object-contain dark:hidden"
+            />
+            <img
+              src="/branding/logo-card-fundo-escuro.png"
+              alt="Hub Manager Tour"
+              className="h-9 sm:h-11 w-auto object-contain hidden dark:block"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-[#9184d9] font-medium bg-[#9184d9]/10 px-2.5 py-1 rounded-full">
+              📱 Acesso de Elenco
+            </span>
+          </div>
         </div>
 
         <h1 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight leading-tight text-foreground">

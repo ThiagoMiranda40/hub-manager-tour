@@ -28,13 +28,13 @@ export function AppShell({
             <img
               src="/branding/logo-completo-fundo-claro.png"
               alt="Hub Manager Tour"
-              className="h-8 sm:h-9 w-auto object-contain dark:hidden"
+              className="h-9 sm:h-11 w-auto object-contain dark:hidden"
             />
             {/* Tema escuro */}
             <img
               src="/branding/logo-card-fundo-escuro.png"
               alt="Hub Manager Tour"
-              className="h-8 sm:h-9 w-auto object-contain hidden dark:block"
+              className="h-9 sm:h-11 w-auto object-contain hidden dark:block"
             />
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">

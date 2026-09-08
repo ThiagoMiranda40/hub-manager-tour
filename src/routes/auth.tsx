@@ -78,10 +78,22 @@ function AuthPage() {
   return (
     <div className="grid min-h-screen place-items-center px-4 py-12">
       <div className="w-full max-w-sm">
-        <div className="text-center">
+        <div className="text-center flex flex-col items-center">
+          {/* Logo oficial da marca */}
+          <div className="mb-5">
+            <img
+              src="/branding/logo-completo-fundo-claro.png"
+              alt="Hub Manager Tour"
+              className="h-11 sm:h-12 w-auto object-contain dark:hidden"
+            />
+            <img
+              src="/branding/logo-card-fundo-escuro.png"
+              alt="Hub Manager Tour"
+              className="h-11 sm:h-12 w-auto object-contain hidden dark:block"
+            />
+          </div>
           <p className="label-mono">Acesso de administração</p>
-          <h1 className="mt-2 font-display text-4xl sm:text-5xl leading-[0.9]">HUB MANAGER TOUR</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             O seu Hub de Gerenciamento de Turnês
           </p>
         </div>
