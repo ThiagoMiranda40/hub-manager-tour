@@ -22,9 +22,20 @@ export function AppShell({
         <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-3 px-4 sm:gap-6 sm:px-6">
           <Link
             to="/"
-            className="font-sans font-bold text-base sm:text-lg leading-none tracking-tight transition-nocturne hover:opacity-85 touch-nav"
+            className="flex items-center transition-nocturne hover:opacity-85 touch-nav"
           >
-            HUB MANAGER TOUR<span className="text-primary font-black">.</span>
+            {/* Tema claro */}
+            <img
+              src="/branding/logo-completo-fundo-claro.png"
+              alt="Hub Manager Tour"
+              className="h-8 sm:h-9 w-auto object-contain dark:hidden"
+            />
+            {/* Tema escuro */}
+            <img
+              src="/branding/logo-card-fundo-escuro.png"
+              alt="Hub Manager Tour"
+              className="h-8 sm:h-9 w-auto object-contain hidden dark:block"
+            />
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             <Link
