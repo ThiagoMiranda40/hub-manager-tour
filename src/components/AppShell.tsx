@@ -121,10 +121,10 @@ export function AppShell({
           Modo A: Barra Lateral (Sidebar) com 240px ou 76px (RF-13)
          ─────────────────────────────────────────────────────────────────── */}
       {isSidebar ? (
-        <div className="hidden sm:flex min-h-screen">
+        <div className="flex min-h-[calc(100vh-3.5rem)] sm:min-h-screen">
           <aside
             className={cn(
-              "sticky top-0 h-screen flex flex-col justify-between border-r border-line bg-card/60 backdrop-blur-md transition-all duration-200 ease-in-out shrink-0 z-20",
+              "hidden sm:flex sticky top-0 h-screen flex-col justify-between border-r border-line bg-card/60 backdrop-blur-md transition-all duration-200 ease-in-out shrink-0 z-20",
               isCollapsed ? "w-[76px]" : "w-[240px]"
             )}
           >

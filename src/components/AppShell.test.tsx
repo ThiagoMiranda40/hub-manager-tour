@@ -147,4 +147,23 @@ describe("T-15 / RF-13: AppShell Adaptive Navigation Component", () => {
     expect(html).toContain("sm:hidden");
     expect(html).toContain("aria-label=\"Abrir menu de navegação\"");
   });
+
+  it("TC-13.6: em modo sidebar no mobile, mantém o conteúdo principal visível e isola hidden sm:flex apenas no aside", () => {
+    storage["navigation_mode"] = "sidebar";
+
+    const html = renderToStaticMarkup(
+      <AppShell email="produtor@hub.com">
+        <div id="test-content">Conteúdo Visível Mobile</div>
+      </AppShell>
+    );
+
+    // O conteúdo principal deve existir e estar renderizado
+    expect(html).toContain("Conteúdo Visível Mobile");
+
+    // A sidebar (aside) possui a classe hidden sm:flex para ocultar em mobile
+    expect(html).toContain("<aside class=\"hidden sm:flex");
+
+    // O wrapper da página NÃO pode ser "hidden sm:flex" escondendo o main
+    expect(html).not.toContain("<div class=\"hidden sm:flex min-h-screen\">");
+  });
 });
