@@ -223,8 +223,45 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 
 ---
 
+## T-14 — Tema Claro/Escuro Alternável pelo Usuário (RF-12)
+- **Depende de:** T-04
+- **Arquivos afetados:**
+  - `[MODIFY] src/routes/__root.tsx`
+  - `[MODIFY] src/components/AppShell.tsx`
+  - `[MODIFY] src/routes/settings.tsx`
+  - `[MODIFY] src/routes/p.$token.tsx`
+  - `[MODIFY] src/routes/r.$token.tsx`
+- **Fazer:**
+  1. Implementar mecanismo de classe `.dark` no elemento raiz (`html`/`body`), com fallback inicial baseado em `prefers-color-scheme` do navegador quando não houver preferência salva.
+  2. Implementar alternador de tema com ícone lua/sol:
+     - No rodapé da sidebar quando em modo sidebar.
+     - No canto superior direito quando em modo cabeçalho.
+  3. Salvar a escolha do usuário ('light'/'dark') em `localStorage`, fazendo com que prevaleça sobre a preferência do sistema operacional em acessos subsequentes.
+  4. Garantir que todas as telas (internas e rotas públicas `/p/$token` e `/r/$token`), tipografia, cartões e variantes da logo respeitem a paleta escura calibrada na T-04 sem quebra de contraste.
+- **Verificação técnica:** `npx tsc --noEmit && npm run build`
+- **Tradução em linguagem simples:** "O usuário pode alternar entre tema claro e escuro a qualquer momento com um clique; a escolha fica gravada no navegador e todas as telas, inclusive as páginas públicas de envio e rider, adaptam suas cores e logotipos mantendo contraste perfeito."
+
+---
+
+## T-15 — Navegação Adaptável: Cabeçalho ou Barra Lateral Recolhível (RF-13)
+- **Depende de:** T-04
+- **Arquivos afetados:**
+  - `[MODIFY] src/components/AppShell.tsx`
+  - `[MODIFY] src/routes/settings.tsx`
+- **Fazer:**
+  1. Em desktop/tablet (acima de 640px), permitir ao usuário escolher em Configurações entre modo cabeçalho superior e modo barra lateral (sidebar).
+  2. Implementar a barra lateral esquerda com largura de 240px (expandida) e 76px (recolhida), incluindo botão de alternância recolher/expandir com ícones de caret (esquerda/direita).
+  3. No estado recolhido (76px), exibir apenas os ícones de navegação e o símbolo da marca (`marca-simbolo`), ocultando os textos e o wordmark completo.
+  4. No modo cabeçalho (padrão atual), manter a barra horizontal superior fixada no topo.
+  5. Persistir a preferência do modo de navegação e o estado de recolhimento em `localStorage`.
+  6. Em telas móveis (abaixo de 640px / breakpoint `sm:`), a navegação deve sempre se comportar como menu hambúrguer no topo, independentemente da configuração salva para desktop.
+- **Verificação técnica:** `npx tsc --noEmit && npm run build`
+- **Tradução em linguagem simples:** "O usuário pode escolher se prefere o menu no topo ou numa barra lateral que encolhe para dar mais espaço à tela. No celular, a navegação se adapta automaticamente para menu hambúrguer compacto."
+
+---
+
 ## T-13 — Verificação Ponta a Ponta dos Cenários de Aceite, DoD de QA e Build de Produção
-- **Depende de:** T-01 até T-12
+- **Depende de:** T-01 até T-15
 - **Referência:** Checklist de "Pronto para Produção" (DoD) em `specs/001-modulo-1-v1/qa-plan.md`
 - **Arquivos afetados:** Todos os componentes e rotas do Módulo 1 V1
 - **Fazer:**

@@ -199,6 +199,50 @@ Aplicando **Particionamento de Equivalência (EP)**, **Análise de Valor Limite 
 
 ---
 
+### RF-12: Tema Claro/Escuro
+
+#### Casos Derivados
+- **TC-12.1 (Padrão do sistema via prefers-color-scheme):**
+  - **Dado** o primeiro acesso do usuário sem preferência salva em `localStorage`,
+  - **quando** a página carrega,
+  - **então** o tema segue `prefers-color-scheme` do navegador (claro ou escuro).
+- **TC-12.2 (Alternador de tema e persistência em localStorage):**
+  - **Dado** o alternador de tema (ícone lua/sol, no rodapé da sidebar em modo sidebar, ou canto superior direito em modo cabeçalho),
+  - **quando** o usuário clica,
+  - **então** o tema muda imediatamente e a escolha é salva em `localStorage`, prevalecendo sobre a preferência do sistema em visitas futuras.
+- **TC-12.3 (Preservação de contraste e tema escuro global):**
+  - **Dado** qualquer tela (interna ou pública, `/p/[token]` e `/r/[token]`),
+  - **quando** o tema é escuro,
+  - **então** todos os componentes, incluindo a logo, respeitam a paleta escura calibrada na T-04 sem quebra de contraste.
+
+---
+
+### RF-13: Navegação Adaptável
+
+#### Casos Derivados
+- **TC-13.1 (Modo sidebar desktop/tablet e botão recolher/expandir):**
+  - **Dado** o usuário em desktop/tablet (acima de 640px),
+  - **quando** ele escolhe o modo sidebar em Configurações,
+  - **então** a navegação migra para uma barra lateral esquerda, largura 240px expandida / 76px recolhida, com botão de recolher/expandir (caret esquerda/direita).
+- **TC-13.2 (Sidebar recolhida com ícones e símbolo da marca):**
+  - **Dado** a sidebar recolhida,
+  - **quando** exibida,
+  - **então** mostra só ícones de navegação e o símbolo da marca (sem o wordmark completo).
+- **TC-13.3 (Modo cabeçalho superior padrão):**
+  - **Dado** o modo cabeçalho (padrão atual),
+  - **quando** escolhido,
+  - **então** a navegação permanece no topo como hoje.
+- **TC-13.4 (Persistência da escolha em localStorage):**
+  - **Dado** a escolha entre os dois modos,
+  - **quando** feita,
+  - **então** é salva em `localStorage` e mantida entre sessões.
+- **TC-13.5 (Menu hambúrguer obrigatório em mobile):**
+  - **Dado** o acesso em mobile (abaixo de 640px, breakpoint `sm:` já usado no resto do sistema),
+  - **quando** a tela carrega,
+  - **então** a navegação sempre vira menu hambúrguer, independente da preferência desktop salva.
+
+---
+
 ## 4. Cartas de Teste Exploratório (Session-Based Test Charters)
 
 As sessões exploratórias focam no comportamento dinâmico que testes automatizados não captam com facilidade (percepção visual, usabilidade em luz baixa, comportamento em conexões instáveis de turnê).

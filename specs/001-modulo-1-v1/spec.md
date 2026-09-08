@@ -200,6 +200,52 @@ para identificar de forma imediata se um risco real (item inegociável) está pe
 
 ---
 
+### RF-12 — Tema Claro/Escuro Alternável pelo Usuário
+> Adendo pós-T-11 (08/09/2026): requisito de UI/UX identificado a partir do wireframe de alta fidelidade (package_ux_ui/), antes de T-14/T-15.
+
+Como usuário do sistema (produtor, integrante da equipe),  
+quero poder alternar manualmente entre tema claro e escuro,  
+para usar o sistema no ambiente de luz que for mais confortável.
+
+**Critério de aceite:**
+- **Dado** o primeiro acesso sem preferência salva,  
+  **quando** a página carrega,  
+  **então** o tema segue prefers-color-scheme do navegador.
+- **Dado** o alternador de tema (ícone lua/sol, no rodapé da sidebar em modo sidebar, ou canto superior direito em modo cabeçalho),  
+  **quando** o usuário clica,  
+  **então** o tema muda imediatamente e a escolha é salva em localStorage, prevalecendo sobre a preferência do sistema em visitas futuras.
+- **Dado** qualquer tela (interna ou pública, /p/[token] e /r/[token]),  
+  **quando** o tema é escuro,  
+  **então** todos os componentes, incluindo a logo, respeitam a paleta escura calibrada na T-04 sem quebra de contraste.
+
+---
+
+### RF-13 — Navegação Adaptável: Cabeçalho ou Barra Lateral Recolhível
+> Adendo pós-T-11 (08/09/2026): mesma origem do RF-12.
+
+Como usuário do sistema,  
+quero escolher entre navegação no cabeçalho superior ou barra lateral recolhível/expansível,  
+para usar o layout mais confortável ao meu fluxo de trabalho.
+
+**Critério de aceite:**
+- **Dado** o usuário em desktop/tablet (acima de 640px),  
+  **quando** ele escolhe o modo sidebar em Configurações,  
+  **então** a navegação migra para uma barra lateral esquerda, largura 240px expandida / 76px recolhida, com botão de recolher/expandir (caret esquerda/direita).
+- **Dado** a sidebar recolhida,  
+  **quando** exibida,  
+  **então** mostra só ícones de navegação e o símbolo da marca (sem o wordmark completo).
+- **Dado** o modo cabeçalho (padrão atual),  
+  **quando** escolhido,  
+  **então** a navegação permanece no topo como hoje.
+- **Dado** a escolha entre os dois modos,  
+  **quando** feita,  
+  **então** é salva em localStorage e mantida entre sessões.
+- **Dado** o acesso em mobile (abaixo de 640px, breakpoint sm: já usado no resto do sistema),  
+  **quando** a tela carrega,  
+  **então** a navegação sempre vira menu hambúrguer, independente da preferência desktop salva.
+
+---
+
 ## Requisitos Não-Funcionais
 
 ### RNF-01 — Usabilidade Mobile e Feedback Visual de Toque (:active)
