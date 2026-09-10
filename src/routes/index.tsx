@@ -327,9 +327,9 @@ function Dashboard() {
                 params={{ id: show.id }}
                 className="group block rounded-xl border border-line/80 bg-card/60 p-4 transition-all duration-120 hover:border-[#9184d9]/70 hover:bg-card/90 hover:shadow-xs active:scale-[0.99] touch-manipulation cursor-pointer sm:p-5"
               >
-                <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-12 sm:gap-6">
+                <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[3fr_4fr_2.5fr_2fr_0.5fr] sm:gap-6">
                   {/* Coluna 1: Data & Dia da Semana */}
-                  <div className="flex items-center gap-3 sm:col-span-3 sm:block">
+                  <div className="flex items-center gap-3 sm:block">
                     <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-lg border border-line bg-background/80 font-mono sm:size-14">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9184d9]">
                         {formatWeekday(show.show_date)}
@@ -352,7 +352,7 @@ function Dashboard() {
                   </div>
 
                   {/* Coluna 2: Artista, Turnê, Cidade e Local */}
-                  <div className="sm:col-span-4">
+                  <div>
                     <div className="font-display text-2xl leading-none tracking-tight text-foreground group-hover:text-[#9184d9] transition-colors">
                       {show.artists?.name ?? "SEM ARTISTA"}
                     </div>
@@ -374,7 +374,7 @@ function Dashboard() {
                   </div>
 
                   {/* Coluna 3: Progresso de Documentos */}
-                  <div className="sm:col-span-2.5">
+                  <div>
                     <div className="mb-1.5 flex items-center justify-between gap-1.5">
                       <span className="label-mono text-[10px] text-muted-foreground">Docs</span>
                       {!hasRequirement ? (
@@ -415,7 +415,7 @@ function Dashboard() {
                   </div>
 
                   {/* Coluna 4: Resumo do Rider Técnico */}
-                  <div className="sm:col-span-2">
+                  <div>
                     <div className="mb-1.5 flex items-center justify-between gap-1.5">
                       <span className="label-mono text-[10px] text-muted-foreground">Rider</span>
                       {rider.total === 0 ? (
@@ -461,7 +461,7 @@ function Dashboard() {
                   </div>
 
                   {/* Coluna 5: Ação / Seta */}
-                  <div className="hidden text-right sm:col-span-0.5 sm:flex sm:justify-end">
+                  <div className="hidden text-right sm:flex sm:justify-end">
                     <div className="rounded-full p-1 text-muted-foreground/60 transition-transform duration-120 group-hover:translate-x-1 group-hover:text-foreground">
                       <ChevronRight className="size-4" />
                     </div>
@@ -1079,27 +1079,27 @@ function DashboardSkeleton() {
               key={i}
               className="rounded-xl border border-line/80 bg-card/60 p-5"
             >
-              <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-12">
-                <div className="flex items-center gap-3 sm:col-span-3 sm:block">
+              <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[3fr_4fr_2.5fr_2fr_0.5fr] sm:gap-6">
+                <div className="flex items-center gap-3 sm:block">
                   <Skeleton className="size-14 rounded-lg" />
                   <div className="mt-2 space-y-1">
                     <Skeleton className="h-3 w-24" />
                     <Skeleton className="h-2.5 w-16" />
                   </div>
                 </div>
-                <div className="sm:col-span-4 space-y-2">
+                <div className="space-y-2">
                   <Skeleton className="h-6 w-40" />
                   <Skeleton className="h-3 w-48" />
                 </div>
-                <div className="sm:col-span-2.5 space-y-2">
+                <div className="space-y-2">
                   <Skeleton className="h-3 w-full" />
                   <Skeleton className="h-1.5 w-full rounded-full" />
                 </div>
-                <div className="sm:col-span-2 space-y-2">
+                <div className="space-y-2">
                   <Skeleton className="h-3 w-full" />
                   <Skeleton className="h-1.5 w-full rounded-full" />
                 </div>
-                <div className="hidden sm:col-span-0.5 sm:block">
+                <div className="hidden sm:block">
                   <Skeleton className="size-4 rounded-full ml-auto" />
                 </div>
               </div>
