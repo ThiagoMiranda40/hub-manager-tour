@@ -13,6 +13,7 @@ import {
   Check,
   RotateCcw,
   Sliders,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getPublicRider, updatePublicRiderItem } from "@/lib/public-show.functions";
@@ -452,7 +453,11 @@ function PublicRiderPage() {
               );
             })}
           </div>
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center pr-0.5">
+            <div className="rounded-full bg-foreground/10 backdrop-blur-sm p-1 shadow-sm">
+              <ChevronRight className="size-3 text-muted-foreground" />
+            </div>
+          </div>
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────── */}
