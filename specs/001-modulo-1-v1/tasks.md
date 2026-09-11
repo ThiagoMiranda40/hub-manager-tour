@@ -264,8 +264,28 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 
 ---
 
+## T-16 — Token Individual por Integrante na Página Pública de Envio (RF-04)
+- **Depende de:** T-08
+- **Arquivos afetados:**
+  - `[NEW] supabase/migrations/<timestamp>_cast_member_access_token.sql`
+  - `[MODIFY] src/lib/public-show.functions.ts`
+  - `[MODIFY] src/routes/p.$token.tsx`
+  - `[MODIFY] src/routes/shows.$id.tsx`
+- **Fazer:**
+  1. Migration: adicionar coluna `access_token text UNIQUE DEFAULT encode(gen_random_bytes(9), 'hex')` em `cast_members`, com índice. O DEFAULT sendo volátil gera token único automaticamente para todas as linhas já existentes, sem script de backfill separado.
+  2. `getPublicShow`: resolver pelo `access_token` do integrante (não mais por `shows.public_token`), retornando apenas os dados daquele integrante — remover a listagem completa do elenco da resposta.
+  3. `submitDocument`: remover `castMemberId` como parâmetro vindo do cliente — derivar exclusivamente do `access_token` resolvido no servidor. Isso é uma melhoria de segurança adicional: o cliente deixa de ter qualquer influência sobre de quem é o documento.
+  4. `p.$token.tsx`: remover a etapa "Quem é você no elenco?" — o token já resolve a pessoa diretamente.
+  5. `shows.$id.tsx`: substituir o botão único "Copiar Link do Elenco" por uma lista com um botão de copiar por integrante (reaproveitar o padrão visual já usado nos cards de link da T-07).
+  6. Manter `shows.public_token` na tabela por ora (não remover a coluna) — só deixa de ser usado nesse fluxo; avaliar remoção futura em limpeza de schema.
+- **Verificação técnica:** `npx tsc --noEmit && npm test && npm run build`
+- **Verificação de segurança:** acionar `ciberseguranca-produto-digital` em modo revisão dedicado antes da aprovação final — validar especificamente que um `access_token` de um integrante não consegue, por nenhum caminho (URL manipulada, chamada direta da Server Function), acessar dado de outro integrante do mesmo show.
+- **Tradução em linguagem simples:** "Cada integrante da equipe agora recebe seu próprio link privado — ninguém mais consegue ver o que o colega enviou ou está devendo só trocando o nome selecionado na tela."
+
+---
+
 ## T-13 — Verificação Ponta a Ponta dos Cenários de Aceite, DoD de QA e Build de Produção
-- **Depende de:** T-01 até T-15
+- **Depende de:** T-01 até T-16
 - **Referência:** Checklist de "Pronto para Produção" (DoD) em `specs/001-modulo-1-v1/qa-plan.md`
 - **Arquivos afetados:** Todos os componentes e rotas do Módulo 1 V1
 - **Fazer:**

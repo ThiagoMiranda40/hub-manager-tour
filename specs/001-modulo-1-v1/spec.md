@@ -82,6 +82,9 @@ para enviar arquivos sem duplicar envios anteriores e poder solicitar reembolso 
   **quando** acessado,  
   **então** uma tela amigável informa o status e orienta contato com a produção.
 
+> **Adendo de segurança (11/09/2026):**
+> O link público de envio de documentos deixa de ser um único token por show compartilhado entre todo o elenco, e passa a ser um token único por integrante (mesmo padrão de entropia já usado em rider_public_token: encode(gen_random_bytes(9), 'hex')). Cada integrante recebe seu próprio link individual, sem etapa de "selecionar seu nome" — o token já identifica a pessoa. Um integrante não pode, através do próprio link, visualizar documentos, pendências ou observações de nenhum outro integrante. Sem exigir login/senha — mantém a fricção zero para quem envia.
+
 ---
 
 ### RF-05 — Painel de Pendências, Reembolsos com Cópia de Pix e Compartilhamento
