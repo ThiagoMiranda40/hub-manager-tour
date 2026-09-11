@@ -453,7 +453,7 @@ function PublicRiderPage() {
               );
             })}
           </div>
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center pr-0.5">
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center pr-0.5 sm:hidden">
             <div className="rounded-full bg-foreground/10 backdrop-blur-sm p-1 shadow-sm">
               <ChevronRight className="size-3 text-muted-foreground" />
             </div>
