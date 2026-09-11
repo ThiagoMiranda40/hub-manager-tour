@@ -649,3 +649,12 @@ export function parseReimbursementAmount(value: string): number {
   return clean;
 }
 
+/**
+ * Constrói link direto para WhatsApp com número e mensagem pré-preenchida (RF-04)
+ */
+export function buildWhatsAppLink(phone: string, message: string): string {
+  const digits = phone.replace(/\D/g, "");
+  const withCountryCode = digits.startsWith("55") ? digits : `55${digits}`;
+  return `https://wa.me/${withCountryCode}?text=${encodeURIComponent(message)}`;
+}
+

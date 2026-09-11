@@ -13,6 +13,7 @@ import {
   sortStageRiderItems,
   getMemberPublicUrl,
   parseReimbursementAmount,
+  buildWhatsAppLink,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -711,6 +712,32 @@ describe("T-16 (RF-04): Validações e Limites de Fronteira (BVA) do Link Indivi
     expect(statusA.pendingCount).toBe(1);
     expect(statusA.isComplete).toBe(false);
     expect(statusA.status).toBe("pending");
+  });
+});
+
+describe("buildWhatsAppLink: geração de links diretos do WhatsApp (RF-04)", () => {
+  it("adiciona DDI 55 quando o telefone não possui código de país", () => {
+    const phone = "(11) 98765-4321";
+    const msg = "Olá integrante!";
+    const url = buildWhatsAppLink(phone, msg);
+    expect(url).toBe("https://wa.me/5511987654321?text=Ol%C3%A1%20integrante!");
+  });
+
+  it("preserva telefone que já possui DDI 55 no início", () => {
+    const phone = "+55 (21) 99999-8888";
+    const msg = "Seu link individual de envio";
+    const url = buildWhatsAppLink(phone, msg);
+    expect(url).toBe("https://wa.me/5521999998888?text=Seu%20link%20individual%20de%20envio");
+  });
+
+  it("codifica corretamente caracteres especiais, acentos, barras e URLs na mensagem", () => {
+    const phone = "31988887777";
+    const msg = "Olá João & Maria! Link do show da Turnê em São Paulo, dia 12/10/2026: https://hub.app/p/token123";
+    const url = buildWhatsAppLink(phone, msg);
+    expect(url).toBe(`https://wa.me/5531988887777?text=${encodeURIComponent(msg)}`);
+    expect(url).toContain("S%C3%A3o%20Paulo");
+    expect(url).toContain("%26");
+    expect(url).toContain("https%3A%2F%2Fhub.app%2Fp%2Ftoken123");
   });
 });
 
