@@ -218,6 +218,10 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
   1. Implementar helper `ai-extraction.ts` conectado a modelo multimodal (Gemini Flash).
   2. Função 1: Ler PDF/foto de passagem ou nota e extrair número de voo, hotel ou valor para aprovação rápida do produtor.
   3. Função 2: Importar PDF de rider técnico legado e transformá-lo em checklist estruturado.
+  4. Implementar redimensionamento client-side de imagens (máx. ~1536px no lado maior) antes do envio à API de extração.
+  5. Implementar validação/reporte de moeda detectada em cada valor monetário extraído, com alerta visual se não for BRL ou não identificável.
+  6. Implementar UI de comparação (valor atual vs. sugerido) antes de qualquer aplicação de campo já preenchido — nunca sobrescrita automática.
+  7. Acionar a skill ciberseguranca-produto-digital em modo revisão dedicado a esta tarefa antes da entrega final (gestão de segredo da API key, validação de tamanho/tipo de arquivo enviado à IA, tratamento de erro da API externa sem vazar detalhe técnico).
 - **Verificação técnica:** `npx tsc --noEmit && npm run build`
 - **Tradução em linguagem simples:** "Funcionalidade inteligente: ao anexar um PDF de passagem ou rider antigo, a IA reconhece o conteúdo e pré-preenche os dados para o produtor apenas aprovar."
 

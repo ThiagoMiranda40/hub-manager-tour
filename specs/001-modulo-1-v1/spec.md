@@ -175,6 +175,13 @@ para eliminar digitação manual de número de voo, hotel, valor de nota ou chec
   **quando** solicitada a importação por inteligência,  
   **então** o sistema estrutura os itens em categorias e quantidades pré-preenchidas para revisão e aprovação do produtor.
 
+> **Adendo de arquitetura (11/09/2026):**
+> - **Modelo:** Gemini 2.5 Flash, referenciado por uma única constante configurável no código (não espalhada em múltiplos arquivos), para facilitar troca futura sem reescrever a integração.
+> - **Chave de API:** única, do Thiago, configurada como variável de ambiente/segredo no servidor (GEMINI_API_KEY), nunca exposta ao cliente. Sem opção de chave por usuário nesta fase — decisão revisitável quando o produto tiver múltiplos tenants pagantes (módulo futuro de créditos/monetização, arquitetura compatível, sem necessidade de retrabalho).
+> - **Validação de moeda (crítico):** toda extração de valor monetário deve identificar e reportar explicitamente a moeda detectada no documento. Se a moeda não for BRL (ou não identificável com confiança), o card de sugestão deve exibir alerta visual claro antes de qualquer aplicação — nunca preencher `amount` silenciosamente com um número sem confirmar que está em reais.
+> - **Nunca sobrescrita silenciosa:** ao sugerir preenchimento de campos já existentes (`amount`, `note`), o card de sugestão exibe o valor atual e o valor sugerido lado a lado; o produtor decide aplicar campo a campo ou tudo de uma vez — nunca substituição automática.
+> - **Otimização de imagem:** antes do envio à API, redimensionar imagens no cliente para no máximo ~1536px no lado maior (fotos de celular frequentemente vêm em resolução desnecessária para OCR, encarecendo a chamada sem ganho de legibilidade).
+
 ---
 
 ### RF-11 — Priorização de Itens Inegociáveis no Balanço do Rider Técnico
