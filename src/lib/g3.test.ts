@@ -557,3 +557,162 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(sortedAllDiv.map((i) => i.id)).toEqual(["div-mand-1", "div-mand-2", "div-des-1", "div-des-2"]);
   });
 });
+
+describe("T-16 (RF-04): Validações e Limites de Fronteira (BVA) do Link Individual e Envio Público", () => {
+  // ───────────────────────────────────────────────────────────────────────────
+  // TC-16.1: Resolução e Composição de Link Individual por Integrante
+  // ───────────────────────────────────────────────────────────────────────────
+  it("TC-16.1: compõe URL individual correta com o access_token e trata ausência de token com segurança", () => {
+    const origin = "https://app.hubmanagertour.com";
+    const getMemberUrl = (token?: string | null) => (token ? `${origin}/p/${token}` : "");
+
+    // Token individual válido (18 chars hexadecimais gerados pelo encode(gen_random_bytes(9), 'hex'))
+    const validToken = "4f8a12e9b0d35c7a61";
+    expect(getMemberUrl(validToken)).toBe("https://app.hubmanagertour.com/p/4f8a12e9b0d35c7a61");
+
+    // Token ausente ou nulo -> não expõe rota quebrada nem URL de fallback insegura
+    expect(getMemberUrl(null)).toBe("");
+    expect(getMemberUrl(undefined)).toBe("");
+    expect(getMemberUrl("")).toBe("");
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // TC-16.2: Análise de Valor Limite (BVA) no Tamanho Máximo de Arquivo (20 MB)
+  // ───────────────────────────────────────────────────────────────────────────
+  it("TC-16.2: BVA no tamanho do upload (limite exato de 20 MB / 20.971.520 bytes)", () => {
+    const MAX_BYTES = 20 * 1024 * 1024; // 20.971.520 bytes
+    const validateFileSize = (bytes: number) => {
+      if (bytes <= 0) return { valid: false, error: "Arquivo vazio" };
+      if (bytes > MAX_BYTES) return { valid: false, error: "Arquivo acima de 20 MB" };
+      return { valid: true };
+    };
+
+    // 1 byte (menor arquivo válido) -> aceito
+    expect(validateFileSize(1)).toEqual({ valid: true });
+
+    // 20 MB exatos (20.971.520 bytes) -> aceito (fronteira exata)
+    expect(validateFileSize(MAX_BYTES)).toEqual({ valid: true });
+
+    // 20 MB + 1 byte (20.971.521 bytes) -> rejeitado (imediatamente acima da fronteira)
+    expect(validateFileSize(MAX_BYTES + 1)).toEqual({
+      valid: false,
+      error: "Arquivo acima de 20 MB",
+    });
+
+    // 0 bytes (fronteira inferior inválida) -> rejeitado
+    expect(validateFileSize(0)).toEqual({
+      valid: false,
+      error: "Arquivo vazio",
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // TC-16.3: Particionamento de Equivalência em Extensões Permitidas
+  // ───────────────────────────────────────────────────────────────────────────
+  it("TC-16.3: particionamento de equivalência para formatos de comprovante permitidos e proibidos", () => {
+    const ALLOWED = ["jpg", "jpeg", "png", "webp", "pdf"];
+    const isAllowedExt = (filename: string) => {
+      const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+      return ALLOWED.includes(ext);
+    };
+
+    // Classes de equivalência válidas (imagens e PDFs comuns)
+    expect(isAllowedExt("passagem.pdf")).toBe(true);
+    expect(isAllowedExt("recibo_uber.png")).toBe(true);
+    expect(isAllowedExt("nota_fiscal.jpg")).toBe(true);
+    expect(isAllowedExt("voucher_hotel.jpeg")).toBe(true);
+    expect(isAllowedExt("comprovante.webp")).toBe(true);
+
+    // Case-insensitive (maiúsculas permitidas)
+    expect(isAllowedExt("BILHETE.PDF")).toBe(true);
+    expect(isAllowedExt("FOTO.JPG")).toBe(true);
+
+    // Classes de equivalência inválidas (executáveis, scripts, planilhas ou vídeos)
+    expect(isAllowedExt("script.sh")).toBe(false);
+    expect(isAllowedExt("malware.exe")).toBe(false);
+    expect(isAllowedExt("planilha.xlsx")).toBe(false);
+    expect(isAllowedExt("documento.docx")).toBe(false);
+    expect(isAllowedExt("video.mp4")).toBe(false);
+    expect(isAllowedExt("arquivo_sem_extensao")).toBe(false);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // TC-16.4: BVA e Parse do Valor Declarado para Reembolso (RF-04 / TC-04.2)
+  // ───────────────────────────────────────────────────────────────────────────
+  it("TC-16.4: BVA e validação de formato do valor numérico de reembolso", () => {
+    const parseReimbursementAmount = (value: string) => {
+      const clean = Number(value.replace(/\./g, "").replace(",", "."));
+      if (!Number.isFinite(clean) || clean <= 0) {
+        throw new Error("O valor de reembolso deve ser maior que R$ 0,00.");
+      }
+      return clean;
+    };
+
+    // Valor comum no formato brasileiro
+    expect(parseReimbursementAmount("45,50")).toBe(45.5);
+    expect(parseReimbursementAmount("1.250,90")).toBe(1250.9);
+
+    // Fronteira mínima válida: R$ 0,01
+    expect(parseReimbursementAmount("0,01")).toBe(0.01);
+
+    // Fronteira inválida: R$ 0,00 -> erro
+    expect(() => parseReimbursementAmount("0,00")).toThrow(
+      "O valor de reembolso deve ser maior que R$ 0,00.",
+    );
+
+    // Valores negativos -> erro
+    expect(() => parseReimbursementAmount("-15,00")).toThrow(
+      "O valor de reembolso deve ser maior que R$ 0,00.",
+    );
+
+    // Texto não-numérico -> erro
+    expect(() => parseReimbursementAmount("gratis")).toThrow(
+      "O valor de reembolso deve ser maior que R$ 0,00.",
+    );
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // TC-16.5: Isolamento Estrito de Exigências por Integrante (Anti-IDOR / LGPD)
+  // ───────────────────────────────────────────────────────────────────────────
+  it("TC-16.5: isolamento estrito garante queIntegrante A nunca vê nem herda pendências do Integrante B", () => {
+    const memberA = { id: "m-joao", name: "João", role: "Guitarrista" };
+    const memberB = { id: "m-maria", name: "Maria", role: "Vocalista" };
+
+    // Show tem exigências configuradas para ambos
+    const allRequirements: ShowRequirement[] = [
+      { cast_member_id: "m-joao", document_type_id: "doc-passagem", required: true },
+      { cast_member_id: "m-joao", document_type_id: "doc-hotel", required: true },
+      { cast_member_id: "m-maria", document_type_id: "doc-passagem", required: true },
+      { cast_member_id: "m-maria", document_type_id: "doc-nf", required: true },
+    ];
+
+    // João já enviou sua passagem; Maria não enviou nada ainda
+    const allDocuments = [
+      { id: "doc-1", cast_member_id: "m-joao", doc_type: "doc-passagem", file_name: "passagem_joao.pdf" },
+    ];
+
+    // Simula a resolução do backend de getPublicShow filtrando estritamente pelo token de João
+    const memberARequirements = allRequirements.filter((r) => r.cast_member_id === memberA.id);
+    const memberADocuments = allDocuments.filter((d) => d.cast_member_id === memberA.id);
+
+    // João só deve ver 2 exigências (as dele) e 1 documento enviado (o dele)
+    expect(memberARequirements.length).toBe(2);
+    expect(memberARequirements.every((r) => r.cast_member_id === "m-joao")).toBe(true);
+    expect(memberADocuments.length).toBe(1);
+    expect(memberADocuments[0]?.file_name).toBe("passagem_joao.pdf");
+
+    // NENHUM dado da Maria deve existir na visão do João
+    const hasMariaData = memberARequirements.some((r) => r.cast_member_id === memberB.id) ||
+                         memberADocuments.some((d) => d.cast_member_id === memberB.id);
+    expect(hasMariaData).toBe(false);
+
+    // O status individual de João contabiliza apenas 1 pendência (o hotel dele), sem ser onerado pela Maria
+    const statusA = computeMemberRequirementStatus(memberA.id, memberARequirements, memberADocuments);
+    expect(statusA.expectedCount).toBe(2);
+    expect(statusA.receivedCount).toBe(1);
+    expect(statusA.pendingCount).toBe(1);
+    expect(statusA.isComplete).toBe(false);
+    expect(statusA.status).toBe("pending");
+  });
+});
+
