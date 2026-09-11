@@ -400,40 +400,42 @@ function PublicRiderPage() {
         )}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* Filtros por Categoria */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none print:hidden">
-          <button
-            type="button"
-            onClick={() => setSelectedCategory("todas")}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-mono transition-colors whitespace-nowrap active:scale-[0.97]",
-              selectedCategory === "todas"
-                ? "bg-[#9184d9] text-white font-medium"
-                : "border border-line bg-secondary/40 text-muted-foreground hover:bg-secondary",
-            )}
-          >
-            Todas ({items.length})
-          </button>
-          {RIDER_CATEGORIES.map((cat) => {
-            const count = items.filter((i) => i.category === cat.id).length;
-            if (count === 0) return null;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-mono transition-colors whitespace-nowrap active:scale-[0.97]",
-                  selectedCategory === cat.id
-                    ? "bg-[#9184d9] text-white font-medium"
-                    : "border border-line bg-secondary/40 text-muted-foreground hover:bg-secondary",
-                )}
-              >
-                {cat.label} ({count})
-              </button>
-            );
-          })}
+        {/* Filtros por Categoria com affordance de rolagem */}
+        <div className="relative print:hidden">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("todas")}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-mono transition-colors whitespace-nowrap active:scale-[0.97]",
+                selectedCategory === "todas"
+                  ? "bg-[#9184d9] text-white font-medium"
+                  : "border border-line bg-secondary/40 text-muted-foreground hover:bg-secondary",
+              )}
+            >
+              Todas ({items.length})
+            </button>
+            {RIDER_CATEGORIES.map((cat) => {
+              const count = items.filter((i) => i.category === cat.id).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-mono transition-colors whitespace-nowrap active:scale-[0.97]",
+                    selectedCategory === cat.id
+                      ? "bg-[#9184d9] text-white font-medium"
+                      : "border border-line bg-secondary/40 text-muted-foreground hover:bg-secondary",
+                  )}
+                >
+                  {cat.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent" />
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────── */}

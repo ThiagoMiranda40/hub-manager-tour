@@ -857,43 +857,46 @@ function ShowDetail() {
             </section>
           ) : null}
 
-          {/* Barra de Abas da Prancheta (Nocturne Tab Bar) */}
-          <nav
-            aria-label="Abas da Prancheta"
-            className="mt-6 flex items-center gap-1 border-b border-line overflow-x-auto scrollbar-none"
-          >
-            <TabButton
-              active={activeTab === "cast"}
-              onClick={() => setActiveTab("cast")}
-              label="Elenco & Exigências"
-              badge={cast.length}
-              hasAlert={progress.hasRequirement && progress.pendingPeople > 0}
-            />
-            <TabButton
-              active={activeTab === "docs"}
-              onClick={() => setActiveTab("docs")}
-              label="Documentos"
-              badge={docs.length}
-            />
-            <TabButton
-              active={activeTab === "rider"}
-              onClick={() => setActiveTab("rider")}
-              label="Rider Técnico"
-              badge={`${riderBalance.confirmed}/${riderBalance.total}`}
-            />
-            <TabButton
-              active={activeTab === "reimbursements"}
-              onClick={() => setActiveTab("reimbursements")}
-              label="Reembolsos"
-              badge={reimbursableDocs.length}
-              hasAlert={pendingReimbursementDocs.length > 0}
-            />
-            <TabButton
-              active={activeTab === "quick_actions"}
-              onClick={() => setActiveTab("quick_actions")}
-              label="Ações Rápidas & Links"
-            />
-          </nav>
+          {/* Barra de Abas da Prancheta (Nocturne Tab Bar com affordance de rolagem) */}
+          <div className="relative">
+            <nav
+              aria-label="Abas da Prancheta"
+              className="mt-6 flex items-center gap-1 border-b border-line overflow-x-auto scrollbar-none"
+            >
+              <TabButton
+                active={activeTab === "cast"}
+                onClick={() => setActiveTab("cast")}
+                label="Elenco & Exigências"
+                badge={cast.length}
+                hasAlert={progress.hasRequirement && progress.pendingPeople > 0}
+              />
+              <TabButton
+                active={activeTab === "docs"}
+                onClick={() => setActiveTab("docs")}
+                label="Documentos"
+                badge={docs.length}
+              />
+              <TabButton
+                active={activeTab === "rider"}
+                onClick={() => setActiveTab("rider")}
+                label="Rider Técnico"
+                badge={`${riderBalance.confirmed}/${riderBalance.total}`}
+              />
+              <TabButton
+                active={activeTab === "reimbursements"}
+                onClick={() => setActiveTab("reimbursements")}
+                label="Reembolsos"
+                badge={reimbursableDocs.length}
+                hasAlert={pendingReimbursementDocs.length > 0}
+              />
+              <TabButton
+                active={activeTab === "quick_actions"}
+                onClick={() => setActiveTab("quick_actions")}
+                label="Ações Rápidas & Links"
+              />
+            </nav>
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent" />
+          </div>
 
           {/* ─────────────────────────────────────────────────────────────────
               ABA 1: ELENCO & EXIGÊNCIAS
