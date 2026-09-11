@@ -42,6 +42,23 @@ export const Route = createFileRoute("/r/$token")({
         property: "og:description",
         content: "Confirme os itens de palco, som, iluminação e camarim do show em tempo real.",
       },
+      {
+        property: "og:image",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
+      },
+      {
+        property: "og:image:secure_url",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
+      },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Hub Manager Tour — Confirmação de Rider Técnico" },
+      { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:image",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
+      },
     ],
   }),
   component: PublicRiderPage,

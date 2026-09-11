@@ -41,6 +41,23 @@ export const Route = createFileRoute("/p/$token")({
         content:
           "Checklist personalizada de documentos da turnê: confira o que já entregou e envie o que falta.",
       },
+      {
+        property: "og:image",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
+      },
+      {
+        property: "og:image:secure_url",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
+      },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Hub Manager Tour — Checklist do Integrante" },
+      { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:image",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
+      },
     ],
   }),
   component: PublicUpload,

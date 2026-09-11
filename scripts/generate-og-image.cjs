@@ -455,7 +455,8 @@ async function main() {
     stdio: 'inherit'
   });
 
-  console.log('6. og-image.png updated successfully in public/og-image.png!');
+  fs.copyFileSync('public/og-image.png', 'public/og-image-v2.png');
+  console.log('6. og-image.png and og-image-v2.png updated successfully in public/!');
 }
 
 main().catch(err => {

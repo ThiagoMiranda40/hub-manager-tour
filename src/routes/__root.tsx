@@ -95,11 +95,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:url", content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br" },
       {
         property: "og:image",
-        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image.png",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
       },
       {
         property: "og:image:secure_url",
-        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image.png",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
       },
       { property: "og:image:type", content: "image/png" },
       { property: "og:image:width", content: "1200" },
@@ -114,7 +114,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         name: "twitter:image",
-        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image.png",
+        content: "https://hubmanagertour.triadetecnologiaesolucoes.com.br/og-image-v2.png",
       },
     ],
     links: [
