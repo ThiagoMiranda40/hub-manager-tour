@@ -212,16 +212,18 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 - **Depende de:** T-07, T-09
 - **Arquivos afetados:**
   - `[NEW] src/lib/ai-extraction.ts`
-  - `src/routes/shows.$id.tsx`
+  - `[NEW] supabase/migrations/<timestamp>_cast_member_ai_analysis_count.sql`
+  - `src/routes/p.$token.tsx`
   - `src/routes/settings.tsx`
 - **Fazer:**
-  1. Implementar helper `ai-extraction.ts` conectado a modelo multimodal (Gemini Flash).
-  2. Função 1: Ler PDF/foto de passagem ou nota e extrair número de voo, hotel ou valor para aprovação rápida do produtor.
-  3. Função 2: Importar PDF de rider técnico legado e transformá-lo em checklist estruturado.
-  4. Implementar redimensionamento client-side de imagens (máx. ~1536px no lado maior) antes do envio à API de extração.
-  5. Implementar validação/reporte de moeda detectada em cada valor monetário extraído, com alerta visual se não for BRL ou não identificável.
-  6. Implementar UI de comparação (valor atual vs. sugerido) antes de qualquer aplicação de campo já preenchido — nunca sobrescrita automática.
-  7. Acionar a skill ciberseguranca-produto-digital em modo revisão dedicado a esta tarefa antes da entrega final (gestão de segredo da API key, validação de tamanho/tipo de arquivo enviado à IA, tratamento de erro da API externa sem vazar detalhe técnico).
+  1. Implementar helper `ai-extraction.ts` conectado a modelo multimodal (Gemini 2.5 Flash), incluindo Server Function dedicada.
+  2. Função 1 (upload-time, em p.$token.tsx): ao anexar arquivo, acionar a IA para identificar tipo de documento (restrito aos document_types já cadastrados), pré-preencher campos, perguntar sobre reembolso, extrair valor se presente, e solicitar preenchimento manual do valor se ausente e for reembolso. Tudo revisável pelo integrante antes de confirmar o envio.
+  3. Implementar limite de taxa por cast_member/show (coluna ai_analysis_count, incremento atômico, teto de 15), com fallback silencioso para o formulário manual ao atingir o limite.
+  4. Função 2 (settings.tsx, inalterada): Importar PDF de rider técnico legado e transformá-lo em checklist estruturado para revisão em lote do produtor.
+  5. Implementar redimensionamento client-side de imagens (máx. ~1536px no lado maior) antes do envio à API de extração.
+  6. Implementar validação/reporte de moeda detectada em cada valor monetário extraído, com alerta visual se não for BRL ou não identificável.
+  7. Implementar UI de comparação (valor atual vs. sugerido) antes de qualquer aplicação de campo já preenchido — nunca sobrescrita automática.
+  8. Acionar a skill ciberseguranca-produto-digital em modo revisão dedicado antes da entrega final (gestão de segredo da API key, limite de taxa/anti-abuso na rota pública, validação de tamanho/tipo de arquivo enviado à IA, tratamento de erro da API externa sem vazar detalhe técnico).
 - **Verificação técnica:** `npx tsc --noEmit && npm run build`
 - **Tradução em linguagem simples:** "Funcionalidade inteligente: ao anexar um PDF de passagem ou rider antigo, a IA reconhece o conteúdo e pré-preenche os dados para o produtor apenas aprovar."
 
