@@ -630,3 +630,22 @@ export function formatDocumentDescription(d: {
 }): string {
   return d.note?.trim() || d.file_name || "arquivo";
 }
+
+/**
+ * Compõe o link público individual do integrante (/p/$token) a partir da origem e do access_token (T-16 / RF-04)
+ */
+export function getMemberPublicUrl(origin: string, accessToken?: string | null): string {
+  return accessToken ? `${origin}/p/${accessToken}` : "";
+}
+
+/**
+ * Converte e valida o valor monetário de reembolso no formato brasileiro (RF-04 / TC-04.2 / TC-16.4)
+ */
+export function parseReimbursementAmount(value: string): number {
+  const clean = Number(value.replace(/\./g, "").replace(",", "."));
+  if (!Number.isFinite(clean) || clean <= 0) {
+    throw new Error("O valor de reembolso deve ser maior que R$ 0,00.");
+  }
+  return clean;
+}
+

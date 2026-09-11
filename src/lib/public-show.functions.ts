@@ -90,8 +90,8 @@ export const getPublicShow = createServerFn({ method: "GET" })
     };
   });
 
-const MAX_BYTES = 20 * 1024 * 1024;
-const ALLOWED_EXT = ["jpg", "jpeg", "png", "webp", "pdf"];
+export const MAX_BYTES = 20 * 1024 * 1024;
+export const ALLOWED_EXT = ["jpg", "jpeg", "png", "webp", "pdf"];
 const ALLOWED_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
 
 export const submitDocument = createServerFn({ method: "POST" })

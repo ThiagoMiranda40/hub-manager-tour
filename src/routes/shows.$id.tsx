@@ -39,6 +39,7 @@ import {
   formatBRL,
   initials,
   labelFrom,
+  getMemberPublicUrl as buildMemberPublicUrl,
   type ShowRequirement,
   type ShowRiderItem,
 } from "@/lib/g3";
@@ -244,10 +245,8 @@ function ShowDetail() {
   );
 
   // URLs públicas
-  const getMemberPublicUrl = (accessToken?: string | null) => {
-    if (typeof window === "undefined" || !accessToken) return "";
-    return `${window.location.origin}/p/${accessToken}`;
-  };
+  const getMemberPublicUrl = (accessToken?: string | null) =>
+    typeof window !== "undefined" ? buildMemberPublicUrl(window.location.origin, accessToken) : "";
 
   const riderPublicUrl =
     typeof window !== "undefined" && show

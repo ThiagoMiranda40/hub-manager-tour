@@ -17,8 +17,14 @@ import { getPublicShow, submitDocument } from "@/lib/public-show.functions";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ALLOWED_EXTENSIONS, MAX_UPLOAD_BYTES, formatShowDate, initials } from "@/lib/g3";
 import { cn } from "@/lib/utils";
+import {
+  ALLOWED_EXTENSIONS,
+  MAX_UPLOAD_BYTES,
+  formatShowDate,
+  initials,
+  parseReimbursementAmount,
+} from "@/lib/g3";
 
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
@@ -163,11 +169,7 @@ function PublicUpload() {
       // TC-04.2: BVA no valor de reembolso
       let parsedAmount: number | undefined = undefined;
       if (isReimbursement && amount.trim()) {
-        const cleanAmount = Number(amount.replace(/\./g, "").replace(",", "."));
-        if (!Number.isFinite(cleanAmount) || cleanAmount <= 0) {
-          throw new Error("O valor de reembolso deve ser maior que R$ 0,00.");
-        }
-        parsedAmount = cleanAmount;
+        parsedAmount = parseReimbursementAmount(amount);
       }
 
       // Upload do arquivo no bucket do Supabase Storage

@@ -11,9 +11,12 @@ import {
   reorderRiderItems,
   sortRiderItemsByPriority,
   sortStageRiderItems,
+  getMemberPublicUrl,
+  parseReimbursementAmount,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
+import { MAX_BYTES, ALLOWED_EXT } from "./public-show.functions";
 
 describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas do Rider", () => {
   // ───────────────────────────────────────────────────────────────────────────
@@ -564,23 +567,24 @@ describe("T-16 (RF-04): Validações e Limites de Fronteira (BVA) do Link Indivi
   // ───────────────────────────────────────────────────────────────────────────
   it("TC-16.1: compõe URL individual correta com o access_token e trata ausência de token com segurança", () => {
     const origin = "https://app.hubmanagertour.com";
-    const getMemberUrl = (token?: string | null) => (token ? `${origin}/p/${token}` : "");
 
     // Token individual válido (18 chars hexadecimais gerados pelo encode(gen_random_bytes(9), 'hex'))
     const validToken = "4f8a12e9b0d35c7a61";
-    expect(getMemberUrl(validToken)).toBe("https://app.hubmanagertour.com/p/4f8a12e9b0d35c7a61");
+    expect(getMemberPublicUrl(origin, validToken)).toBe("https://app.hubmanagertour.com/p/4f8a12e9b0d35c7a61");
 
     // Token ausente ou nulo -> não expõe rota quebrada nem URL de fallback insegura
-    expect(getMemberUrl(null)).toBe("");
-    expect(getMemberUrl(undefined)).toBe("");
-    expect(getMemberUrl("")).toBe("");
+    expect(getMemberPublicUrl(origin, null)).toBe("");
+    expect(getMemberPublicUrl(origin, undefined)).toBe("");
+    expect(getMemberPublicUrl(origin, "")).toBe("");
   });
 
   // ───────────────────────────────────────────────────────────────────────────
   // TC-16.2: Análise de Valor Limite (BVA) no Tamanho Máximo de Arquivo (20 MB)
   // ───────────────────────────────────────────────────────────────────────────
   it("TC-16.2: BVA no tamanho do upload (limite exato de 20 MB / 20.971.520 bytes)", () => {
-    const MAX_BYTES = 20 * 1024 * 1024; // 20.971.520 bytes
+    // MAX_BYTES importado diretamente de public-show.functions
+    expect(MAX_BYTES).toBe(20 * 1024 * 1024);
+
     const validateFileSize = (bytes: number) => {
       if (bytes <= 0) return { valid: false, error: "Arquivo vazio" };
       if (bytes > MAX_BYTES) return { valid: false, error: "Arquivo acima de 20 MB" };
@@ -610,10 +614,10 @@ describe("T-16 (RF-04): Validações e Limites de Fronteira (BVA) do Link Indivi
   // TC-16.3: Particionamento de Equivalência em Extensões Permitidas
   // ───────────────────────────────────────────────────────────────────────────
   it("TC-16.3: particionamento de equivalência para formatos de comprovante permitidos e proibidos", () => {
-    const ALLOWED = ["jpg", "jpeg", "png", "webp", "pdf"];
+    // ALLOWED_EXT importado diretamente de public-show.functions
     const isAllowedExt = (filename: string) => {
       const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-      return ALLOWED.includes(ext);
+      return ALLOWED_EXT.includes(ext);
     };
 
     // Classes de equivalência válidas (imagens e PDFs comuns)
@@ -640,13 +644,7 @@ describe("T-16 (RF-04): Validações e Limites de Fronteira (BVA) do Link Indivi
   // TC-16.4: BVA e Parse do Valor Declarado para Reembolso (RF-04 / TC-04.2)
   // ───────────────────────────────────────────────────────────────────────────
   it("TC-16.4: BVA e validação de formato do valor numérico de reembolso", () => {
-    const parseReimbursementAmount = (value: string) => {
-      const clean = Number(value.replace(/\./g, "").replace(",", "."));
-      if (!Number.isFinite(clean) || clean <= 0) {
-        throw new Error("O valor de reembolso deve ser maior que R$ 0,00.");
-      }
-      return clean;
-    };
+    // parseReimbursementAmount importado diretamente de g3.ts (produção)
 
     // Valor comum no formato brasileiro
     expect(parseReimbursementAmount("45,50")).toBe(45.5);
