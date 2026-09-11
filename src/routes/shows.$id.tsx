@@ -2172,15 +2172,15 @@ function ShowDetail() {
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                              <div className="flex items-center gap-2.5 sm:gap-1.5 shrink-0 self-end sm:self-center">
                                 <button
                                   type="button"
                                   onClick={() => handleCopyMemberLink(m)}
                                   disabled={!m.access_token}
-                                  className="inline-flex items-center gap-1.5 bg-[#9184d9] text-white py-1.5 px-3 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all touch-manipulation shadow-sm disabled:opacity-40"
+                                  className="inline-flex items-center gap-1.5 bg-[#9184d9] text-white min-h-[44px] py-2 px-3 sm:px-3.5 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all touch-manipulation shadow-sm disabled:opacity-40"
                                   title={`Copiar link exclusivo de ${m.name}`}
                                 >
-                                  <Copy className="size-3.5" />
+                                  <Copy className="size-4" />
                                   {isCopied ? "Copiado!" : "Copiar link"}
                                 </button>
                                 {memberPhone && memberUrl ? (
@@ -2188,23 +2188,29 @@ function ShowDetail() {
                                     href={buildWhatsAppLink(memberPhone, waMessage)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center justify-center border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/20 active:scale-[0.97] transition-all"
+                                    className="inline-flex items-center justify-center border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 min-h-[44px] min-w-[44px] p-2.5 rounded-lg hover:bg-emerald-500/20 active:scale-[0.97] transition-all touch-manipulation"
                                     title={`Enviar link para ${m.name} via WhatsApp`}
                                   >
-                                    <WhatsAppIcon className="size-3.5 text-[#25D366]" />
+                                    <WhatsAppIcon className="size-[18px] text-[#25D366]" />
                                   </a>
                                 ) : (
                                   <button
                                     type="button"
-                                    disabled
-                                    className="inline-flex items-center justify-center border border-line p-1.5 rounded-lg opacity-40 cursor-not-allowed text-muted-foreground"
+                                    onClick={() =>
+                                      toast.info(
+                                        !memberPhone
+                                          ? "Cadastre o telefone dessa pessoa em Pessoas & Equipe para habilitar o envio direto."
+                                          : "Token pendente para este integrante.",
+                                      )
+                                    }
+                                    className="inline-flex items-center justify-center border border-line min-h-[44px] min-w-[44px] p-2.5 rounded-lg opacity-40 cursor-not-allowed text-muted-foreground active:scale-[0.98] transition-all touch-manipulation"
                                     title={
                                       !memberPhone
-                                        ? "Cadastre o telefone dessa pessoa em Pessoas & Equipe para habilitar o envio direto"
-                                        : "Token pendente para este integrante"
+                                        ? "Cadastre o telefone dessa pessoa em Pessoas & Equipe para habilitar o envio direto."
+                                        : "Token pendente para este integrante."
                                     }
                                   >
-                                    <WhatsAppIcon className="size-3.5" />
+                                    <WhatsAppIcon className="size-[18px]" />
                                   </button>
                                 )}
                                 {memberUrl ? (
@@ -2212,10 +2218,10 @@ function ShowDetail() {
                                     href={memberUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center justify-center border border-line p-1.5 rounded-lg hover:bg-accent active:scale-[0.97] text-muted-foreground hover:text-foreground"
+                                    className="inline-flex items-center justify-center border border-line min-h-[44px] min-w-[44px] p-2.5 rounded-lg hover:bg-accent active:scale-[0.97] text-muted-foreground hover:text-foreground transition-all touch-manipulation"
                                     title={`Abrir página de ${m.name} em nova aba`}
                                   >
-                                    <ExternalLink className="size-3.5" />
+                                    <ExternalLink className="size-[18px]" />
                                   </a>
                                 ) : null}
                               </div>
