@@ -6,23 +6,33 @@ export const getPublicShow = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: show, error } = await supabaseAdmin
-      .from("shows")
-      .select("id, city, venue, show_date, artist_id, user_id, artists(name)")
-      .eq("public_token", data.token)
+    // 1. Busca integrante pelo access_token individual exclusivo
+    const { data: member, error: memberErr } = await supabaseAdmin
+      .from("cast_members")
+      .select("id, name, role, show_id")
+      .eq("access_token", data.token)
       .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (memberErr) throw new Error(memberErr.message);
+    if (!member) return null;
+
+    // 2. Busca dados do show associado
+    const { data: show, error: showErr } = await supabaseAdmin
+      .from("shows")
+      .select("id, city, venue, show_date, artist_id, user_id, artists(name)")
+      .eq("id", member.show_id)
+      .maybeSingle();
+
+    if (showErr) throw new Error(showErr.message);
     if (!show) return null;
 
+    // 3. Busca roles do produtor, tipos de documento e APENAS as exigências e documentos DESTE integrante
     const [
-      { data: cast },
       { data: roles },
       { data: docTypes },
       { data: requirements },
       { data: documents },
     ] = await Promise.all([
-      supabaseAdmin.from("cast_members").select("id, name, role").eq("show_id", show.id).order("name"),
       supabaseAdmin.from("cast_roles").select("id, name").eq("user_id", show.user_id),
       supabaseAdmin
         .from("document_types")
@@ -32,11 +42,13 @@ export const getPublicShow = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("show_requirements")
         .select("id, cast_member_id, document_type_id, required, deadline_date")
-        .eq("show_id", show.id),
+        .eq("show_id", show.id)
+        .eq("cast_member_id", member.id),
       supabaseAdmin
         .from("documents")
         .select("id, cast_member_id, doc_type, file_name, created_at")
         .eq("show_id", show.id)
+        .eq("cast_member_id", member.id)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -51,11 +63,11 @@ export const getPublicShow = createServerFn({ method: "GET" })
         show_date: show.show_date as string,
         artist: (show.artists as { name: string } | null)?.name ?? null,
       },
-      cast: (cast ?? []).map((m) => ({
-        id: m.id as string,
-        name: m.name as string,
-        role: roleName(m.role as string),
-      })),
+      member: {
+        id: member.id as string,
+        name: member.name as string,
+        role: roleName(member.role as string),
+      },
       docTypes: (docTypes ?? []).map((t) => ({
         id: t.id as string,
         name: t.name as string,
@@ -87,7 +99,6 @@ export const submitDocument = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().min(4),
-        castMemberId: z.string().uuid(),
         docTypeId: z.string().uuid(),
         filePath: z.string().min(3),
         fileName: z.string().max(200).optional(),
@@ -101,23 +112,26 @@ export const submitDocument = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: show, error } = await supabaseAdmin
+    // 1. Resolve o integrante exclusivamente a partir do access_token individual recebido
+    const { data: member, error: memberErr } = await supabaseAdmin
+      .from("cast_members")
+      .select("id, show_id")
+      .eq("access_token", data.token)
+      .maybeSingle();
+
+    if (memberErr) throw new Error(memberErr.message);
+    if (!member) throw new Error("Link ou token inválido.");
+
+    // 2. Busca o show associado ao integrante para validações de contexto e segurança
+    const { data: show, error: showErr } = await supabaseAdmin
       .from("shows")
       .select("id, user_id")
-      .eq("public_token", data.token)
+      .eq("id", member.show_id)
       .maybeSingle();
 
-    if (error) throw new Error(error.message);
-    if (!show) throw new Error("Link inválido");
+    if (showErr) throw new Error(showErr.message);
+    if (!show) throw new Error("Show não encontrado.");
 
-    const { data: member } = await supabaseAdmin
-      .from("cast_members")
-      .select("id")
-      .eq("id", data.castMemberId)
-      .eq("show_id", show.id)
-      .maybeSingle();
-
-    if (!member) throw new Error("Pessoa não pertence a este show");
     if (!data.filePath.startsWith(`${show.id}/`)) throw new Error("Arquivo inválido");
 
     const { data: docType } = await supabaseAdmin
@@ -165,7 +179,7 @@ export const submitDocument = createServerFn({ method: "POST" })
     const { error: insertError } = await supabaseAdmin.from("documents").insert({
       user_id: show.user_id,
       show_id: show.id,
-      cast_member_id: data.castMemberId,
+      cast_member_id: member.id,
       doc_type: data.docTypeId,
       file_path: data.filePath,
       file_name: data.fileName ?? null,
@@ -173,7 +187,6 @@ export const submitDocument = createServerFn({ method: "POST" })
       is_reimbursement: isReimbursement,
       amount: isReimbursement ? (data.amount ?? null) : null,
     });
-
 
     if (insertError) throw new Error(insertError.message);
     return { ok: true };

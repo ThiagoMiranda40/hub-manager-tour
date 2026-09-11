@@ -6,14 +6,9 @@ import {
   CheckCircle2,
   Clock,
   Upload,
-  FileText,
   AlertTriangle,
-  ArrowDown,
   Check,
-  Smartphone,
   Sparkles,
-  Receipt,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -80,7 +75,6 @@ function PublicUpload() {
 
   const uploadFormRef = useRef<HTMLDivElement>(null);
 
-  const [memberId, setMemberId] = useState("");
   const [docTypeId, setDocTypeId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -97,30 +91,23 @@ function PublicUpload() {
   });
 
   const docTypes = useMemo(() => data?.docTypes ?? [], [data?.docTypes]);
-  const cast = useMemo(() => data?.cast ?? [], [data?.cast]);
   const requirements = useMemo(() => data?.requirements ?? [], [data?.requirements]);
   const documents = useMemo(() => data?.documents ?? [], [data?.documents]);
-
-  const selectedMember = useMemo(
-    () => cast.find((c) => c.id === memberId) ?? null,
-    [cast, memberId],
-  );
+  const member = data?.member ?? null;
 
   const selectedType = useMemo(
     () => docTypes.find((t) => t.id === docTypeId) ?? null,
     [docTypes, docTypeId],
   );
 
-  // Documentos e exigências específicos do integrante selecionado
+  // Documentos e exigências específicos deste integrante (já isolados no servidor)
   const memberRequirements = useMemo(() => {
-    if (!memberId) return [];
-    return requirements.filter((r) => r.castMemberId === memberId && r.required !== false);
-  }, [requirements, memberId]);
+    return requirements.filter((r) => r.required !== false);
+  }, [requirements]);
 
   const memberDocuments = useMemo(() => {
-    if (!memberId) return [];
-    return documents.filter((d) => d.castMemberId === memberId);
-  }, [documents, memberId]);
+    return documents;
+  }, [documents]);
 
   // Seletor automático do primeiro tipo de documento caso nenhum esteja marcado
   useEffect(() => {
@@ -161,7 +148,6 @@ function PublicUpload() {
   const upload = useMutation({
     mutationFn: async () => {
       if (!data || !file) throw new Error("Selecione um arquivo para enviar.");
-      if (!memberId) throw new Error("Selecione seu nome no elenco.");
       if (!docTypeId) throw new Error("Selecione o tipo de documento.");
 
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -191,11 +177,10 @@ function PublicUpload() {
         throw new Error(`Falha no upload do arquivo: ${upErr.message}`);
       }
 
-      // Registro seguro do documento via Server Function com token de validação
+      // Registro seguro do documento via Server Function (o servidor resolve o integrante exclusivamente pelo token)
       await send({
         data: {
           token,
-          castMemberId: memberId,
           docTypeId,
           filePath: path,
           fileName: file.name,
@@ -208,7 +193,7 @@ function PublicUpload() {
 
     onSuccess: () => {
       const typeName = selectedType?.name ?? "Documento";
-      const memberName = selectedMember?.name ?? "Integrante";
+      const memberName = member?.name ?? "Integrante";
 
       setDoneMessage(`${typeName} de ${memberName} enviado com sucesso!`);
       setFile(null);
@@ -240,7 +225,7 @@ function PublicUpload() {
   }
 
   // TC-04.4: Estado de Token Inválido com mensagem amigável e sem vazamento técnico
-  if (!data || !data.show) {
+  if (!data || !data.show || !data.member) {
     return (
       <div className="relative grid min-h-screen place-items-center px-4 py-12 text-center bg-background">
         <div className="absolute top-4 right-4">
@@ -254,7 +239,7 @@ function PublicUpload() {
             Link Inválido ou Expirado
           </h1>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            Não foi possível encontrar este show. Verifique se o endereço foi copiado por completo ou
+            Não foi possível encontrar este acesso. Verifique se o endereço foi copiado por completo ou
             solicite um novo link à produção da turnê.
           </p>
           <div className="mt-6 border-t border-line pt-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground/70">
@@ -265,7 +250,7 @@ function PublicUpload() {
     );
   }
 
-  const { show } = data;
+  const { show, member: activeMember } = data;
 
   return (
     <div className="mx-auto min-h-screen max-w-lg px-4 py-8 sm:py-12 space-y-8">
@@ -301,227 +286,171 @@ function PublicUpload() {
           {show.venue ? ` · ${show.venue}` : ""} · {formatShowDate(show.show_date)}
         </p>
 
-        <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-          Selecione seu nome abaixo para conferir o que a produção já recebeu e enviar seus arquivos
-          pendentes.
+        {/* Identificação direta do Integrante (RF-04 com Token Individual) */}
+        <div className="mt-4 flex items-center gap-3 p-3.5 rounded-xl border border-[#9184d9]/30 bg-[#9184d9]/5">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#9184d9] text-white font-mono text-sm font-semibold">
+            {initials(activeMember.name)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-[#9184d9] font-semibold">
+              Checklist Pessoal
+            </div>
+            <div className="text-sm font-semibold truncate text-foreground">
+              {activeMember.name}
+            </div>
+            <div className="text-[11px] font-mono text-muted-foreground">
+              {activeMember.role}
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+          Confira abaixo os documentos solicitados pela produção para este show e envie seus arquivos pendentes.
         </p>
       </header>
 
       {/* ─────────────────────────────────────────────────────────────────
-          PASSO 1: SELEÇÃO DO INTEGRANTE NO ELENCO
+          PASSO 1: CHECKLIST PESSOAL DINÂMICA (RF-04)
          ───────────────────────────────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between">
-          <h2 className="label-mono font-medium text-foreground">1 · Quem é você no elenco?</h2>
-          {selectedMember ? (
-            <span className="text-xs text-[#9184d9] font-mono font-medium">Selecionado ✓</span>
-          ) : null}
-        </div>
-
-        {cast.length === 0 ? (
-          <div className="mt-3 border border-dashed border-line p-6 rounded-xl text-center">
-            <p className="font-mono text-xs text-muted-foreground">
-              A produção ainda não cadastrou os integrantes deste show.
+      <section className="border border-line bg-card p-5 rounded-2xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-[#9184d9]" />
+              <h2 className="font-semibold text-sm sm:text-base text-foreground">
+                1 · Checklist de {activeMember.name}
+              </h2>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground font-mono">
+              Documentos exigidos e recebidos para esta data
             </p>
           </div>
-        ) : (
-          <div className="mt-3 grid grid-cols-1 gap-2">
-            {cast.map((m) => {
-              const isSelected = memberId === m.id;
+        </div>
+
+        {/* Situação 1: O integrante possui exigências configuradas */}
+        {memberRequirements.length > 0 ? (
+          <div className="space-y-3">
+            {memberRequirements.map((req) => {
+              const docType = docTypes.find((t) => t.id === req.docTypeId);
+              const submitted = memberDocuments.find((d) => d.docTypeId === req.docTypeId);
+              const isReceived = Boolean(submitted);
+
               return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    setMemberId(m.id);
-                    setDoneMessage(null);
-                    setFormError(null);
-                  }}
+                <div
+                  key={req.id}
                   className={cn(
-                    "flex items-center gap-3 w-full text-left p-3 rounded-xl border transition-all duration-120 touch-manipulation min-h-[48px] active:scale-[0.98]",
-                    isSelected
-                      ? "border-[#9184d9] bg-[#9184d9]/10 shadow-sm ring-1 ring-[#9184d9]"
-                      : "border-line bg-card hover:bg-accent/30",
+                    "flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all",
+                    isReceived
+                      ? "border-emerald-500/30 bg-emerald-500/5"
+                      : "border-amber-500/40 bg-amber-500/10",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "grid size-8 shrink-0 place-items-center rounded-lg font-mono text-xs font-semibold",
-                      isSelected ? "bg-[#9184d9] text-white" : "bg-accent/40 border border-line",
-                    )}
-                  >
-                    {initials(m.name)}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate text-foreground">{m.name}</div>
-                    <div className="text-[11px] font-mono text-muted-foreground">{m.role}</div>
-                  </div>
-
-                  <div className="shrink-0">
-                    <div
-                      className={cn(
-                        "size-4 rounded-full border grid place-items-center",
-                        isSelected
-                          ? "border-[#9184d9] bg-[#9184d9] text-white"
-                          : "border-line bg-background",
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="mt-0.5 shrink-0">
+                      {isReceived ? (
+                        <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <Clock className="size-4 text-amber-600 dark:text-amber-400" />
                       )}
-                    >
-                      {isSelected ? <Check className="size-2.5" /> : null}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm text-foreground">
+                          {docType?.name ?? "Documento"}
+                        </span>
+                        <StatusBadge
+                          status={isReceived ? "confirmed" : "pending"}
+                          label={isReceived ? "Recebido" : "Pendente"}
+                          size="sm"
+                        />
+                      </div>
+
+                      {isReceived ? (
+                        <div className="mt-1 text-xs text-muted-foreground font-mono truncate">
+                          <span className="truncate">{submitted?.fileName ?? "Arquivo enviado"}</span>
+                          <span className="mx-1">·</span>
+                          <span>{formatSubmissionDate(submitted!.createdAt)}</span>
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                          Aguardando envio para esta apresentação.
+                        </p>
+                      )}
                     </div>
                   </div>
-                </button>
+
+                  <div className="shrink-0 flex sm:justify-end">
+                    {isReceived ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectRequirementToUpload(req.docTypeId)}
+                        className="text-xs font-mono text-muted-foreground hover:text-foreground underline underline-offset-2 touch-manipulation"
+                      >
+                        Reenviar novo arquivo
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectRequirementToUpload(req.docTypeId)}
+                        className="inline-flex items-center gap-1 bg-[#9184d9] text-white px-3 py-1.5 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all touch-manipulation shadow-sm"
+                      >
+                        <Upload className="size-3.5" /> Anexar agora
+                      </button>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
+        ) : (
+          /* Situação 2: Integrante sem exigência configurada para esta data */
+          <div className="border border-dashed border-line p-4 rounded-xl text-center space-y-2">
+            <StatusBadge status="no_requirement" label="Sem exigência configurada nesta data" />
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+              Você não possui documentos obrigatórios pendentes para este show. Se você tiver
+              despesas para reembolso (táxi, alimentação, etc.), pode anexar o comprovante abaixo.
+            </p>
+          </div>
         )}
+
+        {/* Documentos extras enviados pelo integrante que não estão nas exigências obrigatórias */}
+        {memberDocuments.filter((d) => !memberRequirements.some((r) => r.docTypeId === d.docTypeId))
+          .length > 0 ? (
+          <div className="pt-3 border-t border-line space-y-2">
+            <div className="label-mono text-xs text-muted-foreground">
+              Outros comprovantes enviados por você:
+            </div>
+            <div className="space-y-1.5">
+              {memberDocuments
+                .filter((d) => !memberRequirements.some((r) => r.docTypeId === d.docTypeId))
+                .map((d) => {
+                  const docType = docTypes.find((t) => t.id === d.docTypeId);
+                  return (
+                    <div
+                      key={d.id}
+                      className="flex items-center justify-between text-xs p-2 rounded-lg bg-accent/20 border border-line"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+                        <span className="font-medium">{docType?.name ?? "Documento"}</span>
+                        <span className="text-muted-foreground truncate">
+                          ({d.fileName ?? "arquivo"})
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+                        {formatSubmissionDate(d.createdAt)}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {/* ─────────────────────────────────────────────────────────────────
-          PASSO 2: CHECKLIST PESSOAL DINÂMICA (RF-04)
-          Aparece imediatamente após a seleção do nome
-         ───────────────────────────────────────────────────────────────── */}
-      {selectedMember ? (
-        <section className="border border-line bg-card p-5 rounded-2xl space-y-4 animate-in fade-in-50 duration-200">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="size-4 text-[#9184d9]" />
-                <h2 className="font-semibold text-sm sm:text-base text-foreground">
-                  Checklist Pessoal de {selectedMember.name}
-                </h2>
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground font-mono">
-                Documentos exigidos e recebidos para esta data
-              </p>
-            </div>
-          </div>
-
-          {/* Situação 1: O integrante possui exigências configuradas */}
-          {memberRequirements.length > 0 ? (
-            <div className="space-y-3">
-              {memberRequirements.map((req) => {
-                const docType = docTypes.find((t) => t.id === req.docTypeId);
-                const submitted = memberDocuments.find((d) => d.docTypeId === req.docTypeId);
-                const isReceived = Boolean(submitted);
-
-                return (
-                  <div
-                    key={req.id}
-                    className={cn(
-                      "flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all",
-                      isReceived
-                        ? "border-emerald-500/30 bg-emerald-500/5"
-                        : "border-amber-500/40 bg-amber-500/10",
-                    )}
-                  >
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      <div className="mt-0.5 shrink-0">
-                        {isReceived ? (
-                          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <Clock className="size-4 text-amber-600 dark:text-amber-400" />
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-foreground">
-                            {docType?.name ?? "Documento"}
-                          </span>
-                          <StatusBadge
-                            status={isReceived ? "confirmed" : "pending"}
-                            label={isReceived ? "Recebido" : "Pendente"}
-                            size="sm"
-                          />
-                        </div>
-
-                        {isReceived ? (
-                          <div className="mt-1 text-xs text-muted-foreground font-mono truncate">
-                            <span className="truncate">{submitted?.fileName ?? "Arquivo enviado"}</span>
-                            <span className="mx-1">·</span>
-                            <span>{formatSubmissionDate(submitted!.createdAt)}</span>
-                          </div>
-                        ) : (
-                          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                            Aguardando envio para esta apresentação.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 flex sm:justify-end">
-                      {isReceived ? (
-                        <button
-                          type="button"
-                          onClick={() => handleSelectRequirementToUpload(req.docTypeId)}
-                          className="text-xs font-mono text-muted-foreground hover:text-foreground underline underline-offset-2 touch-manipulation"
-                        >
-                          Reenviar novo arquivo
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleSelectRequirementToUpload(req.docTypeId)}
-                          className="inline-flex items-center gap-1 bg-[#9184d9] text-white px-3 py-1.5 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all touch-manipulation shadow-sm"
-                        >
-                          <Upload className="size-3.5" /> Anexar agora
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* Situação 2: Integrante sem exigência configurada para esta data */
-            <div className="border border-dashed border-line p-4 rounded-xl text-center space-y-2">
-              <StatusBadge status="no_requirement" label="Sem exigência configurada nesta data" />
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Você não possui documentos obrigatórios pendentes para este show. Se você tiver
-                despesas para reembolso (táxi, alimentação, etc.), pode anexar o comprovante abaixo.
-              </p>
-            </div>
-          )}
-
-          {/* Documentos extras enviados pelo integrante que não estão nas exigências obrigatórias */}
-          {memberDocuments.filter((d) => !memberRequirements.some((r) => r.docTypeId === d.docTypeId))
-            .length > 0 ? (
-            <div className="pt-3 border-t border-line space-y-2">
-              <div className="label-mono text-xs text-muted-foreground">
-                Outros comprovantes enviados por você:
-              </div>
-              <div className="space-y-1.5">
-                {memberDocuments
-                  .filter((d) => !memberRequirements.some((r) => r.docTypeId === d.docTypeId))
-                  .map((d) => {
-                    const docType = docTypes.find((t) => t.id === d.docTypeId);
-                    return (
-                      <div
-                        key={d.id}
-                        className="flex items-center justify-between text-xs p-2 rounded-lg bg-accent/20 border border-line"
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
-                          <span className="font-medium">{docType?.name ?? "Documento"}</span>
-                          <span className="text-muted-foreground truncate">
-                            ({d.fileName ?? "arquivo"})
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-mono text-muted-foreground shrink-0">
-                          {formatSubmissionDate(d.createdAt)}
-                        </span>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* ─────────────────────────────────────────────────────────────────
-          PASSO 3: FORMULÁRIO DE ANEXO E UPLOAD (FOTO OU ARQUIVO)
+          PASSO 2: FORMULÁRIO DE ANEXO E UPLOAD (FOTO OU ARQUIVO)
          ───────────────────────────────────────────────────────────────── */}
       <section ref={uploadFormRef} className="space-y-6">
         <form
@@ -535,9 +464,7 @@ function PublicUpload() {
         >
           <div>
             <h2 className="label-mono font-medium text-foreground">
-              {selectedMember
-                ? `2 · Anexar comprovante para ${selectedMember.name}`
-                : "2 · Anexar comprovante ou documento"}
+              {`2 · Anexar comprovante para ${activeMember.name}`}
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               Selecione o tipo, anexe a foto ou PDF e envie diretamente para a produção.
@@ -700,7 +627,7 @@ function PublicUpload() {
           {/* Botão de Envio (>= 48px Touch Target) */}
           <button
             type="submit"
-            disabled={upload.isPending || !memberId || !file || !docTypeId}
+            disabled={upload.isPending || !file || !docTypeId}
             className="w-full min-h-[48px] bg-[#9184d9] text-white py-3 px-4 font-mono text-xs uppercase tracking-wider font-semibold rounded-xl hover:bg-[#8072c9] disabled:opacity-40 disabled:cursor-not-allowed select-none touch-manipulation active:scale-[0.98] transition-all duration-120 shadow-sm flex items-center justify-center gap-2"
           >
             {upload.isPending ? (

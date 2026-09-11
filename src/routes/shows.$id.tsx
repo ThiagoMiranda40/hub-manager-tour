@@ -89,7 +89,7 @@ function ShowDetail() {
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
 
   // Feedback de cópia
-  const [copiedCastLink, setCopiedCastLink] = useState(false);
+  const [copiedMemberId, setCopiedMemberId] = useState<string | null>(null);
   const [copiedRiderLink, setCopiedRiderLink] = useState(false);
   const [copiedPixDocId, setCopiedPixDocId] = useState<string | null>(null);
 
@@ -130,7 +130,7 @@ function ShowDetail() {
           .maybeSingle(),
         supabase
           .from("cast_members")
-          .select("id, name, role, person_id")
+          .select("id, name, role, person_id, access_token")
           .eq("show_id", id)
           .order("name"),
         supabase
@@ -244,10 +244,10 @@ function ShowDetail() {
   );
 
   // URLs públicas
-  const castPublicUrl =
-    typeof window !== "undefined" && show
-      ? `${window.location.origin}/p/${show.public_token}`
-      : "";
+  const getMemberPublicUrl = (accessToken?: string | null) => {
+    if (typeof window === "undefined" || !accessToken) return "";
+    return `${window.location.origin}/p/${accessToken}`;
+  };
 
   const riderPublicUrl =
     typeof window !== "undefined" && show
@@ -644,12 +644,16 @@ function ShowDetail() {
     }
   }
 
-  function handleCopyCastLink() {
-    if (!castPublicUrl) return;
-    navigator.clipboard.writeText(castPublicUrl);
-    setCopiedCastLink(true);
-    toast.success("Link de envio do elenco copiado! Envie aos músicos e equipe.");
-    setTimeout(() => setCopiedCastLink(false), 2000);
+  function handleCopyMemberLink(member: { id: string; name: string; access_token?: string | null }) {
+    const url = getMemberPublicUrl(member.access_token);
+    if (!url) {
+      toast.error(`Integrante ${member.name} ainda não possui link individual gerado.`);
+      return;
+    }
+    navigator.clipboard.writeText(url);
+    setCopiedMemberId(member.id);
+    toast.success(`Link individual de ${member.name} copiado!`);
+    setTimeout(() => setCopiedMemberId(null), 2000);
   }
 
   function handleCopyRiderLink() {
@@ -1302,14 +1306,14 @@ function ShowDetail() {
                       Nenhum documento enviado ainda
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Compartilhe o link do elenco para que os integrantes enviem seus arquivos.
+                      Compartilhe os links individuais com os integrantes para que enviem seus arquivos.
                     </p>
                     <button
                       type="button"
-                      onClick={handleCopyCastLink}
+                      onClick={() => setActiveTab("quick_actions")}
                       className="mt-4 inline-flex items-center gap-1.5 bg-[#9184d9] text-white px-4 py-2 font-mono text-xs uppercase tracking-wider rounded-lg active:scale-[0.97]"
                     >
-                      <Copy className="size-3.5" /> Copiar Link do Elenco
+                      <Smartphone className="size-3.5" /> Ver Links do Elenco
                     </button>
                   </div>
                 ) : (
@@ -2090,7 +2094,7 @@ function ShowDetail() {
             <div className="mt-6 space-y-6">
               {/* Cards de Compartilhamento Claramente Diferenciados */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* 📱 Card: Link do Elenco */}
+                {/* 📱 Card: Links Individuais do Elenco (T-16 / RF-04) */}
                 <div className="border border-[#9184d9]/40 bg-[#9184d9]/5 p-6 rounded-2xl flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between">
@@ -2099,44 +2103,83 @@ function ShowDetail() {
                           <Smartphone className="size-5" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-base">Link do Elenco 📱</h3>
+                          <h3 className="font-semibold text-base">Links do Elenco 📱</h3>
                           <span className="text-[10px] font-mono uppercase tracking-wider text-[#9184d9]">
-                            Para Músicos e Equipe Técnica
+                            Links individuais por integrante
                           </span>
                         </div>
                       </div>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {cast.length} {cast.length === 1 ? "integrante" : "integrantes"}
+                      </span>
                     </div>
 
                     <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-                      Envie aos músicos e equipe para envio de passagens, vouchers e comprovantes de
-                      despesas com checklist personalizada em tempo real.
+                      Cada integrante possui seu próprio link individual e seguro. Ao abrir, ele cai
+                      diretamente em sua checklist pessoal, sem acesso aos dados dos demais.
                     </p>
 
-                    <div className="mt-4 border border-line bg-background/80 p-3 rounded-lg font-mono text-xs break-all select-all text-muted-foreground">
-                      {castPublicUrl}
-                    </div>
-                  </div>
+                    {cast.length === 0 ? (
+                      <div className="mt-4 border border-dashed border-line p-4 rounded-xl text-center">
+                        <p className="font-mono text-xs text-muted-foreground">
+                          Nenhum integrante escalado neste show ainda. Adicione pessoas na aba Elenco para gerar os links individuais.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-4 space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                        {cast.map((m) => {
+                          const roleObj = roles.find((r) => r.id === m.role);
+                          const memberRoleName = roleObj?.name ?? m.role;
+                          const memberUrl = getMemberPublicUrl(m.access_token);
+                          const isCopied = copiedMemberId === m.id;
 
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={handleCopyCastLink}
-                      className="flex-1 inline-flex items-center justify-center gap-2 bg-[#9184d9] text-white py-2.5 px-4 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all touch-manipulation shadow-sm"
-                    >
-                      <Copy className="size-4" />
-                      {copiedCastLink ? "Link Copiado!" : "Copiar Link do Elenco"}
-                    </button>
-                    {castPublicUrl ? (
-                      <a
-                        href={castPublicUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center border border-line p-2.5 rounded-lg hover:bg-accent active:scale-[0.97]"
-                        title="Abrir página pública do elenco em nova aba"
-                      >
-                        <ExternalLink className="size-4" />
-                      </a>
-                    ) : null}
+                          return (
+                            <div
+                              key={m.id}
+                              className="border border-line bg-background/80 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-colors hover:border-[#9184d9]/50"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm truncate text-foreground">
+                                    {m.name}
+                                  </span>
+                                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-full shrink-0">
+                                    {memberRoleName}
+                                  </span>
+                                </div>
+                                <div className="mt-1 font-mono text-[11px] text-muted-foreground/80 truncate">
+                                  {memberUrl || "Token pendente"}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyMemberLink(m)}
+                                  disabled={!m.access_token}
+                                  className="inline-flex items-center gap-1.5 bg-[#9184d9] text-white py-1.5 px-3 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all touch-manipulation shadow-sm disabled:opacity-40"
+                                  title={`Copiar link exclusivo de ${m.name}`}
+                                >
+                                  <Copy className="size-3.5" />
+                                  {isCopied ? "Copiado!" : "Copiar link"}
+                                </button>
+                                {memberUrl ? (
+                                  <a
+                                    href={memberUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center border border-line p-1.5 rounded-lg hover:bg-accent active:scale-[0.97] text-muted-foreground hover:text-foreground"
+                                    title={`Abrir página de ${m.name} em nova aba`}
+                                  >
+                                    <ExternalLink className="size-3.5" />
+                                  </a>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
