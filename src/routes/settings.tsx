@@ -22,9 +22,22 @@ import {
   Sun,
   PanelTop,
   PanelLeft,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigationMode } from "@/hooks/useNavigationMode";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { extractRiderFromPDF } from "@/lib/ai-extraction.functions";
+import { resizeFileForAI, type ExtractedRiderItem } from "@/lib/ai-extraction";
 import {
   RIDER_CATEGORIES,
   reorderRiderItems,
@@ -488,6 +501,112 @@ function RiderCatalogSection({
   const [newIsMandatory, setNewIsMandatory] = useState(true);
   const [newSpec, setNewSpec] = useState("");
 
+  // States para Importação de Rider PDF via IA (RF-10 / Função 2)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExtractingRider, setIsExtractingRider] = useState(false);
+  const [extractedRiderItems, setExtractedRiderItems] = useState<ExtractedRiderItem[] | null>(null);
+  const [selectedItemIndices, setSelectedItemIndices] = useState<Set<number>>(new Set());
+  const [riderFile, setRiderFile] = useState<File | null>(null);
+  const [riderFileError, setRiderFileError] = useState<string | null>(null);
+  const [isSavingImportedItems, setIsSavingImportedItems] = useState(false);
+
+  const extractRiderFn = useServerFn(extractRiderFromPDF);
+
+  function mapAiCategory(cat: string): RiderCategory {
+    switch (cat) {
+      case "stage_sound":
+        return "som";
+      case "lighting_fx":
+        return "iluminacao";
+      case "dressing_hospitality":
+        return "camarim";
+      case "structure_risers":
+        return "outros";
+      case "backline":
+      case "som":
+      case "iluminacao":
+      case "camarim":
+      case "outros":
+        return cat as RiderCategory;
+      default:
+        return "outros";
+    }
+  }
+
+  async function handleExtractRider(file: File) {
+    if (!selectedArtistId) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setRiderFileError("Por favor, selecione um arquivo em formato PDF.");
+      return;
+    }
+    setRiderFile(file);
+    setRiderFileError(null);
+    setIsExtractingRider(true);
+    try {
+      const { base64, mimeType } = await resizeFileForAI(file);
+      const res = await extractRiderFn({
+        data: {
+          artistId: selectedArtistId,
+          fileBase64: base64,
+          mimeType,
+        },
+      });
+
+      if (!res.success || !res.items) {
+        throw new Error(res.error || "Falha ao extrair itens do PDF.");
+      }
+
+      setExtractedRiderItems(res.items);
+      setSelectedItemIndices(new Set(res.items.map((_: ExtractedRiderItem, idx: number) => idx)));
+      toast.success(`${res.items.length} itens identificados no rider técnico!`);
+    } catch (err: any) {
+      setRiderFileError(err.message || "Erro ao processar PDF do rider.");
+      toast.error(err.message || "Erro ao processar PDF do rider.");
+    } finally {
+      setIsExtractingRider(false);
+    }
+  }
+
+  async function handleSaveExtractedItems() {
+    if (!selectedArtistId || !extractedRiderItems) return;
+    const selected = extractedRiderItems.filter((_, idx) => selectedItemIndices.has(idx));
+    if (selected.length === 0) {
+      toast.error("Selecione ao menos um item para importar.");
+      return;
+    }
+
+    setIsSavingImportedItems(true);
+    try {
+      const currentItemCount = items.length;
+      const recordsToInsert = selected.map((item, index) => ({
+        user_id: session.user.id,
+        artist_id: selectedArtistId,
+        category: mapAiCategory(item.category),
+        item_name: item.itemName,
+        specification: item.specification,
+        quantity: item.quantity,
+        is_mandatory: item.isMandatory,
+        position: currentItemCount + index,
+      }));
+
+      const { error } = await supabase
+        .from("artist_rider_template_items")
+        .insert(recordsToInsert);
+
+      if (error) throw error;
+
+      toast.success(`${selected.length} itens adicionados ao rider padrão com sucesso!`);
+      setIsImportModalOpen(false);
+      setExtractedRiderItems(null);
+      setRiderFile(null);
+      refreshRider();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao salvar itens importados.");
+    } finally {
+      setIsSavingImportedItems(false);
+    }
+  }
+
   // Query dos artistas cadastrados
   const { data: artists = [], isLoading: loadingArtists } = useQuery({
     queryKey: ["settings-artists"],
@@ -659,21 +778,35 @@ function RiderCatalogSection({
         </div>
 
         {selectedArtistId ? (
-          <button
-            type="button"
-            onClick={() => setIsAdding((v) => !v)}
-            className="inline-flex items-center gap-2 bg-[#9184d9] text-white px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold rounded-xl hover:bg-[#8072c9] active:scale-[0.97] transition-all duration-120 shadow-sm"
-          >
-            {isAdding ? (
-              <>
-                <X className="size-4" /> Cancelar
-              </>
-            ) : (
-              <>
-                <Plus className="size-4" /> Novo Item de Rider
-              </>
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsImportModalOpen(true);
+                setExtractedRiderItems(null);
+                setRiderFile(null);
+                setRiderFileError(null);
+              }}
+              className="inline-flex items-center gap-2 border border-[#9184d9]/40 bg-[#9184d9]/10 text-[#9184d9] px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold rounded-xl hover:bg-[#9184d9]/20 active:scale-[0.97] transition-all duration-120 shadow-sm cursor-pointer"
+            >
+              <Sparkles className="size-4" /> Importar Rider (PDF)
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAdding((v) => !v)}
+              className="inline-flex items-center gap-2 bg-[#9184d9] text-white px-4 py-2.5 font-mono text-xs uppercase tracking-wider font-semibold rounded-xl hover:bg-[#8072c9] active:scale-[0.97] transition-all duration-120 shadow-sm cursor-pointer"
+            >
+              {isAdding ? (
+                <>
+                  <X className="size-4" /> Cancelar
+                </>
+              ) : (
+                <>
+                  <Plus className="size-4" /> Novo Item de Rider
+                </>
+              )}
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -1006,6 +1139,203 @@ function RiderCatalogSection({
           </div>
         </div>
       )}
+
+      {/* Modal de Importação de Rider PDF via IA (RF-10 / Função 2) */}
+      <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-6 overflow-hidden">
+          <DialogHeader className="space-y-1 text-left">
+            <div className="flex items-center gap-2 text-[#9184d9]">
+              <Sparkles className="size-5" />
+              <DialogTitle className="text-lg font-semibold">
+                Importar Rider Técnico (PDF) · {selectedArtist?.name}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Selecione o arquivo PDF do rider técnico do artista. A inteligência artificial identificará os equipamentos e necessidades nas categorias oficiais para você revisar antes de salvar.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
+            {/* Dropzone / Seletor de Arquivo */}
+            {!extractedRiderItems && (
+              <div className="border-2 border-dashed border-line hover:border-[#9184d9]/60 rounded-xl p-8 text-center bg-card/50 transition-colors">
+                <input
+                  type="file"
+                  id="rider-pdf-input"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleExtractRider(file);
+                  }}
+                  disabled={isExtractingRider}
+                />
+                <label
+                  htmlFor="rider-pdf-input"
+                  className={cn(
+                    "cursor-pointer flex flex-col items-center gap-3",
+                    isExtractingRider && "opacity-50 pointer-events-none"
+                  )}
+                >
+                  <div className="size-12 rounded-full bg-[#9184d9]/10 text-[#9184d9] flex items-center justify-center">
+                    {isExtractingRider ? (
+                      <Loader2 className="size-6 animate-spin" />
+                    ) : (
+                      <Upload className="size-6" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-mono text-xs uppercase tracking-wider font-semibold text-foreground">
+                      {isExtractingRider
+                        ? "Analisando rider técnico com IA..."
+                        : riderFile
+                        ? riderFile.name
+                        : "Clique para selecionar o PDF do rider"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Suporta documentos técnicos e riders em formato PDF (máx. 20 MB)
+                    </p>
+                  </div>
+                </label>
+
+                {riderFileError && (
+                  <p className="mt-3 text-xs text-destructive font-mono bg-destructive/10 py-1.5 px-3 rounded-lg">
+                    {riderFileError}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Lista de Itens Extraídos para Revisão */}
+            {extractedRiderItems && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-muted/40 p-3 rounded-xl border border-line">
+                  <div className="text-xs font-mono">
+                    <span className="text-foreground font-semibold">{selectedItemIndices.size}</span> de{" "}
+                    <span className="text-muted-foreground">{extractedRiderItems.length} itens selecionados</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedItemIndices(new Set(extractedRiderItems.map((_, i) => i)))}
+                      className="text-[11px] font-mono text-[#9184d9] hover:underline cursor-pointer"
+                    >
+                      Selecionar todos
+                    </button>
+                    <span className="text-muted-foreground text-xs">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedItemIndices(new Set())}
+                      className="text-[11px] font-mono text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      Desmarcar todos
+                    </button>
+                    <span className="text-muted-foreground text-xs">·</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExtractedRiderItems(null);
+                        setRiderFile(null);
+                      }}
+                      className="text-[11px] font-mono text-muted-foreground hover:text-destructive cursor-pointer"
+                    >
+                      Trocar PDF
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                  {extractedRiderItems.map((item, idx) => {
+                    const isSelected = selectedItemIndices.has(idx);
+                    const mappedCat = mapAiCategory(item.category);
+                    const catLabel = RIDER_CATEGORIES.find((c) => c.id === mappedCat)?.label ?? mappedCat;
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          const next = new Set(selectedItemIndices);
+                          if (isSelected) next.delete(idx);
+                          else next.add(idx);
+                          setSelectedItemIndices(next);
+                        }}
+                        className={cn(
+                          "p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none",
+                          isSelected
+                            ? "border-[#9184d9]/50 bg-[#9184d9]/5"
+                            : "border-line bg-card/40 opacity-60 hover:opacity-100"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="mt-1 size-4 rounded accent-[#9184d9] cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-foreground">
+                              {item.itemName}
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-[#9184d9]/30 bg-[#9184d9]/10 text-[#9184d9] font-medium">
+                              {catLabel}
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              Qtd: {item.quantity}
+                            </span>
+                            {item.isMandatory ? (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                                Obrigatório
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                                Opcional
+                              </span>
+                            )}
+                          </div>
+                          {item.specification && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {item.specification}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-line mt-2">
+            <button
+              type="button"
+              onClick={() => setIsImportModalOpen(false)}
+              className="px-4 py-2 font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            {extractedRiderItems && (
+              <button
+                type="button"
+                disabled={selectedItemIndices.size === 0 || isSavingImportedItems}
+                onClick={() => void handleSaveExtractedItems()}
+                className="inline-flex items-center gap-2 bg-[#9184d9] text-white px-4 py-2 font-mono text-xs uppercase tracking-wider font-semibold rounded-xl hover:bg-[#8072c9] disabled:opacity-50 transition-all cursor-pointer shadow-sm"
+              >
+                {isSavingImportedItems ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" /> Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-4" /> Adicionar {selectedItemIndices.size} Itens ao Rider
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

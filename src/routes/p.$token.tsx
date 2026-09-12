@@ -9,11 +9,15 @@ import {
   AlertTriangle,
   Check,
   Sparkles,
+  X,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicShow, submitDocument } from "@/lib/public-show.functions";
+import { analyzeDocumentWithAI } from "@/lib/ai-extraction.functions";
+import { resizeFileForAI, type ReceiptAnalysisResult } from "@/lib/ai-extraction";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -95,6 +99,7 @@ function PublicUpload() {
   const qc = useQueryClient();
   const fetchShow = useServerFn(getPublicShow);
   const send = useServerFn(submitDocument);
+  const analyzeAI = useServerFn(analyzeDocumentWithAI);
 
   const uploadFormRef = useRef<HTMLDivElement>(null);
 
@@ -104,6 +109,11 @@ function PublicUpload() {
   const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
   const [isReimbursement, setIsReimbursement] = useState(false);
+
+  // Estados da análise inteligente por IA (Gemini 2.5 Flash)
+  const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<ReceiptAnalysisResult | null>(null);
+  const [aiDismissed, setAiDismissed] = useState(false);
 
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -167,6 +177,65 @@ function PublicUpload() {
     }
   }
 
+  // Análise com IA no momento da seleção do arquivo (RF-10 / Adendo 11/09/2026)
+  async function handleFileChange(selectedFile: File | null) {
+    setFormError(null);
+    setDoneMessage(null);
+    setAiSuggestion(null);
+    setAiDismissed(false);
+    setFile(selectedFile);
+
+    if (!selectedFile) return;
+
+    const ext = selectedFile.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!ALLOWED_EXTENSIONS.includes(ext)) return;
+
+    try {
+      setIsAnalyzingAI(true);
+      const { base64, mimeType } = await resizeFileForAI(selectedFile);
+
+      const res = await analyzeAI({
+        data: {
+          token,
+          fileBase64: base64,
+          mimeType,
+          allowedDocTypes: docTypes.map((t) => ({
+            id: t.id,
+            name: t.name,
+            reimbursable: t.reimbursable,
+          })),
+        },
+      });
+
+      if (res.success && res.data) {
+        setAiSuggestion(res.data);
+      } else if (res.rateLimited) {
+        // Fallback silencioso conforme RF-10: não exibe erro, segue normalmente no preenchimento manual
+        console.info("[AI Extraction] Rate limit de 15 análises atingido; usando formulário manual.");
+      }
+    } catch (err) {
+      console.warn("[AI Extraction] Falha silenciosa na análise com IA:", err);
+    } finally {
+      setIsAnalyzingAI(false);
+    }
+  }
+
+  // Aplicação interativa das sugestões da IA com confirmação prévia
+  function applyAiSuggestions(suggestion: ReceiptAnalysisResult) {
+    if (suggestion.docTypeId) {
+      setDocTypeId(suggestion.docTypeId);
+    }
+    setIsReimbursement(suggestion.isReimbursement);
+    if (suggestion.amount !== null && suggestion.amount > 0) {
+      setAmount(suggestion.amount.toFixed(2).replace(".", ","));
+    }
+    if (suggestion.note) {
+      setNote(suggestion.note);
+    }
+    setAiDismissed(true);
+    toast.success("Sugestões da IA aplicadas! Revise antes de enviar.");
+  }
+
   // Mutação de upload com validações de BVA (tamanho e valor de reembolso)
   const upload = useMutation({
     mutationFn: async () => {
@@ -219,6 +288,8 @@ function PublicUpload() {
       setNote("");
       setAmount("");
       setFormError(null);
+      setAiSuggestion(null);
+      setAiDismissed(false);
 
       // Invalida a query para atualizar a checklist em tempo real
       qc.invalidateQueries({ queryKey: ["public-show", token] });
@@ -531,8 +602,7 @@ function PublicUpload() {
                 accept="image/jpeg,image/png,image/webp,application/pdf"
                 className="sr-only"
                 onChange={(e) => {
-                  setFormError(null);
-                  setFile(e.target.files?.[0] ?? null);
+                  handleFileChange(e.target.files?.[0] ?? null);
                 }}
               />
 
@@ -569,6 +639,138 @@ function PublicUpload() {
                   : "JPG, PNG, WEBP ou PDF · até 20 MB"}
               </span>
             </label>
+
+            {/* Estado de Carregamento da IA com opção de pular */}
+            {isAnalyzingAI ? (
+              <div className="mt-3 border border-[#9184d9]/40 bg-[#9184d9]/5 p-4 rounded-xl flex items-center justify-between gap-3 animate-pulse">
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="size-4 text-[#9184d9] animate-spin" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">
+                      Analisando comprovante com IA (Gemini)...
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Identificando tipo de documento, despesas e valores.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAnalyzingAI(false)}
+                  className="text-[11px] font-mono text-muted-foreground hover:text-foreground underline underline-offset-2 touch-manipulation"
+                >
+                  Pular
+                </button>
+              </div>
+            ) : null}
+
+            {/* Card de Sugestão Inteligente (RF-10 / Adendo 11/09/2026) */}
+            {aiSuggestion && !aiDismissed ? (
+              <div className="mt-3 border border-[#9184d9]/40 bg-[#9184d9]/10 p-4 rounded-xl space-y-3 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="size-4 text-[#9184d9]" />
+                    <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[#9184d9] dark:text-[#b4a9f0]">
+                      Sugestão Inteligente (Gemini)
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#9184d9]/20 text-[#9184d9] dark:text-[#b4a9f0]">
+                      {Math.round(aiSuggestion.confidence * 100)}% confiança
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAiDismissed(true)}
+                    className="text-xs text-muted-foreground hover:text-foreground p-1 rounded hover:bg-background/40 touch-manipulation"
+                    title="Dispensar sugestão"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+
+                {/* Alerta de moeda não-BRL (RF-10 / Adendo 11/09/2026) */}
+                {!aiSuggestion.isBrl ? (
+                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs">
+                    <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Atenção para a moeda detectada:</p>
+                      <p className="text-[11px] mt-0.5">{aiSuggestion.currencyWarning}</p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Alerta de Reembolso sem valor legível (RF-10 / Adendo 11/09/2026) */}
+                {aiSuggestion.isReimbursement && aiSuggestion.amount === null ? (
+                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs">
+                    <Clock className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Comprovante de reembolso sem valor identificado:</p>
+                      <p className="text-[11px] mt-0.5">
+                        Não foi possível ler o valor com precisão no documento. Por favor, digite o valor no campo abaixo.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Comparação lado a lado (Atual vs Sugerido) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                  <div className="p-2.5 rounded-lg bg-background/80 border border-line space-y-1">
+                    <span className="label-mono text-[10px] text-muted-foreground block">Tipo de Documento</span>
+                    <p className="font-medium text-foreground">
+                      {aiSuggestion.docTypeName ?? "Não identificado"}
+                    </p>
+                    {aiSuggestion.docTypeId && docTypeId !== aiSuggestion.docTypeId ? (
+                      <button
+                        type="button"
+                        onClick={() => setDocTypeId(aiSuggestion.docTypeId!)}
+                        className="text-[11px] font-mono text-[#9184d9] hover:underline touch-manipulation"
+                      >
+                        Aplicar este tipo
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-background/80 border border-line space-y-1">
+                    <span className="label-mono text-[10px] text-muted-foreground block">
+                      {aiSuggestion.isReimbursement ? "Reembolso e Valor" : "Finalidade"}
+                    </span>
+                    <p className="font-medium text-foreground">
+                      {aiSuggestion.isReimbursement
+                        ? aiSuggestion.amount !== null
+                          ? `Reembolso · R$ ${aiSuggestion.amount.toFixed(2).replace(".", ",")}`
+                          : "Reembolso · Valor manual necessário"
+                        : "Documento de turnê (sem reembolso)"}
+                    </p>
+                    {aiSuggestion.note ? (
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {aiSuggestion.note}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#9184d9]/20">
+                  <span className="text-[11px] text-muted-foreground">
+                    Revise as sugestões antes de confirmar o envio.
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAiDismissed(true)}
+                      className="px-3 py-1.5 text-xs font-mono text-muted-foreground hover:text-foreground rounded-lg border border-line hover:bg-background transition-colors touch-manipulation"
+                    >
+                      Dispensar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyAiSuggestions(aiSuggestion)}
+                      className="inline-flex items-center gap-1.5 bg-[#9184d9] text-white px-3 py-1.5 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all touch-manipulation shadow-sm"
+                    >
+                      <Check className="size-3.5" /> Aplicar Sugestões
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* Opção de Reembolso & Campo de Valor (RF-04 / TC-04.2) */}
