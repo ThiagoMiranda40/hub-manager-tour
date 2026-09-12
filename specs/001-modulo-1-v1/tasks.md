@@ -216,7 +216,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
   - `src/routes/p.$token.tsx`
   - `src/routes/settings.tsx`
 - **Fazer:**
-  1. Implementar helper `ai-extraction.ts` conectado a modelo multimodal (Gemini 2.5 Flash), incluindo Server Function dedicada.
+  1. Implementar helper `ai-extraction.ts` conectado a modelo multimodal (Gemini 3.6 Flash), incluindo Server Function dedicada.
   2. Função 1 (upload-time, em p.$token.tsx): ao anexar arquivo, acionar a IA para identificar tipo de documento (restrito aos document_types já cadastrados), pré-preencher campos, perguntar sobre reembolso, extrair valor se presente, e solicitar preenchimento manual do valor se ausente e for reembolso. Tudo revisável pelo integrante antes de confirmar o envio.
   3. Implementar limite de taxa por cast_member/show (coluna ai_analysis_count, incremento atômico, teto de 15), com fallback silencioso para o formulário manual ao atingir o limite.
   4. Função 2 (settings.tsx, inalterada): Importar PDF de rider técnico legado e transformá-lo em checklist estruturado para revisão em lote do produtor.

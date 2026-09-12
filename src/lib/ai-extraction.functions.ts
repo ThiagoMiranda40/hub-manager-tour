@@ -205,6 +205,9 @@ REGRAS:
               },
               required: ["is_reimbursement", "confidence"],
             },
+            thinkingConfig: {
+              thinkingLevel: "minimal",
+            },
           },
         }),
       });
@@ -219,6 +222,16 @@ REGRAS:
       }
 
       const jsonResult = (await response.json()) as any;
+      const usage = jsonResult?.usageMetadata;
+      if (usage) {
+        console.info("[AI Usage Metadata]", {
+          promptTokens: usage.promptTokenCount,
+          candidatesTokens: usage.candidatesTokenCount,
+          thoughtsTokens: usage.thoughtsTokenCount ?? usage.thinkingTokenCount ?? 0,
+          totalTokens: usage.totalTokenCount,
+        });
+      }
+
       const rawText = jsonResult?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) {
         console.error("[AI Extraction Server Error] API do Gemini retornou sem texto/candidato:", JSON.stringify(jsonResult));
@@ -407,6 +420,9 @@ Para cada item extraia:
               },
               required: ["items"],
             },
+            thinkingConfig: {
+              thinkingLevel: "minimal",
+            },
           },
         }),
       });
@@ -421,6 +437,16 @@ Para cada item extraia:
       }
 
       const jsonResult = (await response.json()) as any;
+      const usage = jsonResult?.usageMetadata;
+      if (usage) {
+        console.info("[Rider AI Usage Metadata]", {
+          promptTokens: usage.promptTokenCount,
+          candidatesTokens: usage.candidatesTokenCount,
+          thoughtsTokens: usage.thoughtsTokenCount ?? usage.thinkingTokenCount ?? 0,
+          totalTokens: usage.totalTokenCount,
+        });
+      }
+
       const rawText = jsonResult?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) {
         return {
