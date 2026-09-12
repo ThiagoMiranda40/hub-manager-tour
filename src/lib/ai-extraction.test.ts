@@ -7,8 +7,8 @@ import {
 } from "./ai-extraction";
 
 describe("T-12: Extração Inteligente com IA — Helpers e Validações", () => {
-  it("TC-12.A1: Modelo oficial configurado como Gemini 2.5 Flash", () => {
-    expect(GEMINI_MODEL).toBe("gemini-2.5-flash");
+  it("TC-12.A1: Modelo oficial configurado como Gemini 3.6 Flash", () => {
+    expect(GEMINI_MODEL).toBe("gemini-3.6-flash");
   });
 
   describe("Validação e Detecção de Moeda (RF-10 / Adendo 11/09/2026)", () => {

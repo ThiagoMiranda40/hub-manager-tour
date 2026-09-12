@@ -1,10 +1,10 @@
 /**
- * Helper central de Extração Inteligente com IA (Gemini 2.5 Flash)
+ * Helper central de Extração Inteligente com IA (Gemini 3.6 Flash)
  * Requisitos: RF-10 / Tarefa T-12
  */
 
-// Modelo multimodal padrão centralizado
-export const GEMINI_MODEL = "gemini-2.5-flash";
+// Modelo de IA padrão para extração multimodal (texto, imagens e PDF)
+export const GEMINI_MODEL = "gemini-3.6-flash";
 
 // Tipos de dados
 export interface CurrencyValidationResult {

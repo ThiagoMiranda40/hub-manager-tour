@@ -110,7 +110,7 @@ function PublicUpload() {
   const [amount, setAmount] = useState("");
   const [isReimbursement, setIsReimbursement] = useState(false);
 
-  // Estados da análise inteligente por IA (Gemini 2.5 Flash)
+  // Estados da análise inteligente por IA (Gemini 3.6 Flash)
   const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<ReceiptAnalysisResult | null>(null);
   const [aiDismissed, setAiDismissed] = useState(false);
