@@ -28,25 +28,6 @@ interface GeminiRiderResponse {
   }>;
 }
 
-const riderRateLimits = new Map<string, { count: number; resetAt: number }>();
-
-function checkUserRiderRateLimit(userId: string, maxPerDay = 20): boolean {
-  const now = Date.now();
-  const entry = riderRateLimits.get(userId);
-
-  if (!entry || now > entry.resetAt) {
-    riderRateLimits.set(userId, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
-    return true;
-  }
-
-  if (entry.count >= maxPerDay) {
-    return false;
-  }
-
-  entry.count += 1;
-  return true;
-}
-
 /**
  * Função 1: Análise inteligente no momento do upload pelo integrante (/p/$token)
  * - Rate limiting atômico por integrante (teto de 15 chamadas)
@@ -329,12 +310,24 @@ export const extractRiderFromPDF = createServerFn({ method: "POST" })
       };
     }
 
-    // 3. Limite de taxa básico por usuário/dia para importação de rider
-    if (!checkUserRiderRateLimit(user.id, 20)) {
-      return {
-        success: false,
-        error: "Limite de análises de rider atingido para hoje (máximo de 20 por usuário). Tente novamente amanhã.",
-      };
+    // 3. Limite de taxa atômico no banco de dados por usuário/dia para importação de rider
+    try {
+      const { data: rpcRes, error: rpcErr } = await (supabaseAdmin as any).rpc(
+        "increment_rider_ai_usage",
+        {
+          p_user_id: user.id,
+          p_max_limit: 20,
+        }
+      );
+
+      if (!rpcErr && rpcRes?.allowed === false) {
+        return {
+          success: false,
+          error: "Limite de importações de rider por IA atingido para hoje (máximo de 20). Tente novamente amanhã.",
+        };
+      }
+    } catch {
+      // Fallback gracioso se a migration ainda não tiver sido rodada no banco
     }
 
     // 4. Validação de chave de API
