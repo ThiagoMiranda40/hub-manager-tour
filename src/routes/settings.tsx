@@ -543,12 +543,19 @@ function RiderCatalogSection({
     setRiderFileError(null);
     setIsExtractingRider(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        throw new Error("Sessão não identificada. Por favor, faça login novamente.");
+      }
+
       const { base64, mimeType } = await resizeFileForAI(file);
       const res = await extractRiderFn({
         data: {
           artistId: selectedArtistId,
           fileBase64: base64,
           mimeType,
+          authToken: token,
         },
       });
 

@@ -28,10 +28,29 @@ interface GeminiRiderResponse {
   }>;
 }
 
+const riderRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function checkUserRiderRateLimit(userId: string, maxPerDay = 20): boolean {
+  const now = Date.now();
+  const entry = riderRateLimits.get(userId);
+
+  if (!entry || now > entry.resetAt) {
+    riderRateLimits.set(userId, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
+    return true;
+  }
+
+  if (entry.count >= maxPerDay) {
+    return false;
+  }
+
+  entry.count += 1;
+  return true;
+}
+
 /**
  * Função 1: Análise inteligente no momento do upload pelo integrante (/p/$token)
  * - Rate limiting atômico por integrante (teto de 15 chamadas)
- * - Classificação restrita aos document_types cadastrados
+ * - Classificação restrita aos document_types cadastrados (buscados diretamente no banco)
  * - Detecção de moeda e suporte a reembolso
  */
 export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
@@ -41,13 +60,6 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
         token: z.string().min(4),
         fileBase64: z.string().min(10),
         mimeType: z.string(),
-        allowedDocTypes: z.array(
-          z.object({
-            id: z.string(),
-            name: z.string(),
-            reimbursable: z.boolean(),
-          })
-        ),
       })
       .parse(data)
   )
@@ -109,7 +121,40 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
       }
     }
 
-    // 3. Verificação segura da API Key no servidor (sem expor ao cliente, sem fallback hardcoded)
+    // 3. Busca show e tipos de documento diretamente no banco (nunca confia em lista enviada pelo cliente)
+    const { data: show, error: showErr } = await (supabaseAdmin as any)
+      .from("shows")
+      .select("id, user_id")
+      .eq("id", member.show_id)
+      .maybeSingle();
+
+    if (showErr || !show) {
+      return {
+        success: false,
+        error: "Show não localizado para este integrante.",
+      };
+    }
+
+    const { data: dbDocTypes, error: docTypesErr } = await (supabaseAdmin as any)
+      .from("document_types")
+      .select("id, name, reimbursable, position")
+      .eq("user_id", show.user_id)
+      .order("position");
+
+    const allowedDocTypes = (dbDocTypes ?? []).map((dt: any) => ({
+      id: dt.id as string,
+      name: dt.name as string,
+      reimbursable: Boolean(dt.reimbursable),
+    }));
+
+    if (allowedDocTypes.length === 0) {
+      return {
+        success: false,
+        error: "Nenhum tipo de documento configurado para este show.",
+      };
+    }
+
+    // 4. Verificação segura da API Key no servidor (sem expor ao cliente, sem fallback hardcoded)
     const apiKey = process.env['GEMINI_API_KEY'];
     if (!apiKey) {
       console.warn("[AI Extraction] GEMINI_API_KEY não configurada no ambiente do servidor.");
@@ -119,9 +164,9 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
       };
     }
 
-    // 4. Monta o prompt com os tipos de documento válidos do show
-    const docTypesGuide = data.allowedDocTypes
-      .map((t) => `- ID "${t.id}": "${t.name}" (reembolsável: ${t.reimbursable ? "sim" : "não"})`)
+    // 5. Monta o prompt com os tipos de documento válidos do show
+    const docTypesGuide = allowedDocTypes
+      .map((t: any) => `- ID "${t.id}": "${t.name}" (reembolsável: ${t.reimbursable ? "sim" : "não"})`)
       .join("\n");
 
     const promptText = `Você é o assistente inteligente de produção de turnês musicais do Hub Manager Tour.
@@ -198,7 +243,7 @@ REGRAS:
       const parsed: GeminiReceiptResponse = JSON.parse(rawText);
 
       // Validação estrita do ID de documento retornado contra a lista permitida
-      const matchingType = data.allowedDocTypes.find((t) => t.id === parsed.doc_type_id);
+      const matchingType = allowedDocTypes.find((t: any) => t.id === parsed.doc_type_id);
       const validatedDocTypeId = matchingType ? matchingType.id : null;
       const validatedDocTypeName = matchingType ? matchingType.name : null;
 
@@ -244,11 +289,55 @@ export const extractRiderFromPDF = createServerFn({ method: "POST" })
         artistId: z.string().uuid(),
         fileBase64: z.string().min(10),
         mimeType: z.string(),
+        authToken: z.string().min(10).optional(),
       })
       .parse(data)
   )
   .handler(async ({ data }) => {
-    // 1. Validação de chave de API
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. Validação de sessão do produtor ANTES de qualquer processamento
+    const token = data.authToken;
+    if (!token) {
+      return {
+        success: false,
+        error: "Acesso não autorizado. Sessão inválida ou ausente.",
+      };
+    }
+
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authErr || !authData?.user) {
+      return {
+        success: false,
+        error: "Acesso não autorizado. Sessão inválida ou expirada.",
+      };
+    }
+    const user = authData.user;
+
+    // 2. Confirmação de que o artistId pertence ao user_id da sessão autenticada
+    const { data: artist, error: artistErr } = await (supabaseAdmin as any)
+      .from("artists")
+      .select("id, user_id")
+      .eq("id", data.artistId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (artistErr || !artist) {
+      return {
+        success: false,
+        error: "Acesso não autorizado ou artista não localizado.",
+      };
+    }
+
+    // 3. Limite de taxa básico por usuário/dia para importação de rider
+    if (!checkUserRiderRateLimit(user.id, 20)) {
+      return {
+        success: false,
+        error: "Limite de análises de rider atingido para hoje (máximo de 20 por usuário). Tente novamente amanhã.",
+      };
+    }
+
+    // 4. Validação de chave de API
     const apiKey = process.env['GEMINI_API_KEY'];
     if (!apiKey) {
       return {

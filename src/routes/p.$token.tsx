@@ -199,11 +199,6 @@ function PublicUpload() {
           token,
           fileBase64: base64,
           mimeType,
-          allowedDocTypes: docTypes.map((t) => ({
-            id: t.id,
-            name: t.name,
-            reimbursable: t.reimbursable,
-          })),
         },
       });
 
