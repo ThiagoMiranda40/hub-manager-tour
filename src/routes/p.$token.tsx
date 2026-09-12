@@ -207,9 +207,13 @@ function PublicUpload() {
       } else if (res.rateLimited) {
         // Fallback silencioso conforme RF-10: não exibe erro, segue normalmente no preenchimento manual
         console.info("[AI Extraction] Rate limit de 15 análises atingido; usando formulário manual.");
+      } else {
+        console.warn("[AI Extraction] Falha ao analisar documento:", res.error);
+        toast.info(res.error || "Não foi possível analisar o documento automaticamente. Preencha manualmente.");
       }
     } catch (err) {
       console.warn("[AI Extraction] Falha silenciosa na análise com IA:", err);
+      toast.info("Não foi possível analisar o documento automaticamente. Preencha manualmente.");
     } finally {
       setIsAnalyzingAI(false);
     }

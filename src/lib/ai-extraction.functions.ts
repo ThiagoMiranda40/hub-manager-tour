@@ -55,6 +55,7 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (memberErr || !member) {
+      console.error("[AI Extraction Server Error] Integrante não localizado ou token inválido:", memberErr?.message || "Registro não encontrado");
       return {
         success: false,
         error: "Integrante não localizado ou token inválido.",
@@ -77,6 +78,7 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
       if (!rpcErr && rpcRes && typeof rpcRes === "object") {
         const allowed = (rpcRes as { allowed?: boolean }).allowed;
         if (allowed === false) {
+          console.warn("[AI Extraction Server] Rate limit atingido para integrante:", memberId);
           return {
             success: false,
             rateLimited: true,
@@ -85,6 +87,7 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
         }
       } else if (currentCount >= 15) {
         // Fallback se a RPC ainda não foi executada no banco
+        console.warn("[AI Extraction Server] Rate limit atingido para integrante (fallback contagem):", memberId, currentCount);
         return {
           success: false,
           rateLimited: true,
@@ -94,6 +97,7 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
     } catch {
       // Se houver qualquer falha no rate limiter, verifica campo direto
       if (currentCount >= 15) {
+        console.warn("[AI Extraction Server] Rate limit atingido para integrante (catch fallback):", memberId, currentCount);
         return {
           success: false,
           rateLimited: true,
@@ -110,6 +114,7 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (showErr || !show) {
+      console.error("[AI Extraction Server Error] Show não localizado para integrante:", member.show_id, showErr?.message);
       return {
         success: false,
         error: "Show não localizado para este integrante.",
@@ -129,6 +134,7 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
     }));
 
     if (allowedDocTypes.length === 0) {
+      console.error("[AI Extraction Server Error] Nenhum tipo de documento configurado no show:", show.id, "produtor:", show.user_id, docTypesErr?.message);
       return {
         success: false,
         error: "Nenhum tipo de documento configurado para este show.",
@@ -138,7 +144,7 @@ export const analyzeDocumentWithAI = createServerFn({ method: "POST" })
     // 4. Verificação segura da API Key no servidor (sem expor ao cliente, sem fallback hardcoded)
     const apiKey = process.env['GEMINI_API_KEY'];
     if (!apiKey) {
-      console.warn("[AI Extraction] GEMINI_API_KEY não configurada no ambiente do servidor.");
+      console.error("[AI Extraction Server Error] GEMINI_API_KEY não configurada no ambiente do servidor.");
       return {
         success: false,
         error: "Serviço de análise inteligente não disponível.",
@@ -205,7 +211,7 @@ REGRAS:
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error("[AI Extraction Error]", response.status, errText);
+        console.error("[AI Extraction Server Error] Gemini API respondeu com status HTTP", response.status, ":", errText);
         return {
           success: false,
           error: "Falha na análise inteligente do documento.",
@@ -215,6 +221,7 @@ REGRAS:
       const jsonResult = (await response.json()) as any;
       const rawText = jsonResult?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) {
+        console.error("[AI Extraction Server Error] API do Gemini retornou sem texto/candidato:", JSON.stringify(jsonResult));
         return {
           success: false,
           error: "Não foi possível extrair dados do comprovante.",
@@ -250,7 +257,7 @@ REGRAS:
         data: result,
       };
     } catch (err: any) {
-      console.error("[AI Extraction Exception]", err?.message);
+      console.error("[AI Extraction Server Exception] Exceção durante a chamada ao Gemini:", err?.stack || err?.message || err);
       return {
         success: false,
         error: "Erro inesperado na análise inteligente.",
