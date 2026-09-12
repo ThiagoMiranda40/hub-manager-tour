@@ -37,7 +37,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { extractRiderFromPDF } from "@/lib/ai-extraction.functions";
-import { resizeFileForAI, type ExtractedRiderItem } from "@/lib/ai-extraction";
+import {
+  resizeFileForAI,
+  mapAiCategoryToSystemCategory,
+  type ExtractedRiderItem,
+} from "@/lib/ai-extraction";
 import {
   RIDER_CATEGORIES,
   reorderRiderItems,
@@ -512,27 +516,6 @@ function RiderCatalogSection({
 
   const extractRiderFn = useServerFn(extractRiderFromPDF);
 
-  function mapAiCategory(cat: string): RiderCategory {
-    switch (cat) {
-      case "stage_sound":
-        return "som";
-      case "lighting_fx":
-        return "iluminacao";
-      case "dressing_hospitality":
-        return "camarim";
-      case "structure_risers":
-        return "outros";
-      case "backline":
-      case "som":
-      case "iluminacao":
-      case "camarim":
-      case "outros":
-        return cat as RiderCategory;
-      default:
-        return "outros";
-    }
-  }
-
   async function handleExtractRider(file: File) {
     if (!selectedArtistId) return;
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
@@ -588,7 +571,7 @@ function RiderCatalogSection({
       const recordsToInsert = selected.map((item, index) => ({
         user_id: session.user.id,
         artist_id: selectedArtistId,
-        category: mapAiCategory(item.category),
+        category: mapAiCategoryToSystemCategory(item.category),
         item_name: item.itemName,
         specification: item.specification,
         quantity: item.quantity,
@@ -1254,7 +1237,7 @@ function RiderCatalogSection({
                 <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
                   {extractedRiderItems.map((item, idx) => {
                     const isSelected = selectedItemIndices.has(idx);
-                    const mappedCat = mapAiCategory(item.category);
+                    const mappedCat = mapAiCategoryToSystemCategory(item.category);
                     const catLabel = RIDER_CATEGORIES.find((c) => c.id === mappedCat)?.label ?? mappedCat;
 
                     return (

@@ -39,6 +39,32 @@ export interface RiderExtractionResult {
 }
 
 /**
+ * Mapeia as 4 categorias de extração por IA para as categorias oficiais de rider do sistema.
+ */
+export function mapAiCategoryToSystemCategory(cat: string | null | undefined): "som" | "iluminacao" | "camarim" | "outros" | "backline" {
+  if (!cat) return "outros";
+  const norm = cat.trim().toLowerCase();
+  switch (norm) {
+    case "stage_sound":
+      return "som";
+    case "lighting_fx":
+      return "iluminacao";
+    case "dressing_hospitality":
+      return "camarim";
+    case "structure_risers":
+      return "outros";
+    case "backline":
+    case "som":
+    case "iluminacao":
+    case "camarim":
+    case "outros":
+      return norm as any;
+    default:
+      return "outros";
+  }
+}
+
+/**
  * Validação rigorosa de moeda identificada no documento.
  * Se a moeda não for BRL (ou variações aceitas de Real), gera um alerta visual obrigatório.
  */
@@ -75,7 +101,8 @@ export function validateCurrency(rawCurrency: string | null | undefined): Curren
  */
 export function sanitizeExtractedAmount(raw: unknown): number | null {
   if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) {
-    return Math.round(raw * 100) / 100;
+    const rounded = Math.round(raw * 100) / 100;
+    return rounded > 0 ? rounded : null;
   }
   if (typeof raw === "string") {
     const trimmed = raw.trim();
@@ -89,7 +116,8 @@ export function sanitizeExtractedAmount(raw: unknown): number | null {
       cleaned = Number(trimmed.replace(/[^\d.]/g, ""));
     }
     if (Number.isFinite(cleaned) && cleaned > 0) {
-      return Math.round(cleaned * 100) / 100;
+      const rounded = Math.round(cleaned * 100) / 100;
+      return rounded > 0 ? rounded : null;
     }
   }
   return null;
