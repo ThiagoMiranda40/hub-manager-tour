@@ -347,73 +347,75 @@ function FichaProducao() {
                 Nenhum item cadastrado no rider deste show.
               </p>
             ) : (
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="border-b border-foreground text-left font-mono text-[10px] uppercase tracking-wider text-muted-foreground print:text-black">
-                    <th className="py-2 pr-3 w-2/5">Item & Especificação</th>
-                    <th className="py-2 pr-2 w-24">Categoria</th>
-                    <th className="py-2 pr-2 w-12 text-center">Qtd</th>
-                    <th className="py-2 pr-2 w-24">Grau</th>
-                    <th className="py-2 pr-2 w-32">Status da Casa</th>
-                    <th className="py-2 text-right w-36">Conferência Palco</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {riderItems.map((item) => (
-                    <tr key={item.id} className="align-top text-xs break-inside-avoid">
-                      <td className="py-2 pr-3">
-                        <span className="font-semibold text-foreground">{item.item_name}</span>
-                        {item.specification ? (
-                          <p className="font-mono text-[10px] text-muted-foreground print:text-black mt-0.5">
-                            {item.specification}
-                          </p>
-                        ) : null}
-                        {item.exception_note ? (
-                          <p className="text-[10px] text-purple-700 dark:text-purple-300 print:text-black font-sans mt-0.5">
-                            <strong>Nota da Casa:</strong> {item.exception_note}
-                          </p>
-                        ) : null}
-                        {item.physical_divergence_note ? (
-                          <p className="text-[10px] text-amber-700 dark:text-amber-400 print:text-black font-sans mt-0.5">
-                            <strong>Divergência Palco:</strong> {item.physical_divergence_note}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-[11px] uppercase text-muted-foreground print:text-black">
-                        {item.category}
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-[11px] text-center font-bold">
-                        {item.quantity}
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-[10px] uppercase">
-                        {item.is_mandatory ? (
-                          <span className="font-bold text-destructive print:text-black">Inegociável</span>
-                        ) : (
-                          <span className="text-muted-foreground print:text-black">Desejável</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-[11px]">
-                        {item.status === "confirmed" ? (
-                          <span className="text-ok font-medium">✓ Confirmado</span>
-                        ) : item.status === "exception" ? (
-                          <span className="text-purple-600 print:text-black font-medium">⚠ Exceção</span>
-                        ) : (
-                          <span className="text-muted-foreground print:text-black">Pendente</span>
-                        )}
-                      </td>
-                      <td className="py-2 text-right font-mono text-[11px]">
-                        {item.physical_check === "conformed" ? (
-                          <span className="text-ok font-semibold">✓ Conforme</span>
-                        ) : item.physical_check === "divergent" ? (
-                          <span className="text-signal font-bold">⚠ Divergente</span>
-                        ) : (
-                          <span className="text-muted-foreground print:text-black">Não conferido</span>
-                        )}
-                      </td>
+              <div className="overflow-x-auto print:overflow-visible -mx-1 px-1">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-foreground text-left font-mono text-[10px] uppercase tracking-wider text-muted-foreground print:text-black">
+                      <th className="py-2 pr-3 w-2/5">Item & Especificação</th>
+                      <th className="py-2 pr-2 w-24">Categoria</th>
+                      <th className="py-2 pr-2 w-12 text-center">Qtd</th>
+                      <th className="py-2 pr-2 w-24">Grau</th>
+                      <th className="py-2 pr-2 w-32">Status da Casa</th>
+                      <th className="py-2 text-right w-36">Conferência Palco</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {riderItems.map((item) => (
+                      <tr key={item.id} className="align-top text-xs break-inside-avoid">
+                        <td className="py-2 pr-3">
+                          <span className="font-semibold text-foreground">{item.item_name}</span>
+                          {item.specification ? (
+                            <p className="font-mono text-[10px] text-muted-foreground print:text-black mt-0.5">
+                              {item.specification}
+                            </p>
+                          ) : null}
+                          {item.exception_note ? (
+                            <p className="text-[10px] text-purple-700 dark:text-purple-300 print:text-black font-sans mt-0.5">
+                              <strong>Nota da Casa:</strong> {item.exception_note}
+                            </p>
+                          ) : null}
+                          {item.physical_divergence_note ? (
+                            <p className="text-[10px] text-amber-700 dark:text-amber-400 print:text-black font-sans mt-0.5">
+                              <strong>Divergência Palco:</strong> {item.physical_divergence_note}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="py-2 pr-2 font-mono text-[11px] uppercase text-muted-foreground print:text-black">
+                          {item.category}
+                        </td>
+                        <td className="py-2 pr-2 font-mono text-[11px] text-center font-bold">
+                          {item.quantity}
+                        </td>
+                        <td className="py-2 pr-2 font-mono text-[10px] uppercase">
+                          {item.is_mandatory ? (
+                            <span className="font-bold text-destructive print:text-black">Inegociável</span>
+                          ) : (
+                            <span className="text-muted-foreground print:text-black">Desejável</span>
+                          )}
+                        </td>
+                        <td className="py-2 pr-2 font-mono text-[11px]">
+                          {item.status === "confirmed" ? (
+                            <span className="text-ok font-medium">✓ Confirmado</span>
+                          ) : item.status === "exception" ? (
+                            <span className="text-purple-600 print:text-black font-medium">⚠ Exceção</span>
+                          ) : (
+                            <span className="text-muted-foreground print:text-black">Pendente</span>
+                          )}
+                        </td>
+                        <td className="py-2 text-right font-mono text-[11px]">
+                          {item.physical_check === "conformed" ? (
+                            <span className="text-ok font-semibold">✓ Conforme</span>
+                          ) : item.physical_check === "divergent" ? (
+                            <span className="text-signal font-bold">⚠ Divergente</span>
+                          ) : (
+                            <span className="text-muted-foreground print:text-black">Não conferido</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
 
