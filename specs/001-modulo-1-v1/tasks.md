@@ -291,13 +291,16 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 - **Referência:** Checklist de "Pronto para Produção" (DoD) em `specs/001-modulo-1-v1/qa-plan.md`
 - **Arquivos afetados:** Todos os componentes e rotas do Módulo 1 V1
 - **Fazer:**
-  1. Executar os 3 cenários-chave ponta a ponta definidos em `spec.md`:
+  1. Executar os 6 cenários-chave ponta a ponta definidos em `spec.md`:
      - Cenário 1: Preset em lote de exigências e contadores detalhados de elenco.
      - Cenário 2: Checklist dinâmica pessoal do integrante e liquidação de reembolso com botão "Copiar Pix".
      - Cenário 3: Confirmação pública do rider com auto-save, reversibilidade e conferência no "Modo Palco".
+     - Cenário 4: Alternância de tema claro/escuro persistente (RF-12) e navegação adaptável entre cabeçalho e barra lateral recolhível, incluindo comportamento correto em mobile (RF-13).
+     - Cenário 5: Acesso via token individual por integrante em /p/[token] — confirmar isolamento total de dados entre integrantes do mesmo show (RF-04, adendo de segurança da T-16).
+     - Cenário 6: Extração por IA no upload de comprovante (Função 1) e importação de rider por PDF (Função 2), incluindo fallback manual quando a IA não está disponível (RF-10).
   2. Rodar a suíte de testes unitários: `npm test`.
   3. Executar typecheck estrito: `npx tsc --noEmit`.
   4. Gerar o build de produção: `npm run build` e validar pacote para deploy Cloudflare Workers.
   5. Validar os itens do checklist Definition of Done (técnico e linguagem simples) de `qa-plan.md`.
 - **Verificação técnica:** `npm test && npx tsc --noEmit && npm run build`
-- **Tradução em linguagem simples:** "Todos os 3 fluxos completos do Módulo 1 foram executados de ponta a ponta, todos os testes unitários passaram e o checklist de pronto para produção foi validado com 100% de integridade."
+- **Tradução em linguagem simples:** "Todos os 6 fluxos completos do Módulo 1 foram executados de ponta a ponta, todos os testes unitários passaram e o checklist de pronto para produção foi validado com 100% de integridade."
