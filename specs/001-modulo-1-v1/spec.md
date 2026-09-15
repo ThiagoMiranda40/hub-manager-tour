@@ -262,6 +262,24 @@ para usar o layout mais confortável ao meu fluxo de trabalho.
 
 ---
 
+### RF-14 — Negociação de Exceção do Rider Técnico (Réplica/Tréplica)
+
+Como produtor ou técnico responsável, ao revisar uma exceção sinalizada pela casa de show num item inegociável,  
+quero poder aceitar (com ressalva registrada) ou recusar (com justificativa e possível alternativa) essa exceção, mantendo uma conversa estruturada com a casa até a resolução, com ambos os lados avisados quando a outra parte responder,  
+para não ficar bloqueado indefinidamente por "Rider Completo" nunca fechar, sem perder o registro de que aquele item teve uma ressalva, e sem a negociação ficar presa informalmente fora do sistema.
+
+**Critério de aceite:**
+- Dado um item inegociável com status "exceção", quando o produtor clica em "Aceitar com ressalva" na aba Rider Técnico, então o item passa a um novo status (accepted_with_exception), deixa de contar em hasMandatoryPendingOrException, mas continua visualmente distinto de "Confirmado".
+- Dado o mesmo cenário, quando o produtor clica em "Recusar" e escreve uma mensagem (motivo e/ou alternativa sugerida), então essa mensagem é registrada como réplica vinculada àquele item, e o status permanece "em negociação".
+- Dado uma réplica registrada, quando a casa de show acessa /r/[token] novamente, então ela vê a réplica e pode responder com uma tréplica, reabrindo o ciclo — sem limite fixo de rodadas.
+- Dado qualquer item com histórico de réplica/tréplica em aberto, quando exibido no Relatório de Produção, então aparece um indicador de "Em negociação com a casa" com a mensagem mais recente.
+- Dado uma tréplica registrada pela casa, quando o produtor está logado no app, então recebe uma notificação push avisando da resposta (sujeito à confirmação de viabilidade técnica no ambiente Cloudflare Workers — ver nota de investigação abaixo).
+- Dado uma réplica registrada pelo produtor, quando ele optar por avisar a casa, então o sistema oferece um botão de reenvio via WhatsApp (reaproveitando buildWhatsAppLink já existente), com uma mensagem que resume a réplica e inclui o link /r/[token] com texto explícito deixando claro que a resposta só é considerada oficial/registrada se feita através daquele link — nunca o conteúdo completo da negociação solto na mensagem, evitando que a conversa fique presa informalmente fora do sistema, sem gerar registro para nenhum dos dois lados.
+
+> **Nota de investigação técnica (antes de implementar):** confirmar se Web Push API (VAPID + Service Worker) funciona de forma confiável no ambiente Cloudflare Workers, ou se é necessária abordagem alternativa. Reportar antes de prosseguir com a implementação da notificação push do lado do produtor.
+
+---
+
 ## Requisitos Não-Funcionais
 
 ### RNF-01 — Usabilidade Mobile e Feedback Visual de Toque (:active)

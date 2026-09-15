@@ -286,8 +286,34 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 
 ---
 
+## T-17 — Negociação de Exceção do Rider via Réplica/Tréplica (RF-14)
+- **Depende de:** T-07, T-10, T-16
+- **Arquivos afetados:**
+  - `[NEW] supabase/migrations/<timestamp>_show_rider_item_messages.sql`
+  - `[MODIFY] src/lib/g3.ts` (computeRiderBalance com terceiro estado; reaproveitar buildWhatsAppLink)
+  - `[MODIFY] src/lib/g3.test.ts`
+  - `[MODIFY] src/routes/shows.$id.tsx` (ações aceitar/recusar, botão de reenvio WhatsApp, recepção de push)
+  - `[MODIFY] src/routes/r.$token.tsx` (exibir réplica, permitir tréplica)
+  - `[MODIFY] src/routes/shows.$id_.ficha.tsx` (indicador de negociação)
+  - `[MODIFY] src/lib/public-show.functions.ts` (Server Functions da negociação no lado da casa)
+  - `[NEW]` investigação/prova de conceito de Web Push em Cloudflare Workers (relatar viabilidade antes de codar a parte de push)
+- **Fazer:**
+  1. ANTES de tudo: investigar e reportar viabilidade de Web Push API (VAPID + Service Worker) em Cloudflare Workers. Se inviável ou excessivamente complexo, propor alternativa e aguardar decisão do Thiago antes de prosseguir com essa parte específica — o resto da tarefa (réplica/tréplica, WhatsApp) não depende dessa decisão.
+  2. Migration: tabela show_rider_item_messages (id, show_rider_item_id, author_type ['producer'|'venue'], message, created_at), RLS escopada por dono do show e por rider_public_token, sem exigir login de nenhum dos dois lados na parte pública.
+  3. Atualizar computeRiderBalance (g3.ts) para reconhecer accepted_with_exception como resolvido, distinto de confirmed e de exception simples.
+  4. Aba Rider Técnico (shows.$id.tsx): botões "Aceitar com ressalva" e "Recusar" em itens com exceção; campo de mensagem ao recusar; histórico de réplica/tréplica; botão de reenvio via WhatsApp com mensagem-resumo + link, deixando explícito que só o link registra oficialmente.
+  5. Página pública do rider (r.$token.tsx): exibir réplica quando existir; permitir tréplica (mesmo padrão de segurança anti-IDOR).
+  6. Relatório de Produção: indicador "Em negociação com a casa" com mensagem mais recente.
+  7. Implementar notificação push pro produtor quando viável tecnicamente (conforme item 1).
+  8. Testes cobrindo o novo estado em computeRiderBalance e a função de montagem da mensagem de WhatsApp da negociação.
+  9. Acionar ciberseguranca-produto-digital em modo revisão dedicado (rota pública recebendo escrita de ambos os lados, sem login).
+- **Verificação técnica:** `npx tsc --noEmit && npm test && npm run build`
+- **Tradução em linguagem simples:** "Quando a casa sinaliza que não tem um equipamento obrigatório, o produtor pode aceitar com ressalva ou recusar propondo uma alternativa pelo sistema. A casa recebe o aviso e responde pelo link, registrando todo o histórico sem conversas perdidas no WhatsApp."
+
+---
+
 ## T-13 — Verificação Ponta a Ponta dos Cenários de Aceite, DoD de QA e Build de Produção
-- **Depende de:** T-01 até T-16
+- **Depende de:** T-01 até T-17
 - **Referência:** Checklist de "Pronto para Produção" (DoD) em `specs/001-modulo-1-v1/qa-plan.md`
 - **Arquivos afetados:** Todos os componentes e rotas do Módulo 1 V1
 - **Fazer:**
