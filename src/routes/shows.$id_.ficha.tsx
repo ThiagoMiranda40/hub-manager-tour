@@ -56,6 +56,7 @@ function FichaProducao() {
         { data: docs },
         { data: reqs },
         { data: rider },
+        { data: riderMessages },
         { data: peopleList },
       ] = await Promise.all([
         supabase
@@ -89,17 +90,34 @@ function FichaProducao() {
           .eq("show_id", id)
           .order("position"),
         supabase
+          .from("show_rider_item_messages")
+          .select("id, show_rider_item_id, author_type, author_name, message, created_at")
+          .eq("show_id", id)
+          .order("created_at", { ascending: true }),
+        supabase
           .from("people")
           .select("id, name, phone, pix_type, pix_key, email")
           .order("name"),
       ]);
+
+      const messagesByItem = new Map<string, any[]>();
+      ((riderMessages ?? []) as any[]).forEach((m) => {
+        const list = messagesByItem.get(m.show_rider_item_id) ?? [];
+        list.push(m);
+        messagesByItem.set(m.show_rider_item_id, list);
+      });
+
+      const hydratedRiderItems = ((rider ?? []) as any[]).map((item) => ({
+        ...item,
+        messages: messagesByItem.get(item.id) ?? [],
+      })) as ShowRiderItem[];
 
       return {
         show,
         cast: cast ?? [],
         docs: docs ?? [],
         requirements: (reqs ?? []) as ShowRequirement[],
-        riderItems: (rider ?? []) as ShowRiderItem[],
+        riderItems: hydratedRiderItems,
         people: peopleList ?? [],
       };
     },
@@ -396,6 +414,32 @@ function FichaProducao() {
                         <td className="py-2 pr-2 font-mono text-[11px]">
                           {item.status === "confirmed" ? (
                             <span className="text-ok font-medium">✓ Confirmado</span>
+                          ) : item.status === "accepted_with_exception" ? (
+                            <div>
+                              <span className="text-teal-600 dark:text-teal-400 print:text-black font-medium">
+                                ✓ Aceito c/ ressalva
+                              </span>
+                              {item.messages && item.messages.length > 0 ? (
+                                <p
+                                  className="text-[10px] text-muted-foreground print:text-black font-sans mt-0.5 truncate max-w-[140px]"
+                                  title={item.messages[item.messages.length - 1]?.message ?? ""}
+                                >
+                                  "{item.messages[item.messages.length - 1]?.message ?? ""}"
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : item.messages && item.messages.length > 0 ? (
+                            <div>
+                              <span className="text-blue-600 dark:text-blue-400 print:text-black font-medium">
+                                💬 Em negociação
+                              </span>
+                              <p
+                                className="text-[10px] text-muted-foreground print:text-black font-sans mt-0.5 truncate max-w-[140px]"
+                                title={item.messages[item.messages.length - 1]?.message ?? ""}
+                              >
+                                "{item.messages[item.messages.length - 1]?.message ?? ""}"
+                              </p>
+                            </div>
                           ) : item.status === "exception" ? (
                             <span className="text-purple-600 print:text-black font-medium">⚠ Exceção</span>
                           ) : (

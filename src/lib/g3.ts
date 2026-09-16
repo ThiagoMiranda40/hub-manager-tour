@@ -86,7 +86,7 @@ export function reorderRiderItems<T extends { id: string; position: number }>(
 
 export type ShowRiderItem = {
   id: string;
-  status: "pending" | "confirmed" | "exception" | string;
+  status: "pending" | "confirmed" | "exception" | "accepted_with_exception" | string;
   category?: string;
   item_name?: string;
   specification?: string | null;
@@ -97,11 +97,22 @@ export type ShowRiderItem = {
   confirmed_by_venue_at?: string | null;
   physical_check?: "unchecked" | "conformed" | "divergent" | string;
   physical_divergence_note?: string | null;
+  messages?: ShowRiderItemMessage[];
+};
+
+export type ShowRiderItemMessage = {
+  id: string;
+  show_rider_item_id: string;
+  show_id: string;
+  author_type: "producer" | "venue";
+  message: string;
+  created_at: string;
 };
 
 export type RiderGroupBalance = {
   total: number;
   confirmed: number;
+  acceptedWithException: number;
   exceptions: number;
   pending: number;
   isComplete: boolean;
@@ -111,6 +122,7 @@ export type RiderGroupBalance = {
 export type RiderBalance = {
   total: number;
   confirmed: number;
+  acceptedWithException: number;
   exceptions: number;
   pending: number;
   pct: number;
@@ -120,7 +132,7 @@ export type RiderBalance = {
   mandatory: RiderGroupBalance;
   /** RF-11: Contadores segregados para itens desejáveis */
   desirable: RiderGroupBalance;
-  /** RF-11: Flag que indica se existe item inegociável em aberto ou com exceção */
+  /** RF-11 & RF-14: Flag que indica se existe item inegociável em aberto ou com exceção */
   hasMandatoryPendingOrException: boolean;
 };
 
@@ -250,15 +262,19 @@ export function computeMemberRequirementStatus(
   };
 }
 
-/** Calcula o balanço do rider técnico do show segregando itens inegociáveis e desejáveis (RF-11) */
+/** Calcula o balanço do rider técnico do show segregando itens inegociáveis e desejáveis (RF-11 e RF-14) */
 export function computeRiderBalance(
   items: { status: string; is_mandatory?: boolean }[],
 ): RiderBalance {
   const total = items.length;
   const confirmed = items.filter((i) => i.status === "confirmed").length;
+  const acceptedWithException = items.filter((i) => i.status === "accepted_with_exception").length;
   const exceptions = items.filter((i) => i.status === "exception").length;
-  const pending = items.filter((i) => i.status === "pending" || !i.status).length;
-  const pct = total > 0 ? Math.round((confirmed / total) * 100) : 0;
+  const pending = items.filter(
+    (i) => i.status === "pending" || (!i.status && i.status !== "confirmed" && i.status !== "exception" && i.status !== "accepted_with_exception")
+  ).length;
+  const resolved = confirmed + acceptedWithException;
+  const pct = total > 0 ? Math.round((resolved / total) * 100) : 0;
   const hasExceptions = exceptions > 0;
 
   const mandatoryItems = items.filter((i) => Boolean(i.is_mandatory));
@@ -267,11 +283,15 @@ export function computeRiderBalance(
   const calcGroup = (group: { status: string }[]): RiderGroupBalance => {
     const gTotal = group.length;
     const gConfirmed = group.filter((i) => i.status === "confirmed").length;
+    const gAcceptedWithException = group.filter((i) => i.status === "accepted_with_exception").length;
     const gExceptions = group.filter((i) => i.status === "exception").length;
-    const gPending = group.filter((i) => i.status === "pending" || !i.status).length;
+    const gPending = group.filter(
+      (i) => i.status === "pending" || (!i.status && i.status !== "confirmed" && i.status !== "exception" && i.status !== "accepted_with_exception")
+    ).length;
     return {
       total: gTotal,
       confirmed: gConfirmed,
+      acceptedWithException: gAcceptedWithException,
       exceptions: gExceptions,
       pending: gPending,
       isComplete: gTotal > 0 && gPending === 0 && gExceptions === 0,
@@ -282,9 +302,10 @@ export function computeRiderBalance(
   const mandatory = calcGroup(mandatoryItems);
   const desirable = calcGroup(desirableItems);
 
-  // TC-11.1 (Bloqueio de conclusão):
-  // RF-11: Se houver itens inegociáveis, a conclusão depende estritamente deles (desejável pendente não bloqueia o show).
-  // Se não houver itens inegociáveis configurados, exige que todos os itens estejam confirmados (sem pendências ou exceções).
+  // TC-11.1 & RF-14:
+  // Se houver itens inegociáveis, a conclusão depende estritamente deles (desejável pendente não bloqueia o show).
+  // accepted_with_exception é considerado resolvido e NÃO onera hasMandatoryPendingOrException.
+  // Se não houver itens inegociáveis configurados, exige que todos os itens estejam resolvidos (sem pendências ou exceções).
   const hasMandatoryPendingOrException = mandatory.pending > 0 || mandatory.exceptions > 0;
   const isComplete =
     total > 0 &&
@@ -295,6 +316,7 @@ export function computeRiderBalance(
   return {
     total,
     confirmed,
+    acceptedWithException,
     exceptions,
     pending,
     pct,
@@ -657,4 +679,22 @@ export function buildWhatsAppLink(phone: string, message: string): string {
   const withCountryCode = digits.startsWith("55") ? digits : `55${digits}`;
   return `https://wa.me/${withCountryCode}?text=${encodeURIComponent(message)}`;
 }
+
+export type RiderNegotiationWhatsAppParams = {
+  artistName: string;
+  showDate?: string | null;
+  itemName: string;
+  replySummary: string;
+  publicUrl: string;
+};
+
+/**
+ * Monta mensagem padronizada do WhatsApp para reenvio de réplica de rider à casa de show (RF-14).
+ * Enfatiza que a resposta oficial deve ser dada através do link público para registro na ficha de montagem.
+ */
+export function buildRiderNegotiationWhatsAppMessage(params: RiderNegotiationWhatsAppParams): string {
+  const dateStr = params.showDate ? ` (${params.showDate})` : "";
+  return `Olá! Aqui é da produção do show de *${params.artistName}*${dateStr}.\n\nAtualizamos a negociação do rider técnico sobre o item *${params.itemName}*:\n\n> "${params.replySummary}"\n\nPara que o acordo fique registrado diretamente na ficha oficial de montagem do palco, por favor responda pelo link exclusivo:\n🔗 ${params.publicUrl}\n\n(Basta clicar no link e confirmar ou responder — sem necessidade de login).\n\nMuito obrigado pela parceria! 🎸`;
+}
+
 

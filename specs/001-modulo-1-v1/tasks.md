@@ -289,10 +289,13 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 ## T-17 — Negociação de Exceção do Rider via Réplica/Tréplica (RF-14)
 - **Depende de:** T-07, T-10, T-16
 - **Arquivos afetados:**
-  - `[NEW] supabase/migrations/<timestamp>_show_rider_item_messages.sql`
-  - `[MODIFY] src/lib/g3.ts` (computeRiderBalance com terceiro estado; reaproveitar buildWhatsAppLink)
+  - `[NEW] supabase/migrations/20260915222000_show_rider_item_messages.sql`
+  - `[NEW] src/lib/public-show.test.ts`
+  - `[MODIFY] src/lib/g3.ts` (computeRiderBalance com terceiro estado; buildRiderNegotiationWhatsAppMessage)
   - `[MODIFY] src/lib/g3.test.ts`
-  - `[MODIFY] src/routes/shows.$id.tsx` (ações aceitar/recusar, botão de reenvio WhatsApp, histórico da thread)
+  - `[MODIFY] src/components/StatusBadge.tsx` (accepted_with_exception e in_negotiation)
+  - `[MODIFY] src/integrations/supabase/types.ts` (show_rider_item_messages)
+  - `[MODIFY] src/routes/shows.$id.tsx` (ações aceitar/recusar, botão de reenvio WhatsApp, histórico da thread, reversão)
   - `[MODIFY] src/routes/r.$token.tsx` (exibir réplica, permitir tréplica, regra de texto puro)
   - `[MODIFY] src/routes/shows.$id_.ficha.tsx` (indicador de negociação na coluna Status da Casa)
   - `[MODIFY] src/lib/public-show.functions.ts` (getPublicRider com mensagens, submitPublicRiderMessage com validação anti-IDOR e rate limiting em duas camadas)

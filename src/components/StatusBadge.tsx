@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, Clock, AlertTriangle, Minus } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Minus, CheckCheck, MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type StatusType =
@@ -9,6 +9,10 @@ export type StatusType =
   | "pending"
   | "excecao"
   | "exception"
+  | "accepted_with_exception"
+  | "aceito_com_ressalva"
+  | "in_negotiation"
+  | "em_negociacao"
   | "sem_exigencia"
   | "no_requirement";
 
@@ -20,10 +24,12 @@ export interface StatusBadgeProps {
 }
 
 /**
- * StatusBadge — Componente acessível (WCAG 2.2 AA) cobrindo os 4 estados do Módulo 1:
- * - Confirmado (Verde)
+ * StatusBadge — Componente acessível (WCAG 2.2 AA) cobrindo os estados do Módulo 1 (incluindo RF-14):
+ * - Confirmado (Verde esmeralda)
  * - Pendente (Âmbar/Amarelo)
  * - Exceção (Roxo/Alerta)
+ * - Aceito com ressalva (Teal/Ciano — resolvido, mas distinto)
+ * - Em negociação (Azul — diálogo ativo)
  * - Sem exigência configurada (Itálico suave sem badge colorido, inconfundível com pendente)
  */
 export function StatusBadge({
@@ -89,6 +95,44 @@ export function StatusBadge({
             aria-hidden="true"
           />
           <span>{label ?? "Exceção"}</span>
+        </span>
+      );
+
+    case "accepted_with_exception":
+    case "aceito_com_ressalva":
+      return (
+        <span
+          role="status"
+          className={cn(
+            "inline-flex items-center gap-1.5 font-medium rounded-full bg-teal-500/15 text-teal-800 dark:text-teal-300 border border-teal-500/30",
+            isSm ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+            className,
+          )}
+        >
+          <CheckCheck
+            className={cn(isSm ? "size-3" : "size-3.5", "shrink-0 text-teal-700 dark:text-teal-300")}
+            aria-hidden="true"
+          />
+          <span>{label ?? "Aceito c/ ressalva"}</span>
+        </span>
+      );
+
+    case "in_negotiation":
+    case "em_negociacao":
+      return (
+        <span
+          role="status"
+          className={cn(
+            "inline-flex items-center gap-1.5 font-medium rounded-full bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-500/30",
+            isSm ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+            className,
+          )}
+        >
+          <MessagesSquare
+            className={cn(isSm ? "size-3" : "size-3.5", "shrink-0 text-blue-700 dark:text-blue-300")}
+            aria-hidden="true"
+          />
+          <span>{label ?? "Em negociação"}</span>
         </span>
       );
 
