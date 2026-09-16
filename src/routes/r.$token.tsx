@@ -11,18 +11,25 @@ import {
   HelpCircle,
   Loader2,
   Check,
+  CheckCheck,
   RotateCcw,
   Sliders,
   ChevronRight,
+  MessagesSquare,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getPublicRider, updatePublicRiderItem } from "@/lib/public-show.functions";
+import {
+  getPublicRider,
+  updatePublicRiderItem,
+  submitPublicRiderMessage,
+} from "@/lib/public-show.functions";
 import {
   RIDER_CATEGORIES,
   computeRiderBalance,
   sortRiderItemsByPriority,
   formatDateBR,
   type ShowRiderItem,
+  type ShowRiderItemMessage,
   type RiderCategory,
 } from "@/lib/g3";
 import { cn } from "@/lib/utils";
@@ -75,6 +82,9 @@ function PublicRiderPage() {
   const [activeExceptionItemId, setActiveExceptionItemId] = useState<string | null>(null);
   const [exceptionNotes, setExceptionNotes] = useState<Record<string, string>>({});
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const [replyingItemId, setReplyingItemId] = useState<string | null>(null);
+  const [replyNotes, setReplyNotes] = useState<Record<string, string>>({});
+  const mutateRiderMessage = useServerFn(submitPublicRiderMessage);
 
   // 1. Carregamento dos dados públicos do rider
   const { data, isLoading, error } = useQuery({
@@ -207,6 +217,50 @@ function PublicRiderPage() {
       status: "pending",
       exceptionNote: null,
     });
+  };
+
+  // RF-14 / T-17: Tréplica e concordância da casa de show
+  const replyMutation = useMutation({
+    mutationFn: async (params: { itemId: string; message: string }) => {
+      return mutateRiderMessage({
+        data: {
+          token,
+          itemId: params.itemId,
+          message: params.message,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Resposta enviada com sucesso!");
+      setReplyingItemId(null);
+      qc.invalidateQueries({ queryKey: ["public-rider", token] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao enviar resposta. Tente novamente.");
+    },
+  });
+
+  const handleAgreeWithProposal = (item: ShowRiderItem) => {
+    replyMutation.mutate({
+      itemId: item.id,
+      message: "A casa de show concordou com a proposta da produção.",
+    });
+  };
+
+  const handleSendReply = (item: ShowRiderItem) => {
+    const text = (replyNotes[item.id] ?? "").trim();
+    if (!text) {
+      toast.error("Por favor, digite sua contraproposta ou resposta técnica.");
+      return;
+    }
+    replyMutation.mutate(
+      { itemId: item.id, message: text },
+      {
+        onSuccess: () => {
+          setReplyNotes((prev) => ({ ...prev, [item.id]: "" }));
+        },
+      },
+    );
   };
 
   // RF-11: Cálculo de balanço segregado
@@ -471,9 +525,12 @@ function PublicRiderPage() {
           ) : (
             filteredItems.map((item) => {
               const isConfirmed = item.status === "confirmed";
+              const isAcceptedWithException = item.status === "accepted_with_exception";
               const isException = item.status === "exception";
+              const isInNegotiation = isException && Boolean(item.messages && item.messages.length > 0);
               const isPending = item.status === "pending" || !item.status;
               const isEditingException = activeExceptionItemId === item.id;
+              const isReplying = replyingItemId === item.id;
               const isMandatory = Boolean(item.is_mandatory);
 
               return (
@@ -481,14 +538,18 @@ function PublicRiderPage() {
                   key={item.id}
                   className={cn(
                     "p-4 rounded-xl border transition-all duration-180 bg-card/60",
-                    // Severidade visual distinta conforme RF-11 (TC-11.2)
+                    // Severidade visual distinta conforme RF-11 (TC-11.2) e RF-14
                     isException && isMandatory
                       ? "border-destructive/50 bg-destructive/5 shadow-[0_0_15px_rgba(239,68,68,0.08)]"
-                      : isException
-                        ? "border-amber-500/40 bg-amber-500/5"
-                        : isConfirmed
-                          ? "border-emerald-500/30 bg-emerald-500/[0.02]"
-                          : "border-line",
+                      : isInNegotiation
+                        ? "border-blue-500/40 bg-blue-500/5 shadow-[0_0_15px_rgba(59,130,246,0.08)]"
+                        : isAcceptedWithException
+                          ? "border-teal-500/40 bg-teal-500/5"
+                          : isException
+                            ? "border-amber-500/40 bg-amber-500/5"
+                            : isConfirmed
+                              ? "border-emerald-500/30 bg-emerald-500/[0.02]"
+                              : "border-line",
                   )}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -526,7 +587,19 @@ function PublicRiderPage() {
                           </span>
                         )}
 
-                        {isException && (
+                        {isAcceptedWithException && (
+                          <span className="text-[10px] font-mono border border-teal-500/40 text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                            <CheckCheck className="size-3" /> Aceito c/ ressalva
+                          </span>
+                        )}
+
+                        {isInNegotiation && (
+                          <span className="text-[10px] font-mono border border-blue-500/40 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                            <MessagesSquare className="size-3" /> Em negociação
+                          </span>
+                        )}
+
+                        {isException && !isInNegotiation && (
                           <span
                             className={cn(
                               "text-[10px] font-mono px-2 py-0.5 rounded font-medium flex items-center gap-1 border",
@@ -657,6 +730,117 @@ function PublicRiderPage() {
                           className="px-3 py-1 text-xs font-mono uppercase tracking-wider bg-[#9184d9] text-white font-medium hover:bg-[#8072cb] rounded-lg active:scale-[0.97]"
                         >
                           Salvar Exceção
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Histórico da Thread de Negociação (RF-14 / T-17) */}
+                  {item.messages && item.messages.length > 0 && (
+                    <div className="mt-3 p-3 rounded-xl border border-line bg-muted/20 space-y-2.5">
+                      <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[#9184d9] font-semibold">
+                        <MessagesSquare className="size-3.5" />
+                        <span>Histórico de Negociação</span>
+                      </div>
+                      <div className="space-y-2">
+                        {item.messages.map((msg) => {
+                          const isVenue = msg.author_type === "venue";
+                          return (
+                            <div
+                              key={msg.id}
+                              className={cn(
+                                "p-2.5 rounded-lg text-xs font-sans border",
+                                isVenue
+                                  ? "bg-card/80 border-line text-foreground"
+                                  : "bg-[#9184d9]/10 border-[#9184d9]/30 text-foreground",
+                              )}
+                            >
+                              <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mb-1">
+                                <span className="font-semibold text-foreground">
+                                  {isVenue ? "🏠 Casa de Show" : "👤 Produção do Artista"}
+                                </span>
+                                <span>
+                                  {msg.created_at
+                                    ? new Date(msg.created_at).toLocaleString("pt-BR", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : ""}
+                                </span>
+                              </div>
+                              {/* REGRA ABSOLUTA DE SEGURANÇA: Texto puro escapado pelo React, sem detecção/conversão em link */}
+                              <p className="whitespace-pre-wrap select-text leading-relaxed">
+                                {msg.message}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ações de resposta para a Casa de Show (Tréplica / Concordância) */}
+                  {isException && item.messages && item.messages.length > 0 && !isReplying && (
+                    <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center justify-between gap-2 print:hidden">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        Como a casa pode responder:
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={replyMutation.isPending}
+                          onClick={() => handleAgreeWithProposal(item)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all active:scale-[0.97] flex items-center gap-1.5"
+                        >
+                          <Check className="size-3.5" />
+                          <span>Concordar com Proposta</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={replyMutation.isPending}
+                          onClick={() => setReplyingItemId(item.id)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider border border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 font-medium transition-all active:scale-[0.97] flex items-center gap-1.5"
+                        >
+                          <MessagesSquare className="size-3.5" />
+                          <span>Responder contraproposta (Tréplica)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Formulário Inline de Tréplica */}
+                  {isReplying && (
+                    <div className="mt-3 pt-3 border-t border-line/60 space-y-2 animate-in fade-in slide-in-from-top-2 duration-180 print:hidden">
+                      <label className="block text-[11px] font-mono text-muted-foreground">
+                        Digite sua contraproposta ou resposta técnica para a produção:
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={replyNotes[item.id] ?? ""}
+                        onChange={(e) =>
+                          setReplyNotes((prev) => ({ ...prev, [item.id]: e.target.value }))
+                        }
+                        placeholder="Ex.: Conseguimos fornecer modelo alternativo com 32 canais e especificações equivalentes."
+                        className="w-full border border-line bg-background px-3 py-2 text-xs rounded-lg outline-none focus:border-[#9184d9] font-sans"
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setReplyingItemId(null)}
+                          className="px-3 py-1 text-xs font-mono uppercase tracking-wider border border-line hover:bg-accent rounded-lg"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSendReply(item)}
+                          disabled={replyMutation.isPending}
+                          className="px-3 py-1 text-xs font-mono uppercase tracking-wider bg-[#9184d9] text-white font-medium hover:bg-[#8072cb] rounded-lg active:scale-[0.97]"
+                        >
+                          {replyMutation.isPending ? "Enviando..." : "Enviar Resposta"}
                         </button>
                       </div>
                     </div>

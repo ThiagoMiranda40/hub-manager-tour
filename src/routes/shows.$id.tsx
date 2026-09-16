@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Copy,
@@ -21,6 +21,12 @@ import {
   CheckSquare,
   Square,
   ChevronRight,
+  MessagesSquare,
+  MessageSquare,
+  Send,
+  CheckCheck,
+  RotateCcw,
+  Share2,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -43,8 +49,10 @@ import {
   labelFrom,
   getMemberPublicUrl as buildMemberPublicUrl,
   buildWhatsAppLink,
+  buildRiderNegotiationWhatsAppMessage,
   type ShowRequirement,
   type ShowRiderItem,
+  type ShowRiderItemMessage,
 } from "@/lib/g3";
 
 export const Route = createFileRoute("/shows/$id")({
@@ -115,6 +123,10 @@ function ShowDetail() {
   const [divergenceNoteEditingId, setDivergenceNoteEditingId] = useState<string | null>(null);
   const [divergenceNoteText, setDivergenceNoteText] = useState("");
 
+  // Negociação de Exceção do Rider (RF-14 / T-17)
+  const [producerReplyingItemId, setProducerReplyingItemId] = useState<string | null>(null);
+  const [producerReplyTextMap, setProducerReplyTextMap] = useState<Record<string, string>>({});
+
   const { roles, docTypes } = useCatalog(!!session);
 
   useEffect(() => {
@@ -136,6 +148,7 @@ function ShowDetail() {
         { data: docs },
         { data: reqs },
         { data: rider },
+        { data: riderMessages },
         { data: peopleList },
       ] = await Promise.all([
         supabase
@@ -169,17 +182,34 @@ function ShowDetail() {
           .eq("show_id", id)
           .order("position"),
         supabase
+          .from("show_rider_item_messages")
+          .select("id, show_rider_item_id, author_type, author_name, message, created_at")
+          .eq("show_id", id)
+          .order("created_at", { ascending: true }),
+        supabase
           .from("people")
           .select("id, name, pix_type, pix_key, default_role_id, phone")
           .order("name"),
       ]);
+
+      const messagesByItem = new Map<string, ShowRiderItemMessage[]>();
+      ((riderMessages ?? []) as any[]).forEach((m) => {
+        const list = messagesByItem.get(m.show_rider_item_id) ?? [];
+        list.push(m as ShowRiderItemMessage);
+        messagesByItem.set(m.show_rider_item_id, list);
+      });
+
+      const hydratedRiderItems = ((rider ?? []) as any[]).map((item) => ({
+        ...item,
+        messages: messagesByItem.get(item.id) ?? [],
+      })) as ShowRiderItem[];
 
       return {
         show,
         cast: cast ?? [],
         docs: docs ?? [],
         requirements: (reqs ?? []) as ShowRequirement[],
-        riderItems: (rider ?? []) as ShowRiderItem[],
+        riderItems: hydratedRiderItems,
         people: peopleList ?? [],
       };
     },
@@ -216,6 +246,38 @@ function ShowDetail() {
   );
 
   const riderBalance = useMemo(() => computeRiderBalance(riderItems), [riderItems]);
+
+  const inNegotiationCount = useMemo(
+    () =>
+      riderItems.filter(
+        (i) => i.status === "exception" && (i.messages?.length ?? 0) > 0,
+      ).length,
+    [riderItems],
+  );
+
+  // Notificação in-app (RF-14 / T-17 item 9): Avisar produtor quando a casa responder
+  const prevVenueMsgCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!riderItems.length) return;
+    const currentVenueMsgs = riderItems.flatMap((item) =>
+      (item.messages ?? []).filter((m) => m.author_type === "venue"),
+    );
+    if (
+      prevVenueMsgCountRef.current !== null &&
+      currentVenueMsgs.length > prevVenueMsgCountRef.current
+    ) {
+      const latestVenueMsg = currentVenueMsgs[currentVenueMsgs.length - 1];
+      if (latestVenueMsg) {
+        const matchingItem = riderItems.find((i) =>
+          (i.messages ?? []).some((m) => m.id === latestVenueMsg.id),
+        );
+        toast.info(
+          `Nova resposta da casa de show sobre "${matchingItem?.item_name || "item de rider"}": "${latestVenueMsg.message.slice(0, 60)}${latestVenueMsg.message.length > 60 ? "..." : ""}"`,
+        );
+      }
+    }
+    prevVenueMsgCountRef.current = currentVenueMsgs.length;
+  }, [riderItems]);
 
   // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco
   const stageRiderItems = useMemo(
@@ -547,6 +609,80 @@ function ShowDetail() {
       }
     },
     onError: (e: Error) => toast.error(`Erro ao registrar conferência no palco: ${e.message}`),
+  });
+
+  // Mutação: Aceitar com ressalva (RF-14 / T-17)
+  const acceptWithExceptionMutation = useMutation({
+    mutationFn: async ({ itemId }: { itemId: string }) => {
+      const { error } = await supabase
+        .from("show_rider_items")
+        .update({
+          status: "accepted_with_exception",
+        })
+        .eq("id", itemId)
+        .eq("show_id", id);
+
+      if (error) throw new Error(error.message);
+      return { itemId };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["show", id] });
+      toast.success("Exceção aceita com ressalva registrada!");
+    },
+    onError: (e: Error) => toast.error(`Erro ao aceitar exceção: ${e.message}`),
+  });
+
+  // Mutação: Reabrir negociação (RF-14 / T-17 - Reversão accepted_with_exception -> exception)
+  const reopenNegotiationMutation = useMutation({
+    mutationFn: async ({ itemId }: { itemId: string }) => {
+      const { error } = await supabase
+        .from("show_rider_items")
+        .update({
+          status: "exception",
+        })
+        .eq("id", itemId)
+        .eq("show_id", id);
+
+      if (error) throw new Error(error.message);
+      return { itemId };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["show", id] });
+      toast.info("Negociação reaberta para o item.");
+    },
+    onError: (e: Error) => toast.error(`Erro ao reabrir negociação: ${e.message}`),
+  });
+
+  // Mutação: Enviar Réplica do Produtor (RF-14 / T-17)
+  const sendProducerReplyMutation = useMutation({
+    mutationFn: async ({ itemId, message }: { itemId: string; message: string }) => {
+      if (!session?.user?.id) throw new Error("Usuário não autenticado.");
+      const { error } = await supabase.from("show_rider_item_messages").insert({
+        show_id: id,
+        show_rider_item_id: itemId,
+        author_type: "producer",
+        author_name: "Produção",
+        message: message.trim(),
+      });
+
+      if (error) throw new Error(error.message);
+
+      // Mantém o item em 'exception' para continuar em negociação
+      await supabase
+        .from("show_rider_items")
+        .update({ status: "exception" })
+        .eq("id", itemId)
+        .eq("show_id", id);
+
+      return { itemId };
+    },
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ["show", id] });
+      toast.success("Réplica enviada para a casa de show!");
+      setProducerReplyingItemId(null);
+      setProducerReplyTextMap((prev) => ({ ...prev, [variables.itemId]: "" }));
+    },
+    onError: (e: Error) => toast.error(`Erro ao enviar réplica: ${e.message}`),
   });
 
   // Clonagem do rider padrão do artista em show vazio
@@ -881,7 +1017,12 @@ function ShowDetail() {
                 active={activeTab === "rider"}
                 onClick={() => setActiveTab("rider")}
                 label="Rider Técnico"
-                badge={`${riderBalance.confirmed}/${riderBalance.total}`}
+                badge={
+                  riderBalance.acceptedWithException > 0
+                    ? `${riderBalance.confirmed}/${riderBalance.total} (+${riderBalance.acceptedWithException})`
+                    : `${riderBalance.confirmed}/${riderBalance.total}`
+                }
+                hasAlert={riderBalance.hasMandatoryPendingOrException || inNegotiationCount > 0}
               />
               <TabButton
                 active={activeTab === "reimbursements"}
@@ -1419,8 +1560,13 @@ function ShowDetail() {
                   <div className="mt-2 text-3xl font-semibold text-ok">
                     {riderBalance.confirmed}
                   </div>
-                  <div className="mt-1 font-mono text-xs text-muted-foreground">
-                    {riderBalance.pct}% atendidos
+                  <div className="mt-1 font-mono text-xs text-muted-foreground flex items-center justify-between">
+                    <span>{riderBalance.pct}% atendidos</span>
+                    {riderBalance.acceptedWithException > 0 ? (
+                      <span className="text-teal-600 dark:text-teal-400 font-medium">
+                        (+{riderBalance.acceptedWithException} ressalva)
+                      </span>
+                    ) : null}
                   </div>
                 </div>
 
@@ -1628,6 +1774,16 @@ function ShowDetail() {
                                       <CheckCircle2 className="size-3.5" />
                                       Confirmado pelo espaço
                                     </span>
+                                  ) : item.status === "accepted_with_exception" ? (
+                                    <span className="inline-flex items-center gap-1.5 text-teal-400 font-mono text-[11px]">
+                                      <CheckCheck className="size-3.5" />
+                                      Aceito com ressalva pela produção
+                                    </span>
+                                  ) : item.messages && item.messages.length > 0 ? (
+                                    <span className="inline-flex items-center gap-1.5 text-blue-400 font-mono text-[11px]">
+                                      <MessagesSquare className="size-3.5" />
+                                      Em negociação com a casa
+                                    </span>
                                   ) : item.status === "exception" ? (
                                     <div className="p-2 rounded-lg bg-purple-950/60 border border-purple-500/30 text-purple-300 text-xs mt-1">
                                       <strong>Exceção da casa:</strong> {item.exception_note || "Sem detalhe"}
@@ -1827,80 +1983,293 @@ function ShowDetail() {
                     </div>
                   ) : (
                     <div className="divide-y divide-line">
-                      {riderItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-accent/10 transition-colors"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs uppercase px-2 py-0.5 border border-line bg-accent/30 rounded">
-                                {item.category}
-                              </span>
-                              <span className="font-medium text-sm">{item.item_name}</span>
-                              <span className="font-mono text-xs text-muted-foreground">
-                                x{item.quantity}
-                              </span>
-                              {item.is_mandatory ? (
-                                <span className="text-[10px] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium">
-                                  Inegociável
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded">
-                                  Desejável
-                                </span>
+                      {riderItems.map((item) => {
+                        const isConfirmed = item.status === "confirmed";
+                        const isAcceptedWithException = item.status === "accepted_with_exception";
+                        const hasMessages = Boolean(item.messages && item.messages.length > 0);
+                        const isInNegotiation = hasMessages && !isConfirmed && !isAcceptedWithException;
+                        const isException =
+                          (item.status === "exception" || isInNegotiation) &&
+                          !isAcceptedWithException &&
+                          !isConfirmed;
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={cn(
+                              "p-4 hover:bg-accent/10 transition-colors space-y-3",
+                              isAcceptedWithException
+                                ? "bg-teal-500/[0.02]"
+                                : isInNegotiation
+                                  ? "bg-blue-500/[0.03]"
+                                  : "",
+                            )}
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-mono text-xs uppercase px-2 py-0.5 border border-line bg-accent/30 rounded">
+                                    {item.category}
+                                  </span>
+                                  <span className="font-medium text-sm">{item.item_name}</span>
+                                  <span className="font-mono text-xs text-muted-foreground">
+                                    x{item.quantity}
+                                  </span>
+                                  {item.is_mandatory ? (
+                                    <span className="text-[10px] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium">
+                                      Inegociável
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded">
+                                      Desejável
+                                    </span>
+                                  )}
+                                </div>
+                                {item.specification ? (
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {item.specification}
+                                  </p>
+                                ) : null}
+                                {item.exception_note ? (
+                                  <div className="mt-1.5 flex items-start gap-1 text-xs text-purple-700 dark:text-purple-300 bg-purple-500/10 p-2 rounded">
+                                    <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                                    <span>
+                                      <strong>Nota da casa:</strong> {item.exception_note}
+                                    </span>
+                                  </div>
+                                ) : null}
+                                {item.physical_divergence_note ? (
+                                  <div className="mt-1.5 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 p-2 rounded">
+                                    <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                                    <span>
+                                      <strong>Divergência no palco:</strong>{" "}
+                                      {item.physical_divergence_note}
+                                    </span>
+                                  </div>
+                                ) : null}
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2">
+                                {item.physical_check === "conformed" ? (
+                                  <span className="font-mono text-[10px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold">
+                                    Palco: OK ✓
+                                  </span>
+                                ) : item.physical_check === "divergent" ? (
+                                  <span
+                                    className="font-mono text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-semibold"
+                                    title={item.physical_divergence_note || ""}
+                                  >
+                                    Palco: Divergência ⚠
+                                  </span>
+                                ) : null}
+
+                                <StatusBadge
+                                  status={
+                                    isConfirmed
+                                      ? "confirmed"
+                                      : isAcceptedWithException
+                                        ? "accepted_with_exception"
+                                        : isInNegotiation
+                                          ? "in_negotiation"
+                                          : isException
+                                            ? "exception"
+                                            : "pending"
+                                  }
+                                  size="sm"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Histórico da Thread de Negociação (RF-14) */}
+                            {hasMessages && (
+                              <div className="pt-2 border-t border-line/60 space-y-2">
+                                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                  <MessagesSquare className="size-3.5 text-blue-500" />
+                                  <span>Histórico de Negociação com a Casa:</span>
+                                </div>
+                                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                                  {(item.messages ?? []).map((msg) => {
+                                    const isProducer = msg.author_type === "producer";
+                                    return (
+                                      <div
+                                        key={msg.id}
+                                        className={cn(
+                                          "p-2.5 rounded-lg text-xs font-sans border",
+                                          isProducer
+                                            ? "bg-[#9184d9]/10 border-[#9184d9]/30 text-foreground"
+                                            : "bg-muted/40 border-line text-foreground",
+                                        )}
+                                      >
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                          <span
+                                            className={cn(
+                                              "font-mono text-[10px] uppercase font-bold tracking-wider",
+                                              isProducer ? "text-[#9184d9]" : "text-muted-foreground",
+                                            )}
+                                          >
+                                            {isProducer ? "Produção (Você)" : "Casa de Show"}
+                                          </span>
+                                          <span className="font-mono text-[10px] text-muted-foreground">
+                                            {msg.created_at
+                                              ? new Date(msg.created_at).toLocaleTimeString("pt-BR", {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                })
+                                              : ""}
+                                          </span>
+                                        </div>
+                                        {/* TEXTO PURO SEM LINKS (ANTI-PHISHING/XSS) */}
+                                        <p className="whitespace-pre-wrap break-words text-xs leading-relaxed select-text">
+                                          {msg.message}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Ações de Decisão e Negociação do Produtor */}
+                            <div className="pt-1 flex flex-wrap items-center gap-2">
+                              {isAcceptedWithException && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    reopenNegotiationMutation.mutate({ itemId: item.id })
+                                  }
+                                  disabled={reopenNegotiationMutation.isPending}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-lg border border-line bg-secondary/50 hover:bg-secondary text-foreground transition-all active:scale-[0.97] disabled:opacity-50"
+                                  title="Reverter confirmação com ressalva para exceção e reabrir negociação com a casa"
+                                >
+                                  <RotateCcw className="size-3 text-muted-foreground" />
+                                  <span>Reabrir negociação</span>
+                                </button>
+                              )}
+
+                              {isException && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      acceptWithExceptionMutation.mutate({ itemId: item.id })
+                                    }
+                                    disabled={acceptWithExceptionMutation.isPending}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium transition-all active:scale-[0.97] shadow-sm disabled:opacity-50"
+                                    title="Aceitar o item com a ressalva da casa, concluindo o atendimento no rider"
+                                  >
+                                    <CheckCheck className="size-3.5" />
+                                    <span>Aceitar com ressalva</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setProducerReplyingItemId(
+                                        producerReplyingItemId === item.id ? null : item.id,
+                                      )
+                                    }
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg border border-line bg-secondary/60 hover:bg-secondary text-foreground transition-all active:scale-[0.97]"
+                                  >
+                                    <MessageSquare className="size-3.5" />
+                                    <span>
+                                      {producerReplyingItemId === item.id
+                                        ? "Fechar Réplica"
+                                        : "Recusar / Propor Alternativa"}
+                                    </span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const latestContext =
+                                        item.messages && item.messages.length > 0
+                                          ? item.messages[item.messages.length - 1]?.message ?? ""
+                                          : item.exception_note || "";
+                                      const replyDraft = producerReplyTextMap[item.id] || "";
+                                      const text = buildRiderNegotiationWhatsAppMessage({
+                                        artistName:
+                                          (show as any)?.artists?.name || "Artista",
+                                        showDate: show?.show_date
+                                          ? formatDateBR(show.show_date)
+                                          : null,
+                                        itemName: item.item_name || "Item do Rider",
+                                        replySummary: replyDraft || latestContext,
+                                        publicUrl: riderPublicUrl || "",
+                                      });
+                                      window.open(
+                                        `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`,
+                                        "_blank",
+                                      );
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all active:scale-[0.97]"
+                                    title="Enviar proposta de negociação por WhatsApp"
+                                  >
+                                    <Share2 className="size-3.5" />
+                                    <span>WhatsApp</span>
+                                  </button>
+                                </>
                               )}
                             </div>
-                            {item.specification ? (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {item.specification}
-                              </p>
-                            ) : null}
-                            {item.exception_note ? (
-                              <div className="mt-1.5 flex items-start gap-1 text-xs text-purple-700 dark:text-purple-300 bg-purple-500/10 p-2 rounded">
-                                <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
-                                <span>
-                                  <strong>Nota da casa:</strong> {item.exception_note}
-                                </span>
-                              </div>
-                            ) : null}
-                            {item.physical_divergence_note ? (
-                              <div className="mt-1.5 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 p-2 rounded">
-                                <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
-                                <span>
-                                  <strong>Divergência no palco:</strong> {item.physical_divergence_note}
-                                </span>
-                              </div>
-                            ) : null}
-                          </div>
 
-                          <div className="flex items-center gap-2">
-                            {item.physical_check === "conformed" ? (
-                              <span className="font-mono text-[10px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold">
-                                Palco: OK ✓
-                              </span>
-                            ) : item.physical_check === "divergent" ? (
-                              <span
-                                className="font-mono text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-semibold"
-                                title={item.physical_divergence_note || ""}
-                              >
-                                Palco: Divergência ⚠
-                              </span>
-                            ) : null}
-
-                            <StatusBadge
-                              status={
-                                item.status === "confirmed"
-                                  ? "confirmed"
-                                  : item.status === "exception"
-                                    ? "exception"
-                                    : "pending"
-                              }
-                              size="sm"
-                            />
+                            {/* Formulário de Réplica do Produtor */}
+                            {producerReplyingItemId === item.id && (
+                              <div className="p-3 rounded-xl border border-primary/30 bg-primary/5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-180">
+                                <label className="block text-[11px] font-mono text-muted-foreground">
+                                  Sua justificativa de recusa ou especificação de alternativa para a
+                                  casa:
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={producerReplyTextMap[item.id] ?? ""}
+                                  onChange={(e) =>
+                                    setProducerReplyTextMap((prev) => ({
+                                      ...prev,
+                                      [item.id]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Ex.: Não podemos aceitar microfone cardióide comum para voz principal pois causa microfonia com os monitores. Sugerimos modelo X ou manter o original."
+                                  className="w-full border border-line bg-background px-3 py-2 text-xs rounded-lg outline-none focus:border-primary font-sans"
+                                  autoFocus
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setProducerReplyingItemId(null)}
+                                    className="px-3 py-1 text-xs font-mono uppercase tracking-wider border border-line hover:bg-accent rounded-lg"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const text = (producerReplyTextMap[item.id] ?? "").trim();
+                                      if (!text) {
+                                        toast.error(
+                                          "Digite uma justificativa ou alternativa antes de enviar.",
+                                        );
+                                        return;
+                                      }
+                                      sendProducerReplyMutation.mutate({
+                                        itemId: item.id,
+                                        message: text,
+                                      });
+                                    }}
+                                    disabled={sendProducerReplyMutation.isPending}
+                                    className="px-3 py-1 text-xs font-mono uppercase tracking-wider bg-primary text-primary-foreground font-medium hover:bg-primary/90 rounded-lg active:scale-[0.97] flex items-center gap-1.5 disabled:opacity-50"
+                                  >
+                                    <Send className="size-3" />
+                                    <span>
+                                      {sendProducerReplyMutation.isPending
+                                        ? "Enviando..."
+                                        : "Enviar Réplica"}
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

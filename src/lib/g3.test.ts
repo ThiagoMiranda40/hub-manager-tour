@@ -14,6 +14,7 @@ import {
   getMemberPublicUrl,
   parseReimbursementAmount,
   buildWhatsAppLink,
+  buildRiderNegotiationWhatsAppMessage,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -738,6 +739,69 @@ describe("buildWhatsAppLink: geração de links diretos do WhatsApp (RF-04)", ()
     expect(url).toContain("S%C3%A3o%20Paulo");
     expect(url).toContain("%26");
     expect(url).toContain("https%3A%2F%2Fhub.app%2Fp%2Ftoken123");
+  });
+});
+
+describe("RF-14: Negociação de Exceção do Rider Técnico e Reabertura (T-17 / QA Seção 8)", () => {
+  it("TC-14.2 — [Domínio / G3] computeRiderBalance com accepted_with_exception", () => {
+    // 1 item inegociável aceito com ressalva e 1 desejável confirmado
+    const items: ShowRiderItem[] = [
+      { id: "r-1", status: "accepted_with_exception", is_mandatory: true },
+      { id: "r-2", status: "confirmed", is_mandatory: false },
+    ];
+
+    const balance = computeRiderBalance(items);
+
+    // Deve computar como atendido (100% de completude)
+    expect(balance.total).toBe(2);
+    expect(balance.confirmed).toBe(2);
+    expect(balance.acceptedWithException).toBe(1);
+    expect(balance.pct).toBe(100);
+    expect(balance.isComplete).toBe(true);
+    // NÃO pode ativar flag de alerta crítico hasMandatoryPendingOrException
+    expect(balance.hasMandatoryPendingOrException).toBe(false);
+    expect(balance.mandatory.isComplete).toBe(true);
+  });
+
+  it("TC-14.3 — [Domínio / G3] Reversão de accepted_with_exception para exception", () => {
+    // Estado inicial: item inegociável aceito com ressalva
+    const initialItems: ShowRiderItem[] = [
+      { id: "r-1", status: "accepted_with_exception", is_mandatory: true },
+    ];
+    const initialBalance = computeRiderBalance(initialItems);
+    expect(initialBalance.isComplete).toBe(true);
+    expect(initialBalance.hasMandatoryPendingOrException).toBe(false);
+
+    // Transição de reversão: produtor clica em "Reabrir negociação" -> volta para 'exception'
+    const revertedItems: ShowRiderItem[] = [
+      { id: "r-1", status: "exception", is_mandatory: true },
+    ];
+    const revertedBalance = computeRiderBalance(revertedItems);
+
+    // Volta a bloquear a conclusão e sinaliza exceção obrigatória pendente
+    expect(revertedBalance.isComplete).toBe(false);
+    expect(revertedBalance.confirmed).toBe(0);
+    expect(revertedBalance.exceptions).toBe(1);
+    expect(revertedBalance.hasMandatoryPendingOrException).toBe(true);
+    expect(revertedBalance.mandatory.exceptions).toBe(1);
+  });
+
+  it("TC-14.6 — [Comunicação / WhatsApp] buildRiderNegotiationWhatsAppMessage formata texto estruturado com link exclusivo e aviso oficial", () => {
+    const text = buildRiderNegotiationWhatsAppMessage({
+      artistName: "Banda Tour Rock",
+      showDate: "20/10/2026",
+      itemName: "Amplificador Fender Twin Reverb",
+      replySummary: "Podemos aceitar o modelo Roland JC-120 como alternativa.",
+      publicUrl: "https://hub.app/r/tok_venue_999",
+    });
+
+    expect(text).toContain("*Negociação do Rider Técnico — Banda Tour Rock*");
+    expect(text).toContain("Data: 20/10/2026");
+    expect(text).toContain("Item: *Amplificador Fender Twin Reverb*");
+    expect(text).toContain("Podemos aceitar o modelo Roland JC-120 como alternativa.");
+    expect(text).toContain("https://hub.app/r/tok_venue_999");
+    // Aviso explícito sobre canal oficial
+    expect(text).toContain("Para que sua resposta seja oficialmente registrada no sistema, responda exclusivamente através do link acima.");
   });
 });
 

@@ -84,9 +84,18 @@ export function reorderRiderItems<T extends { id: string; position: number }>(
   }));
 }
 
+export type ShowRiderItemMessage = {
+  id: string;
+  show_rider_item_id: string;
+  author_type: "producer" | "venue";
+  author_name?: string | null;
+  message: string;
+  created_at?: string;
+};
+
 export type ShowRiderItem = {
   id: string;
-  status: "pending" | "confirmed" | "exception" | string;
+  status: "pending" | "confirmed" | "exception" | "accepted_with_exception" | string;
   category?: string;
   item_name?: string;
   specification?: string | null;
@@ -97,6 +106,7 @@ export type ShowRiderItem = {
   confirmed_by_venue_at?: string | null;
   physical_check?: "unchecked" | "conformed" | "divergent" | string;
   physical_divergence_note?: string | null;
+  messages?: ShowRiderItemMessage[];
 };
 
 export type RiderGroupBalance = {
@@ -111,6 +121,7 @@ export type RiderGroupBalance = {
 export type RiderBalance = {
   total: number;
   confirmed: number;
+  acceptedWithException: number;
   exceptions: number;
   pending: number;
   pct: number;
@@ -250,12 +261,18 @@ export function computeMemberRequirementStatus(
   };
 }
 
-/** Calcula o balanço do rider técnico do show segregando itens inegociáveis e desejáveis (RF-11) */
+/** Calcula o balanço do rider técnico do show segregando itens inegociáveis e desejáveis (RF-11 e RF-14) */
 export function computeRiderBalance(
   items: { status: string; is_mandatory?: boolean }[],
 ): RiderBalance {
   const total = items.length;
-  const confirmed = items.filter((i) => i.status === "confirmed").length;
+  const acceptedWithException = items.filter(
+    (i) => i.status === "accepted_with_exception",
+  ).length;
+  // RF-14: Itens confirmados com ressalva (accepted_with_exception) contam como atendidos no balanço
+  const confirmed = items.filter(
+    (i) => i.status === "confirmed" || i.status === "accepted_with_exception",
+  ).length;
   const exceptions = items.filter((i) => i.status === "exception").length;
   const pending = items.filter((i) => i.status === "pending" || !i.status).length;
   const pct = total > 0 ? Math.round((confirmed / total) * 100) : 0;
@@ -266,7 +283,9 @@ export function computeRiderBalance(
 
   const calcGroup = (group: { status: string }[]): RiderGroupBalance => {
     const gTotal = group.length;
-    const gConfirmed = group.filter((i) => i.status === "confirmed").length;
+    const gConfirmed = group.filter(
+      (i) => i.status === "confirmed" || i.status === "accepted_with_exception",
+    ).length;
     const gExceptions = group.filter((i) => i.status === "exception").length;
     const gPending = group.filter((i) => i.status === "pending" || !i.status).length;
     return {
@@ -282,9 +301,9 @@ export function computeRiderBalance(
   const mandatory = calcGroup(mandatoryItems);
   const desirable = calcGroup(desirableItems);
 
-  // TC-11.1 (Bloqueio de conclusão):
-  // RF-11: Se houver itens inegociáveis, a conclusão depende estritamente deles (desejável pendente não bloqueia o show).
-  // Se não houver itens inegociáveis configurados, exige que todos os itens estejam confirmados (sem pendências ou exceções).
+  // TC-11.1 / TC-14.2 (Bloqueio de conclusão):
+  // RF-11 e RF-14: Se houver itens inegociáveis, a conclusão depende estritamente deles.
+  // accepted_with_exception NÃO conta como pending nem exception, logo não ativa hasMandatoryPendingOrException.
   const hasMandatoryPendingOrException = mandatory.pending > 0 || mandatory.exceptions > 0;
   const isComplete =
     total > 0 &&
@@ -295,6 +314,7 @@ export function computeRiderBalance(
   return {
     total,
     confirmed,
+    acceptedWithException,
     exceptions,
     pending,
     pct,
@@ -656,5 +676,33 @@ export function buildWhatsAppLink(phone: string, message: string): string {
   const digits = phone.replace(/\D/g, "");
   const withCountryCode = digits.startsWith("55") ? digits : `55${digits}`;
   return `https://wa.me/${withCountryCode}?text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * Constrói a mensagem estruturada de WhatsApp para negociação do rider (RF-14 / T-17)
+ * Envia um resumo da réplica com o link exclusivo e aviso claro de que a resposta
+ * oficial deve ser dada através do link.
+ */
+export function buildRiderNegotiationWhatsAppMessage(params: {
+  artistName: string;
+  showDate?: string | null;
+  itemName: string;
+  replySummary: string;
+  publicUrl: string;
+}): string {
+  const dateLine = params.showDate ? `Data: ${params.showDate}\n` : "";
+  const summaryLine = params.replySummary.trim()
+    ? `\nProposta da produção:\n"${params.replySummary.trim()}"\n`
+    : "";
+
+  return (
+    `*Negociação do Rider Técnico — ${params.artistName}*\n` +
+    dateLine +
+    `Item: *${params.itemName}*\n` +
+    summaryLine +
+    `\nAcesse o link do rider para visualizar o histórico e responder:\n` +
+    `${params.publicUrl}\n\n` +
+    `_Importante: Para que sua resposta seja oficialmente registrada no sistema, responda exclusivamente através do link acima._`
+  );
 }
 

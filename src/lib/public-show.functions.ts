@@ -211,16 +211,34 @@ export const getPublicRider = createServerFn({ method: "GET" })
     if (showErr) throw new Error(showErr.message);
     if (!show) return null;
 
-    // Busca os itens do rider do show ordenados por posição
-    const { data: items, error: itemsErr } = await supabaseAdmin
-      .from("show_rider_items")
-      .select(
-        "id, category, item_name, specification, quantity, is_mandatory, position, status, exception_note, confirmed_by_venue_at",
-      )
-      .eq("show_id", show.id)
-      .order("position", { ascending: true });
+    // Busca os itens do rider do show ordenados por posição e mensagens associadas
+    const [
+      { data: items, error: itemsErr },
+      { data: messages, error: messagesErr },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("show_rider_items")
+        .select(
+          "id, category, item_name, specification, quantity, is_mandatory, position, status, exception_note, confirmed_by_venue_at",
+        )
+        .eq("show_id", show.id)
+        .order("position", { ascending: true }),
+      supabaseAdmin
+        .from("show_rider_item_messages")
+        .select("id, show_rider_item_id, author_type, author_name, message, created_at")
+        .eq("show_id", show.id)
+        .order("created_at", { ascending: true }),
+    ]);
 
     if (itemsErr) throw new Error(itemsErr.message);
+    if (messagesErr) throw new Error(messagesErr.message);
+
+    const messagesByItem = new Map<string, any[]>();
+    ((messages ?? []) as any[]).forEach((m) => {
+      const list = messagesByItem.get(m.show_rider_item_id as string) ?? [];
+      list.push(m);
+      messagesByItem.set(m.show_rider_item_id as string, list);
+    });
 
     return {
       show: {
@@ -238,24 +256,26 @@ export const getPublicRider = createServerFn({ method: "GET" })
         quantity: Number(item.quantity) || 1,
         is_mandatory: Boolean(item.is_mandatory),
         position: Number(item.position) || 0,
-        status: (item.status as "pending" | "confirmed" | "exception") || "pending",
+        status: (item.status as "pending" | "confirmed" | "exception" | "accepted_with_exception") || "pending",
         exception_note: (item.exception_note as string | null) ?? null,
         confirmed_by_venue_at: (item.confirmed_by_venue_at as string | null) ?? null,
+        messages: messagesByItem.get(item.id as string) ?? [],
       })),
     };
   });
 
+export const updatePublicRiderItemSchema = z.object({
+  token: z.string().min(4),
+  itemId: z.string().uuid(),
+  // Bloqueio estrito de elevação de privilégio (AppSec Seção 7):
+  // A casa SÓ pode definir 'confirmed', 'exception' ou 'pending'.
+  // 'accepted_with_exception' é terminantemente proibido nesta rota pública.
+  status: z.enum(["confirmed", "exception", "pending"]),
+  exceptionNote: z.string().max(1000).optional().nullable(),
+});
+
 export const updatePublicRiderItem = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        token: z.string().min(4),
-        itemId: z.string().uuid(),
-        status: z.enum(["confirmed", "exception", "pending"]),
-        exceptionNote: z.string().max(1000).optional().nullable(),
-      })
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => updatePublicRiderItemSchema.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -292,5 +312,111 @@ export const updatePublicRiderItem = createServerFn({ method: "POST" })
     }
 
     return { ok: true, item: updated, savedAt: nowIso };
+  });
+
+export const submitPublicRiderMessageSchema = z.object({
+  token: z.string().min(4),
+  itemId: z.string().uuid(),
+  message: z
+    .string()
+    .trim()
+    .min(1, "A mensagem não pode estar vazia.")
+    .max(1000, "Mensagem não pode exceder 1000 caracteres."),
+});
+
+/**
+ * Submete mensagem de tréplica da casa de show com validação anti-IDOR e rate limiting em duas camadas (RF-14 / T-17 / AppSec Seção 7)
+ */
+export const submitPublicRiderMessage = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => submitPublicRiderMessageSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. Localiza o show pelo token público do rider
+    const { data: show, error: showErr } = await supabaseAdmin
+      .from("shows")
+      .select("id")
+      .eq("rider_public_token", data.token)
+      .maybeSingle();
+
+    if (showErr || !show) throw new Error("Link de rider inválido ou expirado.");
+
+    // 2. Blindagem anti-IDOR: O item PRECISA pertencer ao show resolvido
+    const { data: item, error: itemErr } = await supabaseAdmin
+      .from("show_rider_items")
+      .select("id, status")
+      .eq("id", data.itemId)
+      .eq("show_id", show.id)
+      .maybeSingle();
+
+    if (itemErr || !item) {
+      throw new Error("Item do rider não pertence a este evento. Operação negada.");
+    }
+
+    // 3. Controle de Taxa em Duas Camadas (Anti-Abuso e Anti-Spam - AppSec Seção 7)
+    // 3.1 Camada Global por Token: máx 10 mensagens por minuto somando todos os itens do show
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+    const { count: globalCount } = await supabaseAdmin
+      .from("show_rider_item_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("show_id", show.id)
+      .gte("created_at", oneMinuteAgo);
+
+    if ((globalCount ?? 0) >= 10) {
+      throw new Error("Muitas mensagens enviadas recentemente. Aguarde um minuto antes de tentar novamente.");
+    }
+
+    // 3.2 Camada por Item: intervalo mínimo de 5s, teto máximo de 30 mensagens e bloqueio de monólogo
+    const [
+      { count: itemMsgCount },
+      { data: recentMsgs },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("show_rider_item_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("show_rider_item_id", data.itemId),
+      supabaseAdmin
+        .from("show_rider_item_messages")
+        .select("id, author_type, created_at")
+        .eq("show_rider_item_id", data.itemId)
+        .order("created_at", { ascending: false })
+        .limit(2),
+    ]);
+
+    if ((itemMsgCount ?? 0) >= 30) {
+      throw new Error("Limite de mensagens para este item atingido. Entre em contato direto com a produção.");
+    }
+
+    const lastMsg = recentMsgs?.[0];
+    if (lastMsg) {
+      const diffMs = Date.now() - new Date(lastMsg.created_at).getTime();
+      if (diffMs < 5000) {
+        throw new Error("Aguarde alguns segundos antes de enviar outra mensagem.");
+      }
+    }
+
+    // Bloqueio de monólogo: se as últimas 2 mensagens foram da casa ('venue'), exige réplica da produção
+    if (recentMsgs && recentMsgs.length >= 2 && recentMsgs.every((m) => m.author_type === "venue")) {
+      throw new Error("Aguarde a resposta da produção antes de enviar uma nova mensagem para este item.");
+    }
+
+    // 4. Inserção segura da mensagem
+    const { data: inserted, error: insertErr } = await supabaseAdmin
+      .from("show_rider_item_messages")
+      .insert({
+        show_id: show.id,
+        show_rider_item_id: data.itemId,
+        author_type: "venue",
+        author_name: "Casa de Show",
+        message: data.message,
+      })
+      .select("id, show_rider_item_id, author_type, author_name, message, created_at")
+      .single();
+
+    if (insertErr || !inserted) {
+      throw new Error(insertErr?.message || "Erro ao registrar mensagem na thread.");
+    }
+
+    return { ok: true, message: inserted };
   });
 

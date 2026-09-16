@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, Clock, AlertTriangle, Minus } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Minus, CheckCheck, MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type StatusType =
@@ -9,6 +9,8 @@ export type StatusType =
   | "pending"
   | "excecao"
   | "exception"
+  | "accepted_with_exception"
+  | "in_negotiation"
   | "sem_exigencia"
   | "no_requirement";
 
@@ -89,6 +91,42 @@ export function StatusBadge({
             aria-hidden="true"
           />
           <span>{label ?? "Exceção"}</span>
+        </span>
+      );
+
+    case "accepted_with_exception":
+      return (
+        <span
+          role="status"
+          className={cn(
+            "inline-flex items-center gap-1.5 font-medium rounded-full bg-teal-500/15 text-teal-800 dark:text-teal-300 border border-teal-500/30",
+            isSm ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+            className,
+          )}
+        >
+          <CheckCheck
+            className={cn(isSm ? "size-3" : "size-3.5", "shrink-0 text-teal-600 dark:text-teal-400")}
+            aria-hidden="true"
+          />
+          <span>{label ?? "Aceito c/ ressalva"}</span>
+        </span>
+      );
+
+    case "in_negotiation":
+      return (
+        <span
+          role="status"
+          className={cn(
+            "inline-flex items-center gap-1.5 font-medium rounded-full bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-500/30",
+            isSm ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+            className,
+          )}
+        >
+          <MessagesSquare
+            className={cn(isSm ? "size-3" : "size-3.5", "shrink-0 text-blue-600 dark:text-blue-400")}
+            aria-hidden="true"
+          />
+          <span>{label ?? "Em negociação"}</span>
         </span>
       );
 

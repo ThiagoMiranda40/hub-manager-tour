@@ -15,6 +15,7 @@ import {
   labelFrom,
   type ShowRequirement,
   type ShowRiderItem,
+  type ShowRiderItemMessage,
 } from "@/lib/g3";
 
 export const Route = createFileRoute("/shows/$id_/ficha")({
@@ -56,6 +57,7 @@ function FichaProducao() {
         { data: docs },
         { data: reqs },
         { data: rider },
+        { data: riderMessages },
         { data: peopleList },
       ] = await Promise.all([
         supabase
@@ -89,17 +91,34 @@ function FichaProducao() {
           .eq("show_id", id)
           .order("position"),
         supabase
+          .from("show_rider_item_messages")
+          .select("id, show_rider_item_id, author_type, author_name, message, created_at")
+          .eq("show_id", id)
+          .order("created_at", { ascending: true }),
+        supabase
           .from("people")
           .select("id, name, phone, pix_type, pix_key, email")
           .order("name"),
       ]);
+
+      const messagesByItem = new Map<string, ShowRiderItemMessage[]>();
+      ((riderMessages ?? []) as any[]).forEach((m) => {
+        const list = messagesByItem.get(m.show_rider_item_id) ?? [];
+        list.push(m as ShowRiderItemMessage);
+        messagesByItem.set(m.show_rider_item_id, list);
+      });
+
+      const hydratedRiderItems = ((rider ?? []) as any[]).map((item) => ({
+        ...item,
+        messages: messagesByItem.get(item.id) ?? [],
+      })) as ShowRiderItem[];
 
       return {
         show,
         cast: cast ?? [],
         docs: docs ?? [],
         requirements: (reqs ?? []) as ShowRequirement[],
-        riderItems: (rider ?? []) as ShowRiderItem[],
+        riderItems: hydratedRiderItems,
         people: peopleList ?? [],
       };
     },
@@ -360,48 +379,77 @@ function FichaProducao() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
-                    {riderItems.map((item) => (
-                      <tr key={item.id} className="align-top text-xs break-inside-avoid">
-                        <td className="py-2 pr-3">
-                          <span className="font-semibold text-foreground">{item.item_name}</span>
-                          {item.specification ? (
-                            <p className="font-mono text-[10px] text-muted-foreground print:text-black mt-0.5">
-                              {item.specification}
-                            </p>
-                          ) : null}
-                          {item.exception_note ? (
-                            <p className="text-[10px] text-purple-700 dark:text-purple-300 print:text-black font-sans mt-0.5">
-                              <strong>Nota da Casa:</strong> {item.exception_note}
-                            </p>
-                          ) : null}
-                          {item.physical_divergence_note ? (
-                            <p className="text-[10px] text-amber-700 dark:text-amber-400 print:text-black font-sans mt-0.5">
-                              <strong>Divergência Palco:</strong> {item.physical_divergence_note}
-                            </p>
-                          ) : null}
-                        </td>
-                        <td className="py-2 pr-2 font-mono text-[11px] uppercase text-muted-foreground print:text-black">
-                          {item.category}
-                        </td>
-                        <td className="py-2 pr-2 font-mono text-[11px] text-center font-bold">
-                          {item.quantity}
-                        </td>
-                        <td className="py-2 pr-2 font-mono text-[10px] uppercase">
-                          {item.is_mandatory ? (
-                            <span className="font-bold text-destructive print:text-black">Inegociável</span>
-                          ) : (
-                            <span className="text-muted-foreground print:text-black">Desejável</span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-2 font-mono text-[11px]">
-                          {item.status === "confirmed" ? (
-                            <span className="text-ok font-medium">✓ Confirmado</span>
-                          ) : item.status === "exception" ? (
-                            <span className="text-purple-600 print:text-black font-medium">⚠ Exceção</span>
-                          ) : (
-                            <span className="text-muted-foreground print:text-black">Pendente</span>
-                          )}
-                        </td>
+                    {riderItems.map((item) => {
+                      const lastMsg = item.messages && item.messages.length > 0
+                        ? item.messages[item.messages.length - 1]
+                        : null;
+
+                      return (
+                        <tr key={item.id} className="align-top text-xs break-inside-avoid">
+                          <td className="py-2 pr-3">
+                            <span className="font-semibold text-foreground">{item.item_name}</span>
+                            {item.specification ? (
+                              <p className="font-mono text-[10px] text-muted-foreground print:text-black mt-0.5">
+                                {item.specification}
+                              </p>
+                            ) : null}
+                            {item.exception_note ? (
+                              <p className="text-[10px] text-purple-700 dark:text-purple-300 print:text-black font-sans mt-0.5">
+                                <strong>Nota da Casa:</strong> {item.exception_note}
+                              </p>
+                            ) : null}
+                            {item.physical_divergence_note ? (
+                              <p className="text-[10px] text-amber-700 dark:text-amber-400 print:text-black font-sans mt-0.5">
+                                <strong>Divergência Palco:</strong> {item.physical_divergence_note}
+                              </p>
+                            ) : null}
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-[11px] uppercase text-muted-foreground print:text-black">
+                            {item.category}
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-[11px] text-center font-bold">
+                            {item.quantity}
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-[10px] uppercase">
+                            {item.is_mandatory ? (
+                              <span className="font-bold text-destructive print:text-black">Inegociável</span>
+                            ) : (
+                              <span className="text-muted-foreground print:text-black">Desejável</span>
+                            )}
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-[11px]">
+                            {item.status === "confirmed" ? (
+                              <span className="text-ok font-medium">✓ Confirmado</span>
+                            ) : item.status === "accepted_with_exception" ? (
+                              <div>
+                                <span className="text-teal-700 dark:text-teal-400 print:text-black font-semibold">
+                                  ✓ Aceito c/ ressalva
+                                </span>
+                                {lastMsg ? (
+                                  <p className="font-sans text-[10px] text-muted-foreground print:text-black line-clamp-2 mt-0.5">
+                                    {lastMsg.message}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ) : item.messages && item.messages.length > 0 && lastMsg ? (
+                              <div>
+                                <span className="text-blue-700 dark:text-blue-400 print:text-black font-semibold">
+                                  💬 Em negociação
+                                </span>
+                                <p className="font-sans text-[10px] text-muted-foreground print:text-black line-clamp-2 mt-0.5">
+                                  Úl.:{" "}
+                                  {lastMsg.author_type === "producer"
+                                    ? "Produção: "
+                                    : "Casa: "}
+                                  {lastMsg.message}
+                                </p>
+                              </div>
+                            ) : item.status === "exception" ? (
+                              <span className="text-purple-600 print:text-black font-medium">⚠ Exceção</span>
+                            ) : (
+                              <span className="text-muted-foreground print:text-black">Pendente</span>
+                            )}
+                          </td>
                         <td className="py-2 text-right font-mono text-[11px]">
                           {item.physical_check === "conformed" ? (
                             <span className="text-ok font-semibold">✓ Conforme</span>
@@ -412,7 +460,8 @@ function FichaProducao() {
                           )}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
