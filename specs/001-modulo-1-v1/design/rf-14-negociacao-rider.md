@@ -210,3 +210,18 @@ Muito obrigado pela parceria! 🎸
 - **Operável:** Suporte integral a navegação por teclado (`Tab`, `Enter`, `Space`, `Esc`). Áreas de toque mobile com altura mínima de 44px (ou 48px no modo palco).
 - **Compreensível:** Identificação explícita do autor em cada mensagem da thread ("Casa de Show", "Produção"), com carimbo de data e hora.
 - **Robusto:** Elementos nativos de formulário semântico e compatibilidade com leitores de tela.
+
+---
+
+## 7. Diretrizes de Segurança e Blindagem de Interface (AppSec)
+
+1. **Caminho de Leitura Público Seguro (`getPublicRider`):**
+   - O histórico de mensagens de cada item é recuperado e filtrado no servidor estritamente pelo `show.id` validado a partir do `rider_public_token`.
+   - Nenhum dado de outros shows, cachês, credenciais ou tabelas não relacionadas é exposto na resposta da Server Function.
+2. **Regra Absoluta de Exibição de Texto Puro (Anti-Phishing / Anti-XSS):**
+   - É terminantemente vedada a detecção automática e conversão de textos em links clicáveis (`<a>`), tanto na interface do produtor quanto na rota pública da casa.
+   - Todo conteúdo digitado é renderizado estritamente como texto puro escapado pelo React, prevenindo ataques de phishing e injeção de links maliciosos.
+3. **Controle de Taxa em Duas Camadas (Anti-Abuso e Anti-Spam):**
+   - **Camada por Item:** intervalo mínimo de 5 segundos entre mensagens e teto de 30 mensagens por thread de item.
+   - **Camada Global por Token:** máximo de 10 mensagens por minuto somando todos os itens daquele `rider_public_token`, impedindo ataques distribuídos em múltiplos itens em paralelo.
+
