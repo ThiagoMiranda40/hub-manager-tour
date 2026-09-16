@@ -720,3 +720,47 @@ export function sanitizeMessageText(text: string): string {
     .trim();
 }
 
+/**
+ * Validação pura de controle de taxa e anti-abuso para mensagens de negociação do rider (RF-14 / T-17 / TC-14.5)
+ * - Teto máximo por item: 30 mensagens
+ * - Cooldown mínimo entre envios no mesmo item: 5.000 ms
+ * - Bloqueio de monólogo: no máximo 2 mensagens consecutivas da casa de show ('venue') sem resposta da produção
+ */
+export function validateRiderMessageAntiAbuse(params: {
+  itemMsgCount: number;
+  recentMsgs: { author_type: string; created_at: string }[];
+  now?: number;
+}): { allowed: boolean; reason?: string } {
+  if (params.itemMsgCount >= 30) {
+    return {
+      allowed: false,
+      reason: "Limite de mensagens para este item atingido. Entre em contato direto com a produção.",
+    };
+  }
+
+  const currentTime = params.now ?? Date.now();
+  const lastMsg = params.recentMsgs[0];
+  if (lastMsg) {
+    const diffMs = currentTime - new Date(lastMsg.created_at).getTime();
+    if (diffMs < 5000) {
+      return {
+        allowed: false,
+        reason: "Aguarde alguns segundos antes de enviar outra mensagem.",
+      };
+    }
+  }
+
+  if (
+    params.recentMsgs.length >= 2 &&
+    params.recentMsgs.every((m) => m.author_type === "venue")
+  ) {
+    return {
+      allowed: false,
+      reason: "Aguarde a resposta da produção antes de enviar uma nova mensagem para este item.",
+    };
+  }
+
+  return { allowed: true };
+}
+
+

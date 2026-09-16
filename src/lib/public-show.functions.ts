@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { sanitizeMessageText } from "./g3";
+import { sanitizeMessageText, validateRiderMessageAntiAbuse } from "./g3";
 
 export const getPublicShow = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ token: z.string().min(4) }).parse(data))
@@ -384,21 +384,13 @@ export const submitPublicRiderMessage = createServerFn({ method: "POST" })
         .limit(2),
     ]);
 
-    if ((itemMsgCount ?? 0) >= 30) {
-      throw new Error("Limite de mensagens para este item atingido. Entre em contato direto com a produção.");
-    }
+    const antiAbuseCheck = validateRiderMessageAntiAbuse({
+      itemMsgCount: itemMsgCount ?? 0,
+      recentMsgs: recentMsgs ?? [],
+    });
 
-    const lastMsg = recentMsgs?.[0];
-    if (lastMsg) {
-      const diffMs = Date.now() - new Date(lastMsg.created_at).getTime();
-      if (diffMs < 5000) {
-        throw new Error("Aguarde alguns segundos antes de enviar outra mensagem.");
-      }
-    }
-
-    // Bloqueio de monólogo: se as últimas 2 mensagens foram da casa ('venue'), exige réplica da produção
-    if (recentMsgs && recentMsgs.length >= 2 && recentMsgs.every((m) => m.author_type === "venue")) {
-      throw new Error("Aguarde a resposta da produção antes de enviar uma nova mensagem para este item.");
+    if (!antiAbuseCheck.allowed) {
+      throw new Error(antiAbuseCheck.reason ?? "Operação de envio bloqueada.");
     }
 
     // 4. Inserção segura da mensagem (com sanitização RF-14 / T-17)

@@ -305,7 +305,7 @@ stateDiagram-v2
   - Envio com `delta < 5000ms`: Rejeitado por limite de frequência.
   - Envio com `delta >= 5000ms`: Aceito.
 
-### 8.6 Roteiro de Casos de Teste para TDD (TC-14.1 a TC-14.6)
+### 8.6 Roteiro de Casos de Teste para TDD (TC-14.1 a TC-14.7)
 
 Os testes a seguir devem ser escritos e verificados estritamente na fase de implementação (TDD):
 
@@ -324,7 +324,11 @@ Os testes a seguir devem ser escritos e verificados estritamente na fase de impl
 5. **TC-14.5 — [Segurança / Anti-Abuso] Rate Limit e Bloqueio de Monólogo:**
    - Validar rejeição na 3ª mensagem consecutiva enviada pela casa sem resposta da produção.
    - Validar rejeição de envio com intervalo menor que 5 segundos no mesmo item.
+   - Validar rejeição de envio quando o teto de 30 mensagens por item for atingido.
 6. **TC-14.6 — [Comunicação / WhatsApp] Formatação da Mensagem Estruturada:**
    - Verificar que `buildRiderNegotiationWhatsAppMessage` inclui o resumo da réplica, a URL com o token público do rider e a frase formal informando que a resposta oficial deve ser dada pelo link.
+7. **TC-14.7 — [Segurança / Sanitização] Sanitização de Mensagens (Controle Invisível e Quebras Excessivas):**
+   - Validar que caracteres de controle invisíveis (`[\x00-\x08\x0B\x0C\x0E-\x1F]`) são eliminados e repetições consecutivas de 3+ quebras de linha normalizam para no máximo 2.
+
 
 

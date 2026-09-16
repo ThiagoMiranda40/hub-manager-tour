@@ -16,6 +16,7 @@ import {
   buildWhatsAppLink,
   buildRiderNegotiationWhatsAppMessage,
   sanitizeMessageText,
+  validateRiderMessageAntiAbuse,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -805,7 +806,99 @@ describe("RF-14: Negociação de Exceção do Rider Técnico e Reabertura (T-17 
     expect(text).toContain("Para que sua resposta seja oficialmente registrada no sistema, responda exclusivamente através do link acima.");
   });
 
-  it("TC-14.5 — [Segurança / Sanitização] sanitizeMessageText remove caracteres de controle invisíveis e normaliza quebras de linha excessivas", () => {
+  it("TC-14.5 — [Segurança / Anti-Abuso] validateRiderMessageAntiAbuse aplica rate limit por item e bloqueio de monólogo", () => {
+    const baseTime = 1773691200000; // Timestamp fixo de referência
+
+    // 1. Rejeição com teto de 30 mensagens atingido
+    const atCap = validateRiderMessageAntiAbuse({
+      itemMsgCount: 30,
+      recentMsgs: [],
+      now: baseTime,
+    });
+    expect(atCap.allowed).toBe(false);
+    expect(atCap.reason).toBe(
+      "Limite de mensagens para este item atingido. Entre em contato direto com a produção.",
+    );
+
+    // 2. Rejeição com delta < 5000ms (ex.: 3000ms atrás)
+    const tooFast = validateRiderMessageAntiAbuse({
+      itemMsgCount: 5,
+      recentMsgs: [
+        {
+          author_type: "venue",
+          created_at: new Date(baseTime - 3000).toISOString(),
+        },
+      ],
+      now: baseTime,
+    });
+    expect(tooFast.allowed).toBe(false);
+    expect(tooFast.reason).toBe("Aguarde alguns segundos antes de enviar outra mensagem.");
+
+    // 3. Rejeição de monólogo: 2 mensagens consecutivas da casa ('venue') sem resposta da produção
+    const monologue = validateRiderMessageAntiAbuse({
+      itemMsgCount: 5,
+      recentMsgs: [
+        {
+          author_type: "venue",
+          created_at: new Date(baseTime - 10000).toISOString(),
+        },
+        {
+          author_type: "venue",
+          created_at: new Date(baseTime - 20000).toISOString(),
+        },
+      ],
+      now: baseTime,
+    });
+    expect(monologue.allowed).toBe(false);
+    expect(monologue.reason).toBe(
+      "Aguarde a resposta da produção antes de enviar uma nova mensagem para este item.",
+    );
+
+    // 4. Casos válidos permitidos:
+    // a) Primeira mensagem no item
+    const firstMsg = validateRiderMessageAntiAbuse({
+      itemMsgCount: 0,
+      recentMsgs: [],
+      now: baseTime,
+    });
+    expect(firstMsg.allowed).toBe(true);
+
+    // b) Envio após resposta da produção com delta >= 5000ms
+    const afterProducerReply = validateRiderMessageAntiAbuse({
+      itemMsgCount: 3,
+      recentMsgs: [
+        {
+          author_type: "producer",
+          created_at: new Date(baseTime - 6000).toISOString(),
+        },
+        {
+          author_type: "venue",
+          created_at: new Date(baseTime - 30000).toISOString(),
+        },
+      ],
+      now: baseTime,
+    });
+    expect(afterProducerReply.allowed).toBe(true);
+
+    // c) Primeira tréplica da venue (apenas 1 mensagem da venue após producer)
+    const firstVenueFollowup = validateRiderMessageAntiAbuse({
+      itemMsgCount: 4,
+      recentMsgs: [
+        {
+          author_type: "venue",
+          created_at: new Date(baseTime - 8000).toISOString(),
+        },
+        {
+          author_type: "producer",
+          created_at: new Date(baseTime - 25000).toISOString(),
+        },
+      ],
+      now: baseTime,
+    });
+    expect(firstVenueFollowup.allowed).toBe(true);
+  });
+
+  it("TC-14.7 — [Segurança / Sanitização] sanitizeMessageText remove caracteres de controle invisíveis e normaliza quebras de linha excessivas", () => {
     // 1. Caracteres de controle invisíveis (ex.: null byte \x00, bell \x07, form feed \x0C)
     const textWithControlChars = "Mensagem\x00 com\x07 caracteres\x1F ocultos\x0C!";
     expect(sanitizeMessageText(textWithControlChars)).toBe("Mensagem com caracteres ocultos!");
@@ -822,4 +915,5 @@ describe("RF-14: Negociação de Exceção do Rider Técnico e Reabertura (T-17 
     expect(sanitizeMessageText("")).toBe("");
   });
 });
+
 
