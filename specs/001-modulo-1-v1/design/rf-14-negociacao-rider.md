@@ -224,4 +224,9 @@ Muito obrigado pela parceria! 🎸
 3. **Controle de Taxa em Duas Camadas (Anti-Abuso e Anti-Spam):**
    - **Camada por Item:** intervalo mínimo de 5 segundos entre mensagens e teto de 30 mensagens por thread de item.
    - **Camada Global por Token:** máximo de 10 mensagens por minuto somando todos os itens daquele `rider_public_token`, impedindo ataques distribuídos em múltiplos itens em paralelo.
+4. **Bloqueio Estrito de Elevação de Privilégio na Rota Pública (`updatePublicRiderItem`):**
+   - O schema de validação Zod da Server Function pública da casa aceita estritamente o enum `['confirmed', 'exception', 'pending']`, rejeitando categoricamente qualquer tentativa de envio de `status: 'accepted_with_exception'`.
+   - O status `accepted_with_exception` é exclusivo da equipe de produção autenticada e só pode ser gravado através de mutação/Server Function autenticada com validação de `auth.uid() = show.user_id`.
+   - Essa trava impede que um ator malicioso na rota pública auto-aprove exceções ou manipule o balanço de completude do rider do artista.
+
 
