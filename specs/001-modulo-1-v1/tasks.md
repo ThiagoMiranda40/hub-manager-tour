@@ -296,7 +296,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
   - `[MODIFY] src/routes/r.$token.tsx` (exibir réplica, permitir tréplica, regra de texto puro)
   - `[MODIFY] src/routes/shows.$id_.ficha.tsx` (indicador de negociação na coluna Status da Casa)
   - `[MODIFY] src/lib/public-show.functions.ts` (getPublicRider com mensagens, submitPublicRiderMessage com validação anti-IDOR e rate limiting em duas camadas)
-> Consultar obrigatoriamente specs/001-modulo-1-v1/design/rf-14-negociacao-rider.md (Seção 7 — Diretrizes de Segurança) antes de implementar a migration e as Server Functions desta tarefa.
+> Consultar obrigatoriamente specs/001-modulo-1-v1/design/rf-14-negociacao-rider.md (Seção 7 — Diretrizes de Segurança e Seção 8 — Estratégia de Testes e QA/TDD) antes de implementar a migration, as Server Functions e os testes desta tarefa.
 - **Fazer:**
   1. Decisão técnica de push: adotar notificação in-app (toast + badge) nesta etapa conforme parecer técnico (limitações de Web Push no iOS/Safari sem PWA; bibliotecas edge como `@block65/webcrypto-web-push` mantidas documentadas para evolução futura).
   2. Migration `show_rider_item_messages`: colunas `id`, `show_rider_item_id`, `show_id` (redundância deliberada para validação em tempo constante), `author_type ('producer' | 'venue')`, `message`, `created_at`. RLS estrita para produtor autenticado (SELECT e INSERT com `author_type = 'producer'` travado e `shows.user_id = auth.uid()`). Decisão explícita de NÃO abrir política pública de INSERT/SELECT para o role `anon` — toda leitura/escrita da casa passa exclusivamente por Server Functions via `supabaseAdmin`.
@@ -305,16 +305,17 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
      - Camada Global por Token: máximo de 10 mensagens por minuto somando todos os itens daquele `rider_public_token`.
   4. Atualizar `computeRiderBalance` (`g3.ts` e `g3.test.ts`) para reconhecer `accepted_with_exception` como resolvido (não onera `hasMandatoryPendingOrException`), distinto de `confirmed` e de `exception` simples.
   5. Aba Rider Técnico (`shows.$id.tsx`): botões "Aceitar com ressalva" e "Recusar" em itens com exceção; campo inline de mensagem ao recusar; histórico de réplica/tréplica; botão de reenvio via WhatsApp com mensagem-resumo + link, deixando explícito que só o link registra oficialmente; renderização de mensagens estritamente como texto puro (sem converter em links clicáveis).
-  6. Página pública do rider (`r.$token.tsx` e `public-show.functions.ts`):
+  6. Botão "Reabrir negociação" na aba Rider Técnico (`shows.$id.tsx`): permitir reverter itens com status `accepted_with_exception` de volta para `exception`, reaproveitando a mesma mutação autenticada (`auth.uid() = show.user_id`), sem lógica adicional de limite de reaberturas ou notificação nesta versão; incluir caso de teste cobrindo essa transição de reversão em `g3.test.ts`.
+  7. Página pública do rider (`r.$token.tsx` e `public-show.functions.ts`):
      - `getPublicRider` atualizado para retornar o histórico de mensagens de cada item, escopado exclusivamente pelo `show.id` resolvido no servidor.
      - Exibir réplica quando existir e permitir tréplica ("Concordar com Proposta" e "Responder contraproposta").
      - Nunca detectar/converter texto em link clicável — todo conteúdo de mensagem renderizado como texto puro, em ambos os lados (produtor e casa).
-  7. Relatório de Produção (`shows.$id_.ficha.tsx`): indicador "Em negociação" (azul) ou "Aceito c/ ressalva" (ciano) na coluna "Status da Casa" com a mensagem mais recente em fonte reduzida, sem adicionar colunas à tabela.
-  8. Notificação in-app pro produtor quando a casa responder (toast contextual e badge de novas mensagens).
-  9. Testes unitários cobrindo o novo estado em `computeRiderBalance`, a montagem da mensagem de WhatsApp e a proteção de sanitização.
-  10. Após a implementação, confirmar através de revisão de código que os controles da Seção 7 do desenho (migration, RLS, rate limiting em duas camadas, regra de texto puro) foram implementados exatamente como especificado — não é uma nova chamada à skill em modo arquitetura, essa já foi feita antes do código.
+  8. Relatório de Produção (`shows.$id_.ficha.tsx`): indicador "Em negociação" (azul) ou "Aceito c/ ressalva" (ciano) na coluna "Status da Casa" com a mensagem mais recente em fonte reduzida, sem adicionar colunas à tabela.
+  9. Notificação in-app pro produtor quando a casa responder (toast contextual e badge de novas mensagens).
+  10. Testes unitários e roteiro TDD conforme Seção 8 do desenho (TC-14.1 a TC-14.6): cobrindo o novo estado em `computeRiderBalance`, a reversão `accepted_with_exception -> exception`, schemas Zod, montagem de WhatsApp e validações anti-abuso.
+  11. Após a implementação, confirmar através de revisão de código que os controles da Seção 7 do desenho (migration, RLS, rate limiting em duas camadas, regra de texto puro) foram implementados exatamente como especificado — não é uma nova chamada à skill em modo arquitetura, essa já foi feita antes do código.
 - **Verificação técnica:** `npx tsc --noEmit && npm test && npm run build`
-- **Tradução em linguagem simples:** "Quando a casa sinaliza que não tem um equipamento obrigatório, o produtor pode aceitar com ressalva ou recusar propondo uma alternativa pelo sistema. A casa recebe o aviso e responde pelo link, registrando todo o histórico sem conversas perdidas no WhatsApp."
+- **Tradução em linguagem simples:** "Quando a casa sinaliza que não tem um equipamento obrigatório, o produtor pode aceitar com ressalva ou recusar propondo uma alternativa pelo sistema. Se mudar de ideia, pode reabrir a negociação a qualquer momento. A casa recebe o aviso e responde pelo link, registrando todo o histórico sem conversas perdidas no WhatsApp."
 
 ---
 

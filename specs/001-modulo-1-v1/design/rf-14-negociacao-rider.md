@@ -229,4 +229,102 @@ Muito obrigado pela parceria! 🎸
    - O status `accepted_with_exception` é exclusivo da equipe de produção autenticada e só pode ser gravado através de mutação/Server Function autenticada com validação de `auth.uid() = show.user_id`.
    - Essa trava impede que um ator malicioso na rota pública auto-aprove exceções ou manipule o balanço de completude do rider do artista.
 
+---
+
+## 8. Estratégia de Testes e QA/TDD
+
+### 8.1 Pirâmide de Testes Calibrada
+A complexidade do RF-14 reside primordialmente na máquina de estados de negociação, no cálculo de balanço de pendências e nas travas de segurança/autorização em Server Functions. A pirâmide para este requisito é calibrada com:
+- **Base Forte (Testes Unitários e de Domínio - Vitest):** ~70% do esforço. Cobertura exaustiva da máquina de transição de status (`computeRiderBalance`), schemas de validação Zod (`updatePublicRiderItemSchema`, `submitPublicRiderMessageSchema`), montagem de mensagens formatadas do WhatsApp e regras puras de texto.
+- **Camada Intermediária (Testes de Integração de Funções / Contratos):** ~20% do esforço. Validação de contratos das Server Functions, isolamento anti-IDOR/BOLA e testes de integração com as mutações seguras.
+- **Topo Enxuto (Testes Exploratórios e E2E):** ~10% do esforço. Sessões estruturadas de teste exploratório manual cobrindo o fluxo entre telas (produtor no desktop/mobile e casa de show na página `/r/[token]`), executadas formalmente no fechamento da T-13.
+
+### 8.2 Matriz de Risco (Probabilidade × Impacto)
+
+| Componente / Cenário de Falha | Probabilidade | Impacto | Risco (P × I) | Estratégia de Mitigação / Teste |
+| :--- | :---: | :---: | :---: | :--- |
+| **Elevação de privilégio na rota pública** (casa forçar `accepted_with_exception`) | Média | Crítico | **Alto** | Validação Zod estrita rejeitando o enum proibido no input da Server Function pública; teste automatizado dedicado. |
+| **Distorção no cálculo de completude** (`accepted_with_exception` gerar falso alerta de bloqueio) | Alta | Alto | **Alto** | Testes unitários exaustivos em `computeRiderBalance` garantindo que o status conta como atendido e não ativa `hasMandatoryPendingOrException`. |
+| **Vazamento entre shows (IDOR / BOLA)** (acessar ou responder em item de outro show) | Baixa | Crítico | **Alto** | Cláusula composta `eq("id", itemId).eq("show_id", show.id)` em todas as queries e mutações; RLS ativa. |
+| **Spam / negação de serviço na rota pública** (envio automatizado em massa de mensagens) | Média | Médio | **Médio** | Rate limit em duas camadas (por item e por token); bloqueio de monólogo da casa (máx. 2 mensagens sem resposta). |
+| **Injeção de links maliciosos / phishing** nas mensagens da thread | Média | Médio | **Médio** | Regra absoluta de texto puro em ambos os lados, sem parser/conversor de links clicáveis. |
+
+### 8.3 Máquina de Estados e Transições Válidas
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending
+    pending --> confirmed : Casa confirma atendimento
+    pending --> exception : Casa sinaliza exceção c/ nota
+    
+    confirmed --> exception : Casa reverte para exceção (T-10)
+    exception --> confirmed : Casa reverte para confirmado (T-10)
+    
+    exception --> accepted_with_exception : Produtor aceita c/ ressalva (1 clique)
+    exception --> in_negotiation : Produtor recusa e envia réplica
+    
+    in_negotiation --> in_negotiation : Casa envia tréplica / Produtor envia réplica
+    in_negotiation --> accepted_with_exception : Produtor aceita proposta na thread
+    
+    accepted_with_exception --> exception : Produtor clica em "Reabrir negociação"
+    
+    note right of accepted_with_exception
+      Status exclusivo do produtor autenticado.
+      Rota pública é estritamente proibida de transicionar para cá.
+    end note
+```
+
+#### Transições Bloqueadas e Invariantes:
+1. **Bloqueio de Auto-Aceite pela Casa:** A casa de show na rota pública `/r/[token]` **nunca** pode definir `accepted_with_exception`. A ação "Concordar com Proposta" na tela da casa insere uma mensagem de concordância na thread, mas a transição formal para `accepted_with_exception` exige o clique deliberado do produtor.
+2. **Reversão Segura:** A transição `accepted_with_exception -> exception` é permitida exclusivamente ao produtor através de botão explícito ("Reabrir negociação"), reaproveitando a mesma Server Function autenticada (`auth.uid() = show.user_id`). As transições `exception -> confirmed` e `confirmed -> exception` já são suportadas livremente pela rota pública desde a T-10.
+
+### 8.4 Particionamento de Equivalência
+
+- **Classe C1 (Status Válidos da Rota Pública):** `['confirmed', 'exception', 'pending']` — devem ser aceitos por `updatePublicRiderItemSchema`.
+- **Classe C2 (Status Inválidos / Proibidos da Rota Pública):** `['accepted_with_exception', 'in_negotiation', 'approved', '', null]` — devem ser terminantemente rejeitados por `updatePublicRiderItemSchema`.
+- **Classe C3 (Mensagens de Réplica/Tréplica Válidas):** Strings de 1 a 1000 caracteres, com remoção de espaços em branco nas pontas (`trim`).
+- **Classe C4 (Mensagens de Réplica/Tréplica Inválidas):** Mensagens vazias (`""`), strings contendo apenas espaços (`"   "`), textos excedendo 1000 caracteres, ou payloads não-string.
+- **Classe C5 (Impacto de `accepted_with_exception` no Balanço do Rider):**
+  - Item inegociável em `accepted_with_exception`: computado como item atendido (aumenta % do rider), `hasMandatoryPendingOrException = false`.
+  - Item inegociável em `exception` ou `pending`: computado como não atendido, `hasMandatoryPendingOrException = true`.
+
+### 8.5 Análise de Valor Limite (BVA)
+
+- **BVA-1 (Tamanho da Mensagem):**
+  - `0 caracteres`: Inválido (rejeitado pelo schema).
+  - `1 caractere`: Válido (limite inferior aceito).
+  - `1000 caracteres`: Válido (limite superior aceito).
+  - `1001 caracteres`: Inválido (rejeitado pelo schema com mensagem de erro).
+- **BVA-2 (Teto de Mensagens por Item):**
+  - Mensagem nº 30: Aceita com sucesso.
+  - Mensagem nº 31: Rejeitada (teto atingido, exigindo fechamento formal ou contato direto).
+- **BVA-3 (Rate Limit por Token):**
+  - 10 mensagens no intervalo de 60 segundos (somando todos os itens): Aceitas.
+  - 11ª mensagem no mesmo intervalo de 60 segundos: Rejeitada com código/erro de taxa excedida.
+- **BVA-4 (Intervalo Mínimo Consecutivo por Item):**
+  - Envio com `delta < 5000ms`: Rejeitado por limite de frequência.
+  - Envio com `delta >= 5000ms`: Aceito.
+
+### 8.6 Roteiro de Casos de Teste para TDD (TC-14.1 a TC-14.6)
+
+Os testes a seguir devem ser escritos e verificados estritamente na fase de implementação (TDD):
+
+1. **TC-14.1 — [Segurança / Zod] Rejeição de Elevação de Privilégio na Rota Pública:**
+   - Testar que `updatePublicRiderItemSchema.parse({ status: "accepted_with_exception", ... })` lança erro de validação (ZodError).
+   - Testar que status válidos (`"confirmed"`, `"exception"`, `"pending"`) passam sem erro.
+2. **TC-14.2 — [Domínio / G3] Cálculo de `computeRiderBalance` com `accepted_with_exception`:**
+   - Configurar um show com 1 item inegociável em `accepted_with_exception`.
+   - Verificar que `confirmedCount` contabiliza o item, o percentual atinge 100% e `hasMandatoryPendingOrException` é `false`.
+3. **TC-14.3 — [Domínio / G3] Reversão de `accepted_with_exception` para `exception`:**
+   - Dado um item previamente aceito com ressalva, ao sofrer reversão para `exception`, confirmar que `hasMandatoryPendingOrException` volta para `true` e a contagem de confirmados é reduzida.
+4. **TC-14.4 — [Segurança / Zod] Validação de Limites de Texto em Mensagens:**
+   - Validar que mensagens com 0 caracteres ou espaços em branco são rejeitadas (BVA-1).
+   - Validar que mensagens com exatamente 1 caractere e exatamente 1000 caracteres são aceitas.
+   - Validar que mensagens com 1001 caracteres são rejeitadas.
+5. **TC-14.5 — [Segurança / Anti-Abuso] Rate Limit e Bloqueio de Monólogo:**
+   - Validar rejeição na 3ª mensagem consecutiva enviada pela casa sem resposta da produção.
+   - Validar rejeição de envio com intervalo menor que 5 segundos no mesmo item.
+6. **TC-14.6 — [Comunicação / WhatsApp] Formatação da Mensagem Estruturada:**
+   - Verificar que `buildRiderNegotiationWhatsAppMessage` inclui o resumo da réplica, a URL com o token público do rider e a frase formal informando que a resposta oficial deve ser dada pelo link.
+
 
