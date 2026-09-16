@@ -267,18 +267,20 @@ export const getPublicRider = createServerFn({ method: "GET" })
     };
   });
 
-export const updatePublicRiderItemSchema = z.object({
-  token: z.string().min(4),
-  itemId: z.string().uuid(),
-  // Bloqueio estrito de elevação de privilégio (AppSec Seção 7):
-  // A casa SÓ pode definir 'confirmed', 'exception' ou 'pending'.
-  // 'accepted_with_exception' é terminantemente proibido nesta rota pública.
-  status: z.enum(["confirmed", "exception", "pending"]),
-  exceptionNote: z.string().max(1000).optional().nullable(),
-});
-
 export const updatePublicRiderItem = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => updatePublicRiderItemSchema.parse(data))
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        token: z.string().min(4),
+        itemId: z.string().uuid(),
+        // Bloqueio estrito de elevação de privilégio (AppSec Seção 7):
+        // A casa SÓ pode definir 'confirmed', 'exception' ou 'pending'.
+        // 'accepted_with_exception' é terminantemente proibido nesta rota pública.
+        status: z.enum(["confirmed", "exception", "pending"]),
+        exceptionNote: z.string().max(1000).optional().nullable(),
+      })
+      .parse(data),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -317,21 +319,23 @@ export const updatePublicRiderItem = createServerFn({ method: "POST" })
     return { ok: true, item: updated, savedAt: nowIso };
   });
 
-export const submitPublicRiderMessageSchema = z.object({
-  token: z.string().min(4),
-  itemId: z.string().uuid(),
-  message: z
-    .string()
-    .trim()
-    .min(1, "A mensagem não pode estar vazia.")
-    .max(1000, "Mensagem não pode exceder 1000 caracteres."),
-});
-
 /**
  * Submete mensagem de tréplica da casa de show com validação anti-IDOR e rate limiting em duas camadas (RF-14 / T-17 / AppSec Seção 7)
  */
 export const submitPublicRiderMessage = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => submitPublicRiderMessageSchema.parse(data))
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        token: z.string().min(4),
+        itemId: z.string().uuid(),
+        message: z
+          .string()
+          .trim()
+          .min(2, "Mensagem deve ter no mínimo 2 caracteres.")
+          .max(1000, "Mensagem não pode exceder 1000 caracteres."),
+      })
+      .parse(data),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

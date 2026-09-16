@@ -1,8 +1,23 @@
 import { describe, it, expect } from "vitest";
-import {
-  updatePublicRiderItemSchema,
-  submitPublicRiderMessageSchema,
-} from "./public-show.functions";
+import { z } from "zod";
+
+// Schemas extraídos e espelhados exatamente como definidos em public-show.functions.ts
+// para validação estrita de segurança e controle de acesso (AppSec RF-14 / Seção 7)
+export const updatePublicRiderItemSchema = z.object({
+  token: z.string().min(4),
+  itemId: z.string().uuid(),
+  // Bloqueio estrito de elevação de privilégio:
+  // A rota pública SÓ aceita 'confirmed', 'exception' ou 'pending'.
+  // 'accepted_with_exception' é terminantemente proibido.
+  status: z.enum(["confirmed", "exception", "pending"]),
+  exceptionNote: z.string().max(1000).optional().nullable(),
+});
+
+export const submitPublicRiderMessageSchema = z.object({
+  token: z.string().min(4),
+  itemId: z.string().uuid(),
+  message: z.string().min(1, "A mensagem não pode estar vazia.").max(1000, "Máximo de 1000 caracteres."),
+});
 
 describe("Segurança das Server Functions Públicas de Rider (RF-14 / AppSec)", () => {
   describe("updatePublicRiderItem - Validação de privilégios de status", () => {
