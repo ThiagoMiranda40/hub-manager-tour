@@ -15,6 +15,7 @@ import {
   parseReimbursementAmount,
   buildWhatsAppLink,
   buildRiderNegotiationWhatsAppMessage,
+  sanitizeMessageText,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -802,6 +803,23 @@ describe("RF-14: Negociação de Exceção do Rider Técnico e Reabertura (T-17 
     expect(text).toContain("https://hub.app/r/tok_venue_999");
     // Aviso explícito sobre canal oficial
     expect(text).toContain("Para que sua resposta seja oficialmente registrada no sistema, responda exclusivamente através do link acima.");
+  });
+
+  it("TC-14.5 — [Segurança / Sanitização] sanitizeMessageText remove caracteres de controle invisíveis e normaliza quebras de linha excessivas", () => {
+    // 1. Caracteres de controle invisíveis (ex.: null byte \x00, bell \x07, form feed \x0C)
+    const textWithControlChars = "Mensagem\x00 com\x07 caracteres\x1F ocultos\x0C!";
+    expect(sanitizeMessageText(textWithControlChars)).toBe("Mensagem com caracteres ocultos!");
+
+    // 2. Quebras de linha consecutivas excessivas (3+ consecutivas viram no máximo 2)
+    const textWithExcessiveNewlines = "Linha 1\n\n\n\n\nLinha 2\n\n\nLinha 3";
+    expect(sanitizeMessageText(textWithExcessiveNewlines)).toBe("Linha 1\n\nLinha 2\n\nLinha 3");
+
+    // 3. Combinação com trim e preservação de \t e \n normais
+    const combined = "  \x08Item negociado:\n\n\n\n\tMicrofone Shure  ";
+    expect(sanitizeMessageText(combined)).toBe("Item negociado:\n\n\tMicrofone Shure");
+
+    // 4. Tratamento defensivo para texto vazio
+    expect(sanitizeMessageText("")).toBe("");
   });
 });
 

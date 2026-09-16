@@ -706,3 +706,17 @@ export function buildRiderNegotiationWhatsAppMessage(params: {
   );
 }
 
+/**
+ * Sanitiza o conteúdo de mensagens de negociação do rider (RF-14 / T-17)
+ * 1. Remove caracteres de controle invisíveis (exceto \t e \n): [\x00-\x08\x0B\x0C\x0E-\x1F]
+ * 2. Normaliza quebras de linha consecutivas excessivas (3+ consecutivas viram no máximo 2)
+ * 3. Aplica trim() nas extremidades
+ */
+export function sanitizeMessageText(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+

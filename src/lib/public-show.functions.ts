@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { sanitizeMessageText } from "./g3";
 
 export const getPublicShow = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ token: z.string().min(4) }).parse(data))
@@ -400,7 +401,12 @@ export const submitPublicRiderMessage = createServerFn({ method: "POST" })
       throw new Error("Aguarde a resposta da produção antes de enviar uma nova mensagem para este item.");
     }
 
-    // 4. Inserção segura da mensagem
+    // 4. Inserção segura da mensagem (com sanitização RF-14 / T-17)
+    const sanitized = sanitizeMessageText(data.message);
+    if (!sanitized) {
+      throw new Error("A mensagem não pode ser vazia.");
+    }
+
     const { data: inserted, error: insertErr } = await supabaseAdmin
       .from("show_rider_item_messages")
       .insert({
@@ -408,7 +414,7 @@ export const submitPublicRiderMessage = createServerFn({ method: "POST" })
         show_rider_item_id: data.itemId,
         author_type: "venue",
         author_name: "Casa de Show",
-        message: data.message,
+        message: sanitized,
       })
       .select("id, show_rider_item_id, author_type, author_name, message, created_at")
       .single();

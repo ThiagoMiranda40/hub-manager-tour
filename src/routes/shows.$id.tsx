@@ -50,6 +50,7 @@ import {
   getMemberPublicUrl as buildMemberPublicUrl,
   buildWhatsAppLink,
   buildRiderNegotiationWhatsAppMessage,
+  sanitizeMessageText,
   type ShowRequirement,
   type ShowRiderItem,
   type ShowRiderItemMessage,
@@ -657,12 +658,15 @@ function ShowDetail() {
   const sendProducerReplyMutation = useMutation({
     mutationFn: async ({ itemId, message }: { itemId: string; message: string }) => {
       if (!session?.user?.id) throw new Error("Usuário não autenticado.");
+      const sanitized = sanitizeMessageText(message);
+      if (!sanitized) throw new Error("A mensagem não pode ser vazia.");
+
       const { error } = await supabase.from("show_rider_item_messages").insert({
         show_id: id,
         show_rider_item_id: itemId,
         author_type: "producer",
         author_name: "Produção",
-        message: message.trim(),
+        message: sanitized,
       });
 
       if (error) throw new Error(error.message);
