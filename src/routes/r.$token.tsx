@@ -14,17 +14,9 @@ import {
   RotateCcw,
   Sliders,
   ChevronRight,
-  MessagesSquare,
-  MessageSquare,
-  Send,
-  CheckCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getPublicRider,
-  updatePublicRiderItem,
-  submitPublicRiderMessage,
-} from "@/lib/public-show.functions";
+import { getPublicRider, updatePublicRiderItem } from "@/lib/public-show.functions";
 import {
   RIDER_CATEGORIES,
   computeRiderBalance,
@@ -78,14 +70,11 @@ function PublicRiderPage() {
   const qc = useQueryClient();
   const fetchRider = useServerFn(getPublicRider);
   const mutateRiderItem = useServerFn(updatePublicRiderItem);
-  const sendRiderMessage = useServerFn(submitPublicRiderMessage);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("todas");
   const [activeExceptionItemId, setActiveExceptionItemId] = useState<string | null>(null);
   const [exceptionNotes, setExceptionNotes] = useState<Record<string, string>>({});
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
-  const [replyingItemId, setReplyingItemId] = useState<string | null>(null);
-  const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
 
   // 1. Carregamento dos dados públicos do rider
   const { data, isLoading, error } = useQuery({
@@ -177,30 +166,6 @@ function PublicRiderPage() {
         qc.setQueryData(["public-rider", token], context.previousData);
       }
       toast.error(err.message || "Erro ao salvar alteração. Tente novamente.");
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["public-rider", token] });
-    },
-  });
-
-  // Mutação para envio de réplicas e mensagens da casa de show (RF-14)
-  const sendMessageMutation = useMutation({
-    mutationFn: async (params: { itemId: string; message: string }) => {
-      return sendRiderMessage({
-        data: {
-          token,
-          itemId: params.itemId,
-          message: params.message,
-        },
-      });
-    },
-    onSuccess: (_, variables) => {
-      toast.success("Mensagem enviada para a produção do artista!");
-      setReplyingItemId(null);
-      setReplyTextMap((prev) => ({ ...prev, [variables.itemId]: "" }));
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Erro ao enviar mensagem.");
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["public-rider", token] });
@@ -506,11 +471,8 @@ function PublicRiderPage() {
           ) : (
             filteredItems.map((item) => {
               const isConfirmed = item.status === "confirmed";
-              const isAcceptedWithException = item.status === "accepted_with_exception";
-              const hasMessages = Boolean(item.messages && item.messages.length > 0);
-              const isInNegotiation = hasMessages && !isConfirmed && !isAcceptedWithException;
-              const isException = (item.status === "exception" || isInNegotiation) && !isAcceptedWithException && !isConfirmed;
-              const isPending = (item.status === "pending" || !item.status) && !hasMessages;
+              const isException = item.status === "exception";
+              const isPending = item.status === "pending" || !item.status;
               const isEditingException = activeExceptionItemId === item.id;
               const isMandatory = Boolean(item.is_mandatory);
 
@@ -519,18 +481,14 @@ function PublicRiderPage() {
                   key={item.id}
                   className={cn(
                     "p-4 rounded-xl border transition-all duration-180 bg-card/60",
-                    // Severidade visual distinta conforme RF-11 e RF-14
-                    isAcceptedWithException
-                      ? "border-teal-500/40 bg-teal-500/5"
-                      : isInNegotiation
-                        ? "border-blue-500/40 bg-blue-500/5"
-                        : isException && isMandatory
-                          ? "border-destructive/50 bg-destructive/5 shadow-[0_0_15px_rgba(239,68,68,0.08)]"
-                          : isException
-                            ? "border-amber-500/40 bg-amber-500/5"
-                            : isConfirmed
-                              ? "border-emerald-500/30 bg-emerald-500/[0.02]"
-                              : "border-line",
+                    // Severidade visual distinta conforme RF-11 (TC-11.2)
+                    isException && isMandatory
+                      ? "border-destructive/50 bg-destructive/5 shadow-[0_0_15px_rgba(239,68,68,0.08)]"
+                      : isException
+                        ? "border-amber-500/40 bg-amber-500/5"
+                        : isConfirmed
+                          ? "border-emerald-500/30 bg-emerald-500/[0.02]"
+                          : "border-line",
                   )}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -568,19 +526,7 @@ function PublicRiderPage() {
                           </span>
                         )}
 
-                        {isAcceptedWithException && (
-                          <span className="text-[10px] font-mono border border-teal-500/40 text-teal-700 dark:text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
-                            <CheckCheck className="size-3 text-teal-500" /> Confirmado c/ ressalva
-                          </span>
-                        )}
-
-                        {isInNegotiation && (
-                          <span className="text-[10px] font-mono border border-blue-500/30 text-blue-800 dark:text-blue-300 bg-blue-500/15 px-2 py-0.5 rounded font-medium flex items-center gap-1">
-                            <MessagesSquare className="size-3 text-blue-500" /> Em negociação
-                          </span>
-                        )}
-
-                        {!isInNegotiation && !isAcceptedWithException && isException && (
+                        {isException && (
                           <span
                             className={cn(
                               "text-[10px] font-mono px-2 py-0.5 rounded font-medium flex items-center gap-1 border",
@@ -621,139 +567,6 @@ function PublicRiderPage() {
                             Nota de atendimento / alternativa oferecida:
                           </span>
                           {item.exception_note}
-                        </div>
-                      )}
-
-                      {/* Histórico de Negociação / Réplicas e Tréplicas (RF-14) */}
-                      {hasMessages && (
-                        <div className="mt-3 pt-3 border-t border-line/60 space-y-2">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                            <MessagesSquare className="size-3.5 text-blue-500" />
-                            <span>Histórico de Negociação:</span>
-                          </div>
-                          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                            {(item.messages ?? []).map((msg) => {
-                              const isProducer = msg.author_type === "producer";
-                              return (
-                                <div
-                                  key={msg.id}
-                                  className={cn(
-                                    "p-2.5 rounded-lg text-xs font-sans border",
-                                    isProducer
-                                      ? "bg-[#9184d9]/10 border-[#9184d9]/30 text-foreground"
-                                      : "bg-muted/40 border-line text-foreground",
-                                  )}
-                                >
-                                  <div className="flex items-center justify-between gap-2 mb-1">
-                                    <span
-                                      className={cn(
-                                        "font-mono text-[10px] uppercase font-bold tracking-wider",
-                                        isProducer ? "text-[#9184d9]" : "text-muted-foreground",
-                                      )}
-                                    >
-                                      {isProducer ? "Produção do Artista" : "Casa de Show"}
-                                    </span>
-                                    <span className="font-mono text-[10px] text-muted-foreground">
-                                      {msg.created_at
-                                        ? new Date(msg.created_at).toLocaleTimeString("pt-BR", {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })
-                                        : ""}
-                                    </span>
-                                  </div>
-                                  {/* RENDERIZAÇÃO ESTRITA DE TEXTO PURO (SEM LINKS) PARA PREVENÇÃO DE PHISHING/XSS */}
-                                  <p className="whitespace-pre-wrap break-words text-xs leading-relaxed select-text">
-                                    {msg.message}
-                                  </p>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Ações da Casa de Show diante da proposta da produção */}
-                      {isInNegotiation && (
-                        <div className="mt-3 space-y-2 print:hidden">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                sendMessageMutation.mutate({
-                                  itemId: item.id,
-                                  message: "A casa de show concordou com a proposta da produção.",
-                                });
-                              }}
-                              disabled={sendMessageMutation.isPending}
-                              className="px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all active:scale-[0.97] shadow-sm disabled:opacity-50"
-                            >
-                              <Check className="size-3.5" />
-                              <span>Concordar com Proposta</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setReplyingItemId(replyingItemId === item.id ? null : item.id);
-                              }}
-                              className="px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 border border-line bg-secondary/60 hover:bg-secondary text-foreground transition-all active:scale-[0.97]"
-                            >
-                              <MessageSquare className="size-3.5" />
-                              <span>
-                                {replyingItemId === item.id ? "Cancelar Resposta" : "Responder / Contraproposta"}
-                              </span>
-                            </button>
-                          </div>
-
-                          {/* Caixa de Texto Inline para Tréplica da Casa */}
-                          {replyingItemId === item.id && (
-                            <div className="p-3 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-180">
-                              <label className="block text-[11px] font-mono text-muted-foreground">
-                                Sua resposta ou contraproposta para a produção:
-                              </label>
-                              <textarea
-                                rows={2}
-                                value={replyTextMap[item.id] ?? ""}
-                                onChange={(e) =>
-                                  setReplyTextMap((prev) => ({ ...prev, [item.id]: e.target.value }))
-                                }
-                                placeholder="Digite sua resposta..."
-                                className="w-full border border-line bg-background px-3 py-2 text-xs rounded-lg outline-none focus:border-blue-500 font-sans"
-                                autoFocus
-                              />
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setReplyingItemId(null)}
-                                  className="px-3 py-1 text-xs font-mono uppercase tracking-wider border border-line hover:bg-accent rounded-lg"
-                                >
-                                  Cancelar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const text = (replyTextMap[item.id] ?? "").trim();
-                                    if (!text) {
-                                      toast.error("Digite uma mensagem antes de enviar.");
-                                      return;
-                                    }
-                                    sendMessageMutation.mutate({
-                                      itemId: item.id,
-                                      message: text,
-                                    });
-                                  }}
-                                  disabled={sendMessageMutation.isPending}
-                                  className="px-3 py-1 text-xs font-mono uppercase tracking-wider bg-blue-600 text-white font-medium hover:bg-blue-700 rounded-lg active:scale-[0.97] flex items-center gap-1 disabled:opacity-50"
-                                >
-                                  <Send className="size-3" />
-                                  <span>
-                                    {sendMessageMutation.isPending ? "Enviando..." : "Enviar Resposta"}
-                                  </span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>

@@ -492,36 +492,6 @@ export type Database = {
         }
         Relationships: []
       }
-      show_rider_item_messages: {
-        Row: {
-          author_name: string | null
-          author_type: string
-          created_at: string
-          id: string
-          message: string
-          show_id: string
-          show_rider_item_id: string
-        }
-        Insert: {
-          author_name?: string | null
-          author_type: string
-          created_at?: string
-          id?: string
-          message: string
-          show_id: string
-          show_rider_item_id: string
-        }
-        Update: {
-          author_name?: string | null
-          author_type?: string
-          created_at?: string
-          id?: string
-          message?: string
-          show_id?: string
-          show_rider_item_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never

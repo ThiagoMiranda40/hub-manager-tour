@@ -222,27 +222,6 @@ export const getPublicRider = createServerFn({ method: "GET" })
 
     if (itemsErr) throw new Error(itemsErr.message);
 
-    // Busca as mensagens de negociação escopadas exclusivamente pelo show.id validado no servidor
-    const { data: messages } = await supabaseAdmin
-      .from("show_rider_item_messages")
-      .select("id, show_rider_item_id, show_id, author_type, message, created_at")
-      .eq("show_id", show.id)
-      .order("created_at", { ascending: true });
-
-    const messagesByItem = new Map<string, any[]>();
-    for (const msg of messages ?? []) {
-      const list = messagesByItem.get(msg.show_rider_item_id) ?? [];
-      list.push({
-        id: msg.id,
-        show_rider_item_id: msg.show_rider_item_id,
-        show_id: msg.show_id,
-        author_type: msg.author_type,
-        message: msg.message,
-        created_at: msg.created_at,
-      });
-      messagesByItem.set(msg.show_rider_item_id, list);
-    }
-
     return {
       show: {
         id: show.id as string,
@@ -259,10 +238,9 @@ export const getPublicRider = createServerFn({ method: "GET" })
         quantity: Number(item.quantity) || 1,
         is_mandatory: Boolean(item.is_mandatory),
         position: Number(item.position) || 0,
-        status: (item.status as "pending" | "confirmed" | "exception" | "accepted_with_exception") || "pending",
+        status: (item.status as "pending" | "confirmed" | "exception") || "pending",
         exception_note: (item.exception_note as string | null) ?? null,
         confirmed_by_venue_at: (item.confirmed_by_venue_at as string | null) ?? null,
-        messages: messagesByItem.get(item.id as string) ?? [],
       })),
     };
   });
@@ -273,9 +251,6 @@ export const updatePublicRiderItem = createServerFn({ method: "POST" })
       .object({
         token: z.string().min(4),
         itemId: z.string().uuid(),
-        // Bloqueio estrito de elevação de privilégio (AppSec Seção 7):
-        // A casa SÓ pode definir 'confirmed', 'exception' ou 'pending'.
-        // 'accepted_with_exception' é terminantemente proibido nesta rota pública.
         status: z.enum(["confirmed", "exception", "pending"]),
         exceptionNote: z.string().max(1000).optional().nullable(),
       })
@@ -318,105 +293,4 @@ export const updatePublicRiderItem = createServerFn({ method: "POST" })
 
     return { ok: true, item: updated, savedAt: nowIso };
   });
-
-/**
- * Submete mensagem de tréplica da casa de show com validação anti-IDOR e rate limiting em duas camadas (RF-14 / T-17 / AppSec Seção 7)
- */
-export const submitPublicRiderMessage = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        token: z.string().min(4),
-        itemId: z.string().uuid(),
-        message: z
-          .string()
-          .trim()
-          .min(2, "Mensagem deve ter no mínimo 2 caracteres.")
-          .max(1000, "Mensagem não pode exceder 1000 caracteres."),
-      })
-      .parse(data),
-  )
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    // 1. Localiza o show pelo token público do rider
-    const { data: show, error: showErr } = await supabaseAdmin
-      .from("shows")
-      .select("id")
-      .eq("rider_public_token", data.token)
-      .maybeSingle();
-
-    if (showErr || !show) throw new Error("Link de rider inválido ou expirado.");
-
-    // 2. Blindagem anti-IDOR: O item PRECISA pertencer ao show resolvido
-    const { data: item, error: itemErr } = await supabaseAdmin
-      .from("show_rider_items")
-      .select("id, status")
-      .eq("id", data.itemId)
-      .eq("show_id", show.id)
-      .maybeSingle();
-
-    if (itemErr || !item) {
-      throw new Error("Item do rider não pertence a este evento. Operação negada.");
-    }
-
-    // 3. Rate Limiting em Duas Camadas (AppSec Seção 7):
-    // Camada A: Limite Global por Token (máx. 10 msgs/minuto da venue somando todos os itens)
-    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
-    const { count: globalCount } = await supabaseAdmin
-      .from("show_rider_item_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("show_id", show.id)
-      .eq("author_type", "venue")
-      .gte("created_at", oneMinuteAgo);
-
-    if ((globalCount ?? 0) >= 10) {
-      throw new Error("Limite de 10 mensagens por minuto atingido para este evento. Aguarde um momento.");
-    }
-
-    // Camada B: Limite por Item (máx. 30 msgs no total, intervalo de 5s, máx. 2 consecutivas da venue)
-    const { data: itemMsgs } = await supabaseAdmin
-      .from("show_rider_item_messages")
-      .select("id, author_type, created_at")
-      .eq("show_rider_item_id", data.itemId)
-      .order("created_at", { ascending: false });
-
-    if ((itemMsgs?.length ?? 0) >= 30) {
-      throw new Error("Limite máximo de 30 mensagens atingido nesta negociação. Entre em contato direto com a produção.");
-    }
-
-    if (itemMsgs && itemMsgs.length > 0) {
-      const lastMsg = itemMsgs[0];
-      if (lastMsg) {
-        const diffMs = Date.now() - new Date(lastMsg.created_at).getTime();
-        if (diffMs < 5000) {
-          throw new Error("Aguarde alguns segundos antes de enviar outra mensagem neste item.");
-        }
-        if (lastMsg.author_type === "venue") {
-          const secondLast = itemMsgs[1];
-          if (secondLast && secondLast.author_type === "venue") {
-            throw new Error("Aguarde a resposta da produção antes de enviar novas mensagens neste item.");
-          }
-        }
-      }
-    }
-
-    // 4. Inserção com sanitização e author_type travado em 'venue'
-    const cleanMessage = data.message.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "").replace(/\n{3,}/g, "\n\n");
-    const { data: inserted, error: insertErr } = await supabaseAdmin
-      .from("show_rider_item_messages")
-      .insert({
-        show_rider_item_id: data.itemId,
-        show_id: show.id,
-        author_type: "venue",
-        message: cleanMessage,
-      })
-      .select("id, show_rider_item_id, show_id, author_type, message, created_at")
-      .single();
-
-    if (insertErr) throw new Error(insertErr.message);
-
-    return { ok: true, message: inserted };
-  });
-
 

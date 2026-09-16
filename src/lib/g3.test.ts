@@ -14,7 +14,6 @@ import {
   getMemberPublicUrl,
   parseReimbursementAmount,
   buildWhatsAppLink,
-  buildRiderNegotiationWhatsAppMessage,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -378,7 +377,6 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(balancePartial.mandatory).toEqual({
       total: 1,
       confirmed: 0,
-      acceptedWithException: 0,
       exceptions: 0,
       pending: 1,
       isComplete: false,
@@ -387,7 +385,6 @@ describe("T-03: Lógica de Cálculo de Pendências Individuais e Estatísticas d
     expect(balancePartial.desirable).toEqual({
       total: 3,
       confirmed: 3,
-      acceptedWithException: 0,
       exceptions: 0,
       pending: 0,
       isComplete: true,
@@ -741,117 +738,6 @@ describe("buildWhatsAppLink: geração de links diretos do WhatsApp (RF-04)", ()
     expect(url).toContain("S%C3%A3o%20Paulo");
     expect(url).toContain("%26");
     expect(url).toContain("https%3A%2F%2Fhub.app%2Fp%2Ftoken123");
-  });
-});
-
-describe("RF-14 / T-17: Suíte TDD de computeRiderBalance e Negociação de Exceção", () => {
-  // TC-14.1: Reconhecimento do status accepted_with_exception como resolvido
-  it("TC-14.1: item inegociável aceito com ressalva NÃO bloqueia hasMandatoryPendingOrException", () => {
-    const items = [
-      { id: "1", status: "confirmed", is_mandatory: true },
-      { id: "2", status: "accepted_with_exception", is_mandatory: true },
-    ];
-    const balance = computeRiderBalance(items);
-
-    expect(balance.hasMandatoryPendingOrException).toBe(false);
-    expect(balance.isComplete).toBe(true);
-    expect(balance.exceptions).toBe(0);
-    expect(balance.pending).toBe(0);
-    expect(balance.acceptedWithException).toBe(1);
-    expect(balance.confirmed).toBe(1);
-    expect(balance.pct).toBe(100);
-  });
-
-  // TC-14.2: Distinção entre exception simples e accepted_with_exception
-  it("TC-14.2: exception simples bloqueia conclusão, mas accepted_with_exception desbloqueia", () => {
-    const itemsBloqueados = [
-      { id: "1", status: "exception", is_mandatory: true },
-    ];
-    const balanceBloqueado = computeRiderBalance(itemsBloqueados);
-    expect(balanceBloqueado.hasMandatoryPendingOrException).toBe(true);
-    expect(balanceBloqueado.isComplete).toBe(false);
-    expect(balanceBloqueado.exceptions).toBe(1);
-    expect(balanceBloqueado.acceptedWithException).toBe(0);
-
-    const itemsResolvidos = [
-      { id: "1", status: "accepted_with_exception", is_mandatory: true },
-    ];
-    const balanceResolvido = computeRiderBalance(itemsResolvidos);
-    expect(balanceResolvido.hasMandatoryPendingOrException).toBe(false);
-    expect(balanceResolvido.isComplete).toBe(true);
-    expect(balanceResolvido.exceptions).toBe(0);
-    expect(balanceResolvido.acceptedWithException).toBe(1);
-  });
-
-  // TC-14.3: Contadores de grupo segregados (mandatory vs desirable)
-  it("TC-14.3: contadores segregados refletem accepted_with_exception em mandatory e desirable", () => {
-    const items = [
-      { id: "mand-1", status: "accepted_with_exception", is_mandatory: true },
-      { id: "des-1", status: "accepted_with_exception", is_mandatory: false },
-      { id: "des-2", status: "confirmed", is_mandatory: false },
-    ];
-    const balance = computeRiderBalance(items);
-
-    expect(balance.mandatory.acceptedWithException).toBe(1);
-    expect(balance.mandatory.isComplete).toBe(true);
-    expect(balance.desirable.acceptedWithException).toBe(1);
-    expect(balance.desirable.isComplete).toBe(true);
-  });
-
-  // TC-14.4: Ordenação priorizada com accepted_with_exception
-  it("TC-14.4: sortRiderItemsByPriority posiciona accepted_with_exception após itens com pendência e exceção", () => {
-    const items = [
-      { id: "item-resolvido-ressalva", status: "accepted_with_exception", is_mandatory: true, position: 0 },
-      { id: "item-pendente", status: "pending", is_mandatory: true, position: 1 },
-      { id: "item-excecao", status: "exception", is_mandatory: true, position: 2 },
-      { id: "item-confirmado", status: "confirmed", is_mandatory: true, position: 3 },
-    ];
-
-    const sorted = sortRiderItemsByPriority(items);
-
-    // Esperado:
-    // 1º: Pendentes
-    // 2º: Exceções em aberto
-    // 3º e 4º: Resolvidos (confirmados ou aceitos com ressalva)
-    expect(sorted[0]?.id).toBe("item-pendente");
-    expect(sorted[1]?.id).toBe("item-excecao");
-    expect(sorted.slice(2).map((i) => i.id)).toContain("item-resolvido-ressalva");
-    expect(sorted.slice(2).map((i) => i.id)).toContain("item-confirmado");
-  });
-
-  // TC-14.5: Geração de mensagem estruturada de WhatsApp para réplica
-  it("TC-14.5: buildRiderNegotiationWhatsAppMessage formata texto com link oficial e aviso de registro", () => {
-    const msg = buildRiderNegotiationWhatsAppMessage({
-      artistName: "Banda Teste",
-      showDate: "15/10/2026",
-      itemName: "Microfone Shure Beta 58A",
-      replySummary: "Aceitamos 2 unidades do modelo alternativo.",
-      publicUrl: "https://hubmanagertour.com/r/tok123",
-    });
-
-    expect(msg).toContain("Banda Teste");
-    expect(msg).toContain("15/10/2026");
-    expect(msg).toContain("Microfone Shure Beta 58A");
-    expect(msg).toContain("Aceitamos 2 unidades do modelo alternativo.");
-    expect(msg).toContain("https://hubmanagertour.com/r/tok123");
-    expect(msg).toContain("ficha oficial de montagem");
-  });
-
-  // TC-14.6: Transição de reversão (accepted_with_exception -> exception)
-  it("TC-14.6: transição de reversão (accepted_with_exception -> exception) volta a bloquear o show", () => {
-    // 1. Item em accepted_with_exception: show completo e desbloqueado
-    const itemInicial = { id: "mand-1", status: "accepted_with_exception", is_mandatory: true };
-    const balanceInicial = computeRiderBalance([itemInicial]);
-    expect(balanceInicial.hasMandatoryPendingOrException).toBe(false);
-    expect(balanceInicial.isComplete).toBe(true);
-
-    // 2. Reabertura da negociação: item volta para status 'exception'
-    const itemReaberto = { ...itemInicial, status: "exception" };
-    const balanceReaberto = computeRiderBalance([itemReaberto]);
-    expect(balanceReaberto.hasMandatoryPendingOrException).toBe(true);
-    expect(balanceReaberto.isComplete).toBe(false);
-    expect(balanceReaberto.exceptions).toBe(1);
-    expect(balanceReaberto.acceptedWithException).toBe(0);
   });
 });
 
