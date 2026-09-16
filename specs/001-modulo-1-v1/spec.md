@@ -263,6 +263,7 @@ para usar o layout mais confortável ao meu fluxo de trabalho.
 ---
 
 ### RF-14 — Negociação de Exceção do Rider Técnico (Réplica/Tréplica)
+> Desenho de UI/UX detalhado: specs/001-modulo-1-v1/design/rf-14-negociacao-rider.md
 
 Como produtor ou técnico responsável, ao revisar uma exceção sinalizada pela casa de show num item inegociável,  
 quero poder aceitar (com ressalva registrada) ou recusar (com justificativa e possível alternativa) essa exceção, mantendo uma conversa estruturada com a casa até a resolução, com ambos os lados avisados quando a outra parte responder,  
@@ -276,7 +277,7 @@ para não ficar bloqueado indefinidamente por "Rider Completo" nunca fechar, sem
 - Dado uma tréplica registrada pela casa, quando o produtor está logado no app, então recebe uma notificação push avisando da resposta (sujeito à confirmação de viabilidade técnica no ambiente Cloudflare Workers — ver nota de investigação abaixo).
 - Dado uma réplica registrada pelo produtor, quando ele optar por avisar a casa, então o sistema oferece um botão de reenvio via WhatsApp (reaproveitando buildWhatsAppLink já existente), com uma mensagem que resume a réplica e inclui o link /r/[token] com texto explícito deixando claro que a resposta só é considerada oficial/registrada se feita através daquele link — nunca o conteúdo completo da negociação solto na mensagem, evitando que a conversa fique presa informalmente fora do sistema, sem gerar registro para nenhum dos dois lados.
 
-> **Nota de investigação técnica (antes de implementar):** confirmar se Web Push API (VAPID + Service Worker) funciona de forma confiável no ambiente Cloudflare Workers, ou se é necessária abordagem alternativa. Reportar antes de prosseguir com a implementação da notificação push do lado do produtor.
+> **Nota de investigação técnica:** A biblioteca padrão `web-push` (npm) não funciona em Cloudflare Workers por depender de `node:crypto` e `node:https` (ausentes no runtime V8 dos Workers). No entanto, existem bibliotecas projetadas especificamente para edge runtime, baseadas estritamente em Web Crypto API + `fetch`, sem dependência de Node, que funcionam nativamente em Cloudflare Workers — exemplos ativos e mantidos: `@block65/webcrypto-web-push` e `pushforge` (`@pushforge/builder`). A limitação técnica real e sem solução por biblioteca reside no iOS/Safari, que só entrega Web Push se a aplicação estiver instalada como PWA na tela de início do dispositivo. Decisão adotada: notificação in-app (toast + badge) nesta etapa, mantendo o push nativo documentado para evolução futura via PWA ou serviço dedicado.
 
 ---
 
