@@ -1,0 +1,26 @@
+{
+  "name": "Hub Manager Tour",
+  "short_name": "Hub Manager",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f8fb",
+  "theme_color": "#9184d9",
+  "icons": [
+    {
+      "src": "/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
