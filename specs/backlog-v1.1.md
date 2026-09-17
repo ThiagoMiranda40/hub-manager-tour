@@ -3,6 +3,8 @@
 > Priorizado em 17/09/2026 via matriz Impacto × Esforço. Sequência 
 > recomendada: Ganho Rápido → Grande Aposta → Preenchimento.
 
+![Matriz de priorização do Backlog V1.1](./backlog-priorizacao-v1.1.png)
+
 ## Ganho rápido (alto impacto, baixo esforço) — fazer primeiro
 - Estrutura da página de tutorial (código simples; conteúdo — textos e 
   vídeos — é produzido por Thiago incrementalmente depois de a 
