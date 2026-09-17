@@ -275,6 +275,28 @@ export const updatePublicRiderItemSchema = z.object({
   exceptionNote: z.string().max(1000).optional().nullable(),
 });
 
+/**
+ * Validação pura de fluxo para atualização de status pela casa de show (RF-14 / T-17)
+ * Se existirem mensagens na thread (negociação ativa), a casa não pode contornar a negociação
+ * marcando o item diretamente como 'confirmed' ou 'pending'.
+ */
+export function validatePublicRiderItemStatusUpdate(params: {
+  status: string;
+  hasActiveNegotiation: boolean;
+}): { allowed: boolean; reason?: string } {
+  if (
+    params.hasActiveNegotiation &&
+    (params.status === "confirmed" || params.status === "pending")
+  ) {
+    return {
+      allowed: false,
+      reason:
+        "Este item está em negociação ativa. Use 'Concordar com Proposta' ou aguarde a decisão da produção.",
+    };
+  }
+  return { allowed: true };
+}
+
 export const updatePublicRiderItem = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => updatePublicRiderItemSchema.parse(data))
   .handler(async ({ data }) => {
@@ -290,7 +312,27 @@ export const updatePublicRiderItem = createServerFn({ method: "POST" })
     if (showErr) throw new Error(showErr.message);
     if (!show) throw new Error("Link de rider inválido ou expirado.");
 
-    // 2. Blindagem de segurança anti-IDOR/BOLA (A01:2025):
+    // 2. Fechamento de brecha de fluxo (RF-14):
+    // Se o status solicitado for 'confirmed' ou 'pending', verificar se há negociação ativa
+    if (data.status === "confirmed" || data.status === "pending") {
+      const { count: msgCount, error: msgErr } = await supabaseAdmin
+        .from("show_rider_item_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("show_rider_item_id", data.itemId);
+
+      if (msgErr) throw new Error(msgErr.message);
+
+      const check = validatePublicRiderItemStatusUpdate({
+        status: data.status,
+        hasActiveNegotiation: (msgCount ?? 0) > 0,
+      });
+
+      if (!check.allowed) {
+        throw new Error(check.reason);
+      }
+    }
+
+    // 3. Blindagem de segurança anti-IDOR/BOLA (A01:2025):
     // Obrigatoriamente WHERE id = itemId AND show_id = show.id
     const nowIso = new Date().toISOString();
     const updatePayload = {

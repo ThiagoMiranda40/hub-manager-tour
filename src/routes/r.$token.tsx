@@ -527,7 +527,8 @@ function PublicRiderPage() {
               const isConfirmed = item.status === "confirmed";
               const isAcceptedWithException = item.status === "accepted_with_exception";
               const isException = item.status === "exception";
-              const isInNegotiation = isException && Boolean(item.messages && item.messages.length > 0);
+              const hasMessages = Boolean(item.messages && item.messages.length > 0);
+              const isInNegotiation = isException && hasMessages;
               const isPending = item.status === "pending" || !item.status;
               const isEditingException = activeExceptionItemId === item.id;
               const isReplying = replyingItemId === item.id;
@@ -648,42 +649,46 @@ function PublicRiderPage() {
                     {/* Ações com Reversibilidade Imediata (print:hidden) */}
                     {/* ───────────────────────────────────────────────────────── */}
                     <div className="flex items-center gap-2 self-start sm:self-center shrink-0 print:hidden">
-                      {/* Botão Confirmar: atende ou reverte exceção para atendido */}
-                      <button
-                        type="button"
-                        onClick={() => handleConfirm(item)}
-                        disabled={updateMutation.isPending}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-[0.97]",
-                          isConfirmed
-                            ? "bg-emerald-600 text-white font-semibold shadow-sm"
-                            : "border border-line bg-secondary/50 hover:bg-secondary text-foreground",
-                        )}
-                      >
-                        <Check className="size-3.5" />
-                        <span>{isConfirmed ? "Confirmado" : "Confirmar"}</span>
-                      </button>
+                      {/* Botão Confirmar: só disponível se NÃO houver mensagens de negociação ativa */}
+                      {!hasMessages && !isAcceptedWithException && (
+                        <button
+                          type="button"
+                          onClick={() => handleConfirm(item)}
+                          disabled={updateMutation.isPending}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-[0.97]",
+                            isConfirmed
+                              ? "bg-emerald-600 text-white font-semibold shadow-sm"
+                              : "border border-line bg-secondary/50 hover:bg-secondary text-foreground",
+                          )}
+                        >
+                          <Check className="size-3.5" />
+                          <span>{isConfirmed ? "Confirmado" : "Confirmar"}</span>
+                        </button>
+                      )}
 
-                      {/* Botão Sinalizar Exceção */}
-                      <button
-                        type="button"
-                        onClick={() => handleOpenException(item)}
-                        disabled={updateMutation.isPending}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-[0.97]",
-                          isException
-                            ? isMandatory
-                              ? "bg-destructive text-white font-bold"
-                              : "bg-amber-600 text-white font-semibold"
-                            : "border border-line bg-secondary/50 hover:bg-secondary text-foreground",
-                        )}
-                      >
-                        <AlertTriangle className="size-3.5" />
-                        <span>{isException ? "Editar Exceção" : "Sinalizar Exceção"}</span>
-                      </button>
+                      {/* Botão Sinalizar Exceção: disponível enquanto não aceito com ressalva */}
+                      {!isAcceptedWithException && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenException(item)}
+                          disabled={updateMutation.isPending}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-[0.97]",
+                            isException
+                              ? isMandatory
+                                ? "bg-destructive text-white font-bold"
+                                : "bg-amber-600 text-white font-semibold"
+                              : "border border-line bg-secondary/50 hover:bg-secondary text-foreground",
+                          )}
+                        >
+                          <AlertTriangle className="size-3.5" />
+                          <span>{isException ? "Editar Exceção" : "Sinalizar Exceção"}</span>
+                        </button>
+                      )}
 
-                      {/* Botão Voltar para Pendente (se já respondido) */}
-                      {!isPending && (
+                      {/* Botão Voltar para Pendente (se já respondido e sem histórico de negociação ativa) */}
+                      {!isPending && !hasMessages && !isAcceptedWithException && (
                         <button
                           type="button"
                           onClick={() => handleRevertToPending(item)}

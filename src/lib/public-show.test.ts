@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   updatePublicRiderItemSchema,
   submitPublicRiderMessageSchema,
+  validatePublicRiderItemStatusUpdate,
 } from "./public-show.functions";
 
 describe("Segurança das Server Functions Públicas de Rider (RF-14 / AppSec Seção 7)", () => {
@@ -118,4 +119,83 @@ describe("Segurança das Server Functions Públicas de Rider (RF-14 / AppSec Se�
       ).toThrow();
     });
   });
+
+  describe("Bloqueio de contorno de negociação ativa (RF-14 / Fechamento de Brecha)", () => {
+    it("deve rejeitar status 'confirmed' quando há negociação ativa", () => {
+      const result = validatePublicRiderItemStatusUpdate({
+        status: "confirmed",
+        hasActiveNegotiation: true,
+      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe(
+        "Este item está em negociação ativa. Use 'Concordar com Proposta' ou aguarde a decisão da produção.",
+      );
+    });
+
+    it("deve rejeitar status 'pending' quando há negociação ativa", () => {
+      const result = validatePublicRiderItemStatusUpdate({
+        status: "pending",
+        hasActiveNegotiation: true,
+      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe(
+        "Este item está em negociação ativa. Use 'Concordar com Proposta' ou aguarde a decisão da produção.",
+      );
+    });
+
+    it("deve permitir status 'exception' mesmo com negociação ativa (edição de nota de alternativa)", () => {
+      const result = validatePublicRiderItemStatusUpdate({
+        status: "exception",
+        hasActiveNegotiation: true,
+      });
+      expect(result.allowed).toBe(true);
+    });
+
+    it("deve permitir 'confirmed', 'exception' e 'pending' quando NÃO há negociação ativa", () => {
+      expect(
+        validatePublicRiderItemStatusUpdate({
+          status: "confirmed",
+          hasActiveNegotiation: false,
+        }).allowed,
+      ).toBe(true);
+
+      expect(
+        validatePublicRiderItemStatusUpdate({
+          status: "pending",
+          hasActiveNegotiation: false,
+        }).allowed,
+      ).toBe(true);
+
+      expect(
+        validatePublicRiderItemStatusUpdate({
+          status: "exception",
+          hasActiveNegotiation: false,
+        }).allowed,
+      ).toBe(true);
+    });
+  });
+
+  describe("Validação da Constraint de Banco chk_rider_item_status (Simulação Local)", () => {
+    // Simula a regra da constraint PostgreSQL: status IN ('pending', 'confirmed', 'exception', 'accepted_with_exception')
+    const allowedStatuses = ["pending", "confirmed", "exception", "accepted_with_exception"];
+    const checkConstraint = (status: string) => allowedStatuses.includes(status);
+
+    it("deve aceitar 'accepted_with_exception' na constraint do banco", () => {
+      expect(checkConstraint("accepted_with_exception")).toBe(true);
+    });
+
+    it("deve aceitar os status históricos ('pending', 'confirmed', 'exception')", () => {
+      expect(checkConstraint("pending")).toBe(true);
+      expect(checkConstraint("confirmed")).toBe(true);
+      expect(checkConstraint("exception")).toBe(true);
+    });
+
+    it("deve rejeitar status não autorizados na constraint (ex.: 'in_negotiation', 'rejected', 'canceled')", () => {
+      expect(checkConstraint("in_negotiation")).toBe(false);
+      expect(checkConstraint("rejected")).toBe(false);
+      expect(checkConstraint("canceled")).toBe(false);
+      expect(checkConstraint("")).toBe(false);
+    });
+  });
 });
+
