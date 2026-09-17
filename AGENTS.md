@@ -24,3 +24,7 @@
 - **Regra de Pendência:** Pendências são calculadas estritamente por **pessoa + show** via `show_requirements`. O estado "sem exigência configurada" é visualmente e logicamente distinto de "pendente" (nunca onera a contagem de pendências).
 - **Rotas Públicas (`/p/$token` e `/r/$token`):** Acesso anônimo opera com validação de token exclusivo por show; nunca expor dados financeiros ou credenciais de serviço no cliente.
 
+## Relatórios de Entrega
+- Todo relatório de entrega de tarefa deve declarar **100% dos arquivos alterados no commit**, incluindo ajustes que não fazem parte do escopo formal pedido (ex.: um ajuste visual de UI feito por decisão própria, uma correção pontual encontrada no caminho). Nunca afirmar "sem alteração de código" ou equivalente se qualquer arquivo de código foi tocado no mesmo commit.
+- Ajustes de UI/UX feitos por decisão própria (não derivados de um requisito formal do spec.md) devem ser explicitamente rotulados como tal no resumo da entrega — ex.: "Ajuste de UI por decisão própria: [o que mudou e por quê]" — para diferenciar claramente do que decorre de um RF/critério de aceite formal.
+- Se um ajuste desse tipo alterar uma medida (tamanho, espaçamento, cor) definida anteriormente por instrução explícita do Thiago em uma entrega anterior, mencionar isso também (ex.: "Alterado de X para Y, definido anteriormente no commit [hash]").

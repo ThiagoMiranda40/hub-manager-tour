@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PeopleRouteImport } from './routes/people'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as ShowsIdRouteImport } from './routes/shows.$id'
 import { Route as ShowsIdFichaRouteImport } from './routes/shows.$id_.ficha'
 
@@ -26,6 +28,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PeopleRoute = PeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -34,6 +41,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const PTokenRoute = PTokenRouteImport.update({
   id: '/p/$token',
   path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RTokenRoute = RTokenRouteImport.update({
+  id: '/r/$token',
+  path: '/r/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShowsIdRoute = ShowsIdRouteImport.update({
@@ -50,16 +62,20 @@ const ShowsIdFichaRoute = ShowsIdFichaRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
   '/p/$token': typeof PTokenRoute
+  '/r/$token': typeof RTokenRoute
   '/shows/$id': typeof ShowsIdRoute
   '/shows/$id/ficha': typeof ShowsIdFichaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
   '/p/$token': typeof PTokenRoute
+  '/r/$token': typeof RTokenRoute
   '/shows/$id': typeof ShowsIdRoute
   '/shows/$id/ficha': typeof ShowsIdFichaRoute
 }
@@ -67,8 +83,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/people': typeof PeopleRoute
   '/settings': typeof SettingsRoute
   '/p/$token': typeof PTokenRoute
+  '/r/$token': typeof RTokenRoute
   '/shows/$id': typeof ShowsIdRoute
   '/shows/$id_/ficha': typeof ShowsIdFichaRoute
 }
@@ -77,24 +95,30 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/people'
     | '/settings'
     | '/p/$token'
+    | '/r/$token'
     | '/shows/$id'
     | '/shows/$id/ficha'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/people'
     | '/settings'
     | '/p/$token'
+    | '/r/$token'
     | '/shows/$id'
     | '/shows/$id/ficha'
   id:
     | '__root__'
     | '/'
     | '/auth'
+    | '/people'
     | '/settings'
     | '/p/$token'
+    | '/r/$token'
     | '/shows/$id'
     | '/shows/$id_/ficha'
   fileRoutesById: FileRoutesById
@@ -102,8 +126,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  PeopleRoute: typeof PeopleRoute
   SettingsRoute: typeof SettingsRoute
   PTokenRoute: typeof PTokenRoute
+  RTokenRoute: typeof RTokenRoute
   ShowsIdRoute: typeof ShowsIdRoute
   ShowsIdFichaRoute: typeof ShowsIdFichaRoute
 }
@@ -124,6 +150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/people': {
+      id: '/people'
+      path: '/people'
+      fullPath: '/people'
+      preLoaderRoute: typeof PeopleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -136,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: '/p/$token'
       fullPath: '/p/$token'
       preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$token': {
+      id: '/r/$token'
+      path: '/r/$token'
+      fullPath: '/r/$token'
+      preLoaderRoute: typeof RTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shows/$id': {
@@ -158,8 +198,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  PeopleRoute: PeopleRoute,
   SettingsRoute: SettingsRoute,
   PTokenRoute: PTokenRoute,
+  RTokenRoute: RTokenRoute,
   ShowsIdRoute: ShowsIdRoute,
   ShowsIdFichaRoute: ShowsIdFichaRoute,
 }

@@ -44,7 +44,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
   2. Adicionar as colunas `rider_public_token` na tabela `shows` e `person_id` na tabela `cast_members`.
   3. Adicionar as colunas `is_reimbursed boolean DEFAULT false` e `reimbursed_at timestamptz` na tabela `documents`.
   4. Criar constraints (`UNIQUE`, `CHECK`), chaves estrangeiras e índices de performance descritos em `data-model.md`.
-  5. Habilitar RLS em todas as tabelas com políticas para administradores autenticados e permissões pontuais para os tokens públicos.
+  5. Habilitar RLS em todas as tabelas com políticas estritas para administradores autenticados (a permissão pontual do token público é validada pela Server Function, sem grants diretos no papel anon).
   6. Incluir rotina de migração/backfill para povoar `people` a partir dos nomes existentes em `cast_members`.
 - **Verificação técnica:** Script SQL com sintaxe PostgreSQL rigorosa e validação de schema.
 - **Tradução em linguagem simples:** "O banco de dados recebeu a estrutura para guardar pessoas uma só vez com seus contatos e Chave Pix, definir exigências por pessoa e show, controlar o pagamento de reembolsos e armazenar o rider técnico."
@@ -173,6 +173,8 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 ## T-10 — Página Pública de Confirmação do Rider com Auto-Save e Impressão Local
 - **Depende de:** T-04, T-06, T-09
 - **Arquivos afetados:**
+  - `[MODIFY] src/lib/g3.ts`
+  - `[MODIFY] src/lib/g3.test.ts`
   - `[NEW] src/routes/r.$token.tsx`
   - `src/routeTree.gen.ts`
 - **Fazer:**
@@ -184,6 +186,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
      - Clicar de volta em "Confirmar" reverte o status imediatamente.
   4. Adicionar botão "Imprimir Cópia de Atendimento" que abre visão limpa sem botões para a equipe técnica do teatro.
   5. Blindagem de segurança anti-IDOR/BOLA (A01:2025): a Server Function de mutação deve exigir obrigatoriamente a validação composta `WHERE id = itemId AND show_id = show.id`, impedindo que uma casa com token altere itens de outro show.
+  6. Aplicar RF-11: consumir os contadores segregados (inegociável/desejável) de computeRiderBalance e exibir dois indicadores separados, com itens inegociáveis pendentes ordenados antes dos desejáveis.
 - **Verificação técnica:** `npx tsc --noEmit && npm run build`
 - **Tradução em linguagem simples:** "A casa de show confirma item a item pelo celular com salvamento automático e proteção de segurança garantindo que ninguém consiga alterar dados de outro evento."
 
@@ -199,6 +202,7 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
      - Visualização em cards amplos otimizados para toque de polegar em smartphone (altura >= 48px).
      - Botões grandes: "OK Recebido" (verde) e "Divergência" (alerta) para auditoria presencial em ambiente com pouca luz.
   2. Atualizar a rota `shows.$id_.ficha.tsx` para impressão A4 incorporando a nova estrutura de pessoas e o balanço do rider técnico.
+  3. Aplicar RF-11: no Modo Palco, itens inegociáveis pendentes/em divergência aparecem destacados e ordenados antes dos desejáveis.
 - **Verificação técnica:** `npm test && npx tsc --noEmit && npm run build`
 - **Tradução em linguagem simples:** "No dia do show, a equipe no palco usa o celular com botões grandes de polegar para checar se o equipamento entregue bate com o prometido. A Ficha de Produção A4 foi atualizada com os novos dados."
 
@@ -208,29 +212,128 @@ T-04 (Design System Nocturne Calibrado) ─────────────�
 - **Depende de:** T-07, T-09
 - **Arquivos afetados:**
   - `[NEW] src/lib/ai-extraction.ts`
-  - `src/routes/shows.$id.tsx`
+  - `[NEW] supabase/migrations/<timestamp>_cast_member_ai_analysis_count.sql`
+  - `src/routes/p.$token.tsx`
   - `src/routes/settings.tsx`
 - **Fazer:**
-  1. Implementar helper `ai-extraction.ts` conectado a modelo multimodal (Gemini Flash).
-  2. Função 1: Ler PDF/foto de passagem ou nota e extrair número de voo, hotel ou valor para aprovação rápida do produtor.
-  3. Função 2: Importar PDF de rider técnico legado e transformá-lo em checklist estruturado.
+  1. Implementar helper `ai-extraction.ts` conectado a modelo multimodal (Gemini 3.6 Flash), incluindo Server Function dedicada.
+  2. Função 1 (upload-time, em p.$token.tsx): ao anexar arquivo, acionar a IA para identificar tipo de documento (restrito aos document_types já cadastrados), pré-preencher campos, perguntar sobre reembolso, extrair valor se presente, e solicitar preenchimento manual do valor se ausente e for reembolso. Tudo revisável pelo integrante antes de confirmar o envio.
+  3. Implementar limite de taxa por cast_member/show (coluna ai_analysis_count, incremento atômico, teto de 15), com fallback silencioso para o formulário manual ao atingir o limite.
+  4. Função 2 (settings.tsx, inalterada): Importar PDF de rider técnico legado e transformá-lo em checklist estruturado para revisão em lote do produtor.
+  5. Implementar redimensionamento client-side de imagens (máx. ~1536px no lado maior) antes do envio à API de extração.
+  6. Implementar validação/reporte de moeda detectada em cada valor monetário extraído, com alerta visual se não for BRL ou não identificável.
+  7. Implementar UI de comparação (valor atual vs. sugerido) antes de qualquer aplicação de campo já preenchido — nunca sobrescrita automática.
+  8. Acionar a skill ciberseguranca-produto-digital em modo revisão dedicado antes da entrega final (gestão de segredo da API key, limite de taxa/anti-abuso na rota pública, validação de tamanho/tipo de arquivo enviado à IA, tratamento de erro da API externa sem vazar detalhe técnico).
 - **Verificação técnica:** `npx tsc --noEmit && npm run build`
 - **Tradução em linguagem simples:** "Funcionalidade inteligente: ao anexar um PDF de passagem ou rider antigo, a IA reconhece o conteúdo e pré-preenche os dados para o produtor apenas aprovar."
 
 ---
 
+## T-14 — Tema Claro/Escuro Alternável pelo Usuário (RF-12)
+- **Depende de:** T-04
+- **Arquivos afetados:**
+  - `[MODIFY] src/routes/__root.tsx`
+  - `[MODIFY] src/components/AppShell.tsx`
+  - `[MODIFY] src/routes/settings.tsx`
+  - `[MODIFY] src/routes/p.$token.tsx`
+  - `[MODIFY] src/routes/r.$token.tsx`
+- **Fazer:**
+  1. Implementar mecanismo de classe `.dark` no elemento raiz (`html`/`body`), com fallback inicial baseado em `prefers-color-scheme` do navegador quando não houver preferência salva.
+  2. Implementar alternador de tema com ícone lua/sol:
+     - No rodapé da sidebar quando em modo sidebar.
+     - No canto superior direito quando em modo cabeçalho.
+  3. Salvar a escolha do usuário ('light'/'dark') em `localStorage`, fazendo com que prevaleça sobre a preferência do sistema operacional em acessos subsequentes.
+  4. Garantir que todas as telas (internas e rotas públicas `/p/$token` e `/r/$token`), tipografia, cartões e variantes da logo respeitem a paleta escura calibrada na T-04 sem quebra de contraste.
+- **Verificação técnica:** `npx tsc --noEmit && npm run build`
+- **Tradução em linguagem simples:** "O usuário pode alternar entre tema claro e escuro a qualquer momento com um clique; a escolha fica gravada no navegador e todas as telas, inclusive as páginas públicas de envio e rider, adaptam suas cores e logotipos mantendo contraste perfeito."
+
+---
+
+## T-15 — Navegação Adaptável: Cabeçalho ou Barra Lateral Recolhível (RF-13)
+- **Depende de:** T-04
+- **Arquivos afetados:**
+  - `[MODIFY] src/components/AppShell.tsx`
+  - `[MODIFY] src/routes/settings.tsx`
+- **Fazer:**
+  1. Em desktop/tablet (acima de 640px), permitir ao usuário escolher em Configurações entre modo cabeçalho superior e modo barra lateral (sidebar).
+  2. Implementar a barra lateral esquerda com largura de 240px (expandida) e 76px (recolhida), incluindo botão de alternância recolher/expandir com ícones de caret (esquerda/direita).
+  3. No estado recolhido (76px), exibir apenas os ícones de navegação e o símbolo da marca (`marca-simbolo`), ocultando os textos e o wordmark completo.
+  4. No modo cabeçalho (padrão atual), manter a barra horizontal superior fixada no topo.
+  5. Persistir a preferência do modo de navegação e o estado de recolhimento em `localStorage`.
+  6. Em telas móveis (abaixo de 640px / breakpoint `sm:`), a navegação deve sempre se comportar como menu hambúrguer no topo, independentemente da configuração salva para desktop.
+- **Verificação técnica:** `npx tsc --noEmit && npm run build`
+- **Tradução em linguagem simples:** "O usuário pode escolher se prefere o menu no topo ou numa barra lateral que encolhe para dar mais espaço à tela. No celular, a navegação se adapta automaticamente para menu hambúrguer compacto."
+
+---
+
+## T-16 — Token Individual por Integrante na Página Pública de Envio (RF-04)
+- **Depende de:** T-08
+- **Arquivos afetados:**
+  - `[NEW] supabase/migrations/<timestamp>_cast_member_access_token.sql`
+  - `[MODIFY] src/lib/public-show.functions.ts`
+  - `[MODIFY] src/routes/p.$token.tsx`
+  - `[MODIFY] src/routes/shows.$id.tsx`
+- **Fazer:**
+  1. Migration: adicionar coluna `access_token text UNIQUE DEFAULT encode(gen_random_bytes(9), 'hex')` em `cast_members`, com índice. O DEFAULT sendo volátil gera token único automaticamente para todas as linhas já existentes, sem script de backfill separado.
+  2. `getPublicShow`: resolver pelo `access_token` do integrante (não mais por `shows.public_token`), retornando apenas os dados daquele integrante — remover a listagem completa do elenco da resposta.
+  3. `submitDocument`: remover `castMemberId` como parâmetro vindo do cliente — derivar exclusivamente do `access_token` resolvido no servidor. Isso é uma melhoria de segurança adicional: o cliente deixa de ter qualquer influência sobre de quem é o documento.
+  4. `p.$token.tsx`: remover a etapa "Quem é você no elenco?" — o token já resolve a pessoa diretamente.
+  5. `shows.$id.tsx`: substituir o botão único "Copiar Link do Elenco" por uma lista com um botão de copiar por integrante (reaproveitar o padrão visual já usado nos cards de link da T-07).
+  6. Manter `shows.public_token` na tabela por ora (não remover a coluna) — só deixa de ser usado nesse fluxo; avaliar remoção futura em limpeza de schema.
+- **Verificação técnica:** `npx tsc --noEmit && npm test && npm run build`
+- **Verificação de segurança:** acionar `ciberseguranca-produto-digital` em modo revisão dedicado antes da aprovação final — validar especificamente que um `access_token` de um integrante não consegue, por nenhum caminho (URL manipulada, chamada direta da Server Function), acessar dado de outro integrante do mesmo show.
+- **Tradução em linguagem simples:** "Cada integrante da equipe agora recebe seu próprio link privado — ninguém mais consegue ver o que o colega enviou ou está devendo só trocando o nome selecionado na tela."
+
+---
+
+## T-17 — Negociação de Exceção do Rider via Réplica/Tréplica (RF-14)
+- **Depende de:** T-07, T-10, T-16
+- **Arquivos afetados:**
+  - `[NEW] supabase/migrations/<timestamp>_show_rider_item_messages.sql`
+  - `[MODIFY] src/lib/g3.ts` (computeRiderBalance com terceiro estado; reaproveitar buildWhatsAppLink)
+  - `[MODIFY] src/lib/g3.test.ts`
+  - `[MODIFY] src/routes/shows.$id.tsx` (ações aceitar/recusar, botão de reenvio WhatsApp, histórico da thread)
+  - `[MODIFY] src/routes/r.$token.tsx` (exibir réplica, permitir tréplica, regra de texto puro)
+  - `[MODIFY] src/routes/shows.$id_.ficha.tsx` (indicador de negociação na coluna Status da Casa)
+  - `[MODIFY] src/lib/public-show.functions.ts` (getPublicRider com mensagens, submitPublicRiderMessage com validação anti-IDOR e rate limiting em duas camadas)
+> Consultar obrigatoriamente specs/001-modulo-1-v1/design/rf-14-negociacao-rider.md (Seção 7 — Diretrizes de Segurança e Seção 8 — Estratégia de Testes e QA/TDD) antes de implementar a migration, as Server Functions e os testes desta tarefa.
+- **Fazer:**
+  1. Decisão técnica de push: adotar notificação in-app (toast + badge) nesta etapa conforme parecer técnico (limitações de Web Push no iOS/Safari sem PWA; bibliotecas edge como `@block65/webcrypto-web-push` mantidas documentadas para evolução futura).
+  2. Migration `show_rider_item_messages`: colunas `id`, `show_rider_item_id`, `show_id` (redundância deliberada para validação em tempo constante), `author_type ('producer' | 'venue')`, `message`, `created_at`. RLS estrita para produtor autenticado (SELECT e INSERT com `author_type = 'producer'` travado e `shows.user_id = auth.uid()`). Decisão explícita de NÃO abrir política pública de INSERT/SELECT para o role `anon` — toda leitura/escrita da casa passa exclusivamente por Server Functions via `supabaseAdmin`.
+  3. Controle de taxa em duas camadas (Server Function da casa):
+     - Camada por Item: intervalo mínimo de 5s entre envios no mesmo item, teto máximo de 30 mensagens por item, e bloqueio de monólogo (máx. 2 mensagens consecutivas da venue sem réplica).
+     - Camada Global por Token: máximo de 10 mensagens por minuto somando todos os itens daquele `rider_public_token`.
+  4. Atualizar `computeRiderBalance` (`g3.ts` e `g3.test.ts`) para reconhecer `accepted_with_exception` como resolvido (não onera `hasMandatoryPendingOrException`), distinto de `confirmed` e de `exception` simples.
+  5. Aba Rider Técnico (`shows.$id.tsx`): botões "Aceitar com ressalva" e "Recusar" em itens com exceção; campo inline de mensagem ao recusar; histórico de réplica/tréplica; botão de reenvio via WhatsApp com mensagem-resumo + link, deixando explícito que só o link registra oficialmente; renderização de mensagens estritamente como texto puro (sem converter em links clicáveis).
+  6. Botão "Reabrir negociação" na aba Rider Técnico (`shows.$id.tsx`): permitir reverter itens com status `accepted_with_exception` de volta para `exception`, reaproveitando a mesma mutação autenticada (`auth.uid() = show.user_id`), sem lógica adicional de limite de reaberturas ou notificação nesta versão; incluir caso de teste cobrindo essa transição de reversão em `g3.test.ts`.
+  7. Página pública do rider (`r.$token.tsx` e `public-show.functions.ts`):
+     - `getPublicRider` atualizado para retornar o histórico de mensagens de cada item, escopado exclusivamente pelo `show.id` resolvido no servidor.
+     - Exibir réplica quando existir e permitir tréplica ("Concordar com Proposta" e "Responder contraproposta").
+     - Nunca detectar/converter texto em link clicável — todo conteúdo de mensagem renderizado como texto puro, em ambos os lados (produtor e casa).
+  8. Relatório de Produção (`shows.$id_.ficha.tsx`): indicador "Em negociação" (azul) ou "Aceito c/ ressalva" (ciano) na coluna "Status da Casa" com a mensagem mais recente em fonte reduzida, sem adicionar colunas à tabela.
+  9. Notificação in-app pro produtor quando a casa responder (toast contextual e badge de novas mensagens).
+  10. Testes unitários e roteiro TDD conforme Seção 8 do desenho (TC-14.1 a TC-14.6): cobrindo o novo estado em `computeRiderBalance`, a reversão `accepted_with_exception -> exception`, schemas Zod, montagem de WhatsApp e validações anti-abuso.
+  11. Após a implementação, confirmar através de revisão de código que os controles da Seção 7 do desenho (migration, RLS, rate limiting em duas camadas, regra de texto puro) foram implementados exatamente como especificado — não é uma nova chamada à skill em modo arquitetura, essa já foi feita antes do código.
+- **Verificação técnica:** `npx tsc --noEmit && npm test && npm run build`
+- **Tradução em linguagem simples:** "Quando a casa sinaliza que não tem um equipamento obrigatório, o produtor pode aceitar com ressalva ou recusar propondo uma alternativa pelo sistema. Se mudar de ideia, pode reabrir a negociação a qualquer momento. A casa recebe o aviso e responde pelo link, registrando todo o histórico sem conversas perdidas no WhatsApp."
+
+---
+
 ## T-13 — Verificação Ponta a Ponta dos Cenários de Aceite, DoD de QA e Build de Produção
-- **Depende de:** T-01 até T-12
+- **Depende de:** T-01 até T-17
 - **Referência:** Checklist de "Pronto para Produção" (DoD) em `specs/001-modulo-1-v1/qa-plan.md`
 - **Arquivos afetados:** Todos os componentes e rotas do Módulo 1 V1
 - **Fazer:**
-  1. Executar os 3 cenários-chave ponta a ponta definidos em `spec.md`:
+  1. Executar os 6 cenários-chave ponta a ponta definidos em `spec.md`:
      - Cenário 1: Preset em lote de exigências e contadores detalhados de elenco.
      - Cenário 2: Checklist dinâmica pessoal do integrante e liquidação de reembolso com botão "Copiar Pix".
      - Cenário 3: Confirmação pública do rider com auto-save, reversibilidade e conferência no "Modo Palco".
+     - Cenário 4: Alternância de tema claro/escuro persistente (RF-12) e navegação adaptável entre cabeçalho e barra lateral recolhível, incluindo comportamento correto em mobile (RF-13).
+     - Cenário 5: Acesso via token individual por integrante em /p/[token] — confirmar isolamento total de dados entre integrantes do mesmo show (RF-04, adendo de segurança da T-16).
+     - Cenário 6: Extração por IA no upload de comprovante (Função 1) e importação de rider por PDF (Função 2), incluindo fallback manual quando a IA não está disponível (RF-10).
   2. Rodar a suíte de testes unitários: `npm test`.
   3. Executar typecheck estrito: `npx tsc --noEmit`.
   4. Gerar o build de produção: `npm run build` e validar pacote para deploy Cloudflare Workers.
   5. Validar os itens do checklist Definition of Done (técnico e linguagem simples) de `qa-plan.md`.
 - **Verificação técnica:** `npm test && npx tsc --noEmit && npm run build`
-- **Tradução em linguagem simples:** "Todos os 3 fluxos completos do Módulo 1 foram executados de ponta a ponta, todos os testes unitários passaram e o checklist de pronto para produção foi validado com 100% de integridade."
+- **Tradução em linguagem simples:** "Todos os 6 fluxos completos do Módulo 1 foram executados de ponta a ponta, todos os testes unitários passaram e o checklist de pronto para produção foi validado com 100% de integridade."

@@ -82,6 +82,9 @@ para enviar arquivos sem duplicar envios anteriores e poder solicitar reembolso 
   **quando** acessado,  
   **então** uma tela amigável informa o status e orienta contato com a produção.
 
+> **Adendo de segurança (11/09/2026):**
+> O link público de envio de documentos deixa de ser um único token por show compartilhado entre todo o elenco, e passa a ser um token único por integrante (mesmo padrão de entropia já usado em rider_public_token: encode(gen_random_bytes(9), 'hex')). Cada integrante recebe seu próprio link individual, sem etapa de "selecionar seu nome" — o token já identifica a pessoa. Um integrante não pode, através do próprio link, visualizar documentos, pendências ou observações de nenhum outro integrante. Sem exigir login/senha — mantém a fricção zero para quem envia.
+
 ---
 
 ### RF-05 — Painel de Pendências, Reembolsos com Cópia de Pix e Compartilhamento
@@ -174,6 +177,110 @@ para eliminar digitação manual de número de voo, hotel, valor de nota ou chec
 - **Dado** o upload de um arquivo de rider técnico legado (PDF/DOCX) nas configurações do artista,  
   **quando** solicitada a importação por inteligência,  
   **então** o sistema estrutura os itens em categorias e quantidades pré-preenchidas para revisão e aprovação do produtor.
+
+> **Adendo de arquitetura (11/09/2026, atualizado em 12/09/2026):**
+> - **Modelo:** Gemini 3.6 Flash (substituto oficial recomendado pela Google após descontinuação do 2.5 Flash para contas novas, confirmado em 12/09/2026), referenciado por uma única constante configurável no código (não espalhada em múltiplos arquivos), para facilitar troca futura sem reescrever a integração.
+> - **Chave de API:** única, do Thiago, configurada como variável de ambiente/segredo no servidor (GEMINI_API_KEY), nunca exposta ao cliente. Sem opção de chave por usuário nesta fase — decisão revisitável quando o produto tiver múltiplos tenants pagantes (módulo futuro de créditos/monetização, arquitetura compatível, sem necessidade de retrabalho).
+> - **Validação de moeda (crítico):** toda extração de valor monetário deve identificar e reportar explicitamente a moeda detectada no documento. Se a moeda não for BRL (ou não identificável com confiança), o card de sugestão deve exibir alerta visual claro antes de qualquer aplicação — nunca preencher `amount` silenciosamente com um número sem confirmar que está em reais.
+> - **Nunca sobrescrita silenciosa:** ao sugerir preenchimento de campos já existentes (`amount`, `note`), o card de sugestão exibe o valor atual e o valor sugerido lado a lado; o produtor decide aplicar campo a campo ou tudo de uma vez — nunca substituição automática.
+> - **Otimização de imagem:** antes do envio à API, redimensionar imagens no cliente para no máximo ~1536px no lado maior (fotos de celular frequentemente vêm em resolução desnecessária para OCR, encarecendo a chamada sem ganho de legibilidade).
+>
+> **Adendo de fluxo (11/09/2026):**
+> - **Momento da análise (Função 1):** a extração por IA acontece no momento do envio do documento pelo próprio integrante, em `/p/[token]` — não depois, pelo produtor. Ao anexar o arquivo, a IA identifica o tipo de documento (restrito aos `document_types` já cadastrados pelo produtor para aquele show — nunca inventa categoria nova), pré-preenche os campos identificáveis, pergunta se é para reembolso, e localiza o valor monetário se presente no documento. Se for reembolso e o documento não tiver valor legível, solicita que o próprio integrante preencha o valor manualmente. Tudo é apresentado para confirmação do integrante antes do envio final — nunca enviado sem revisão humana de quem está mandando.
+> - **Fallback manual:** se a análise de IA falhar, demorar ou o limite de chamadas for atingido, o formulário de preenchimento manual (fluxo já existente da T-08) continua disponível sem bloqueio — IA é atalho, nunca obrigatório.
+> - **Limite de taxa (rota pública, sem login):** cada `cast_member` tem um teto de 15 análises de IA por show (coluna `ai_analysis_count`, incrementada de forma atômica antes de cada chamada). Ao atingir o limite, a chamada é recusada e o integrante cai automaticamente no preenchimento manual — sem erro visível, sem travar o envio.
+> - **Função 3 (conferência de divergência pelo produtor) — adiada:** analisar múltiplos documentos em conjunto buscando divergência (por documento, por integrante, ou relatório inteiro) fica para uma iteração futura, fora do escopo desta entrega. Justificativa: o RF-05 já exige revisão manual do produtor antes de qualquer reembolso, então adiar não reduz segurança nenhuma — só adia uma conveniência. Quando construída, precisa de período de calibração antes de confiar nos alertas de divergência sem checagem (risco de falso positivo corroer a confiança no recurso).
+
+---
+
+### RF-11 — Priorização de Itens Inegociáveis no Balanço do Rider Técnico
+> Adendo pós-T-09 (07/09/2026): requisito identificado durante revisão da T-09, antes da execução de T-10/T-11.
+
+Como produtor ou casa de show acompanhando o rider técnico de um evento,  
+quero que itens inegociáveis e desejáveis sejam tratados com peso diferente no status geral,  
+para identificar de forma imediata se um risco real (item inegociável) está pendente, sem confundir com pendências de baixo impacto.
+
+**Critério de aceite:**
+- **Dado** um rider com itens inegociáveis e desejáveis,  
+  **quando** todos os desejáveis estiverem confirmados mas houver ao menos um inegociável pendente ou em exceção,  
+  **então** o status geral do rider não pode ser exibido como "completo"/"tudo confirmado".
+- **Dado** um item marcado como inegociável,  
+  **quando** ele for sinalizado como exceção pela casa de show,  
+  **então** o alerta exibido tem severidade visualmente distinta (mais crítica) de uma exceção em item desejável.
+- **Dado** uma listagem de itens do rider (aba Rider Técnico do show, e página pública /r/[token]),  
+  **quando** houver itens pendentes de ambos os tipos,  
+  **então** os itens inegociáveis pendentes aparecem antes dos desejáveis pendentes na ordem de exibição.
+- **Dado** o cálculo de progresso do rider,  
+  **quando** exibido ao usuário,  
+  **então** existem dois contadores separados — inegociáveis e desejáveis — em vez de um único percentual combinado.
+
+---
+
+### RF-12 — Tema Claro/Escuro Alternável pelo Usuário
+> Adendo pós-T-11 (08/09/2026): requisito de UI/UX identificado a partir do wireframe de alta fidelidade (package_ux_ui/), antes de T-14/T-15.
+
+Como usuário do sistema (produtor, integrante da equipe),  
+quero poder alternar manualmente entre tema claro e escuro,  
+para usar o sistema no ambiente de luz que for mais confortável.
+
+**Critério de aceite:**
+- **Dado** o primeiro acesso sem preferência salva,  
+  **quando** a página carrega,  
+  **então** o tema segue prefers-color-scheme do navegador.
+- **Dado** o alternador de tema (ícone lua/sol, no rodapé da sidebar em modo sidebar, ou canto superior direito em modo cabeçalho),  
+  **quando** o usuário clica,  
+  **então** o tema muda imediatamente e a escolha é salva em localStorage, prevalecendo sobre a preferência do sistema em visitas futuras.
+- **Dado** qualquer tela (interna ou pública, /p/[token] e /r/[token]),  
+  **quando** o tema é escuro,  
+  **então** todos os componentes, incluindo a logo, respeitam a paleta escura calibrada na T-04 sem quebra de contraste.
+
+---
+
+### RF-13 — Navegação Adaptável: Cabeçalho ou Barra Lateral Recolhível
+> Adendo pós-T-11 (08/09/2026): mesma origem do RF-12.
+
+Como usuário do sistema,  
+quero escolher entre navegação no cabeçalho superior ou barra lateral recolhível/expansível,  
+para usar o layout mais confortável ao meu fluxo de trabalho.
+
+**Critério de aceite:**
+- **Dado** o usuário em desktop/tablet (acima de 640px),  
+  **quando** ele escolhe o modo sidebar em Configurações,  
+  **então** a navegação migra para uma barra lateral esquerda, largura 240px expandida / 76px recolhida, com botão de recolher/expandir (caret esquerda/direita).
+- **Dado** a sidebar recolhida,  
+  **quando** exibida,  
+  **então** mostra só ícones de navegação e o símbolo da marca (sem o wordmark completo).
+- **Dado** o modo cabeçalho (padrão atual),  
+  **quando** escolhido,  
+  **então** a navegação permanece no topo como hoje.
+- **Dado** a escolha entre os dois modos,  
+  **quando** feita,  
+  **então** é salva em localStorage e mantida entre sessões.
+- **Dado** o acesso em mobile (abaixo de 640px, breakpoint sm: já usado no resto do sistema),  
+  **quando** a tela carrega,  
+  **então** a navegação sempre vira menu hambúrguer, independente da preferência desktop salva.
+
+---
+
+### RF-14 — Negociação de Exceção do Rider Técnico (Réplica/Tréplica)
+> Desenho de UI/UX detalhado: specs/001-modulo-1-v1/design/rf-14-negociacao-rider.md
+
+Como produtor ou técnico responsável, ao revisar uma exceção sinalizada pela casa de show num item inegociável,  
+quero poder aceitar (com ressalva registrada) ou recusar (com justificativa e possível alternativa) essa exceção, mantendo uma conversa estruturada com a casa até a resolução, com ambos os lados avisados quando a outra parte responder,  
+para não ficar bloqueado indefinidamente por "Rider Completo" nunca fechar, sem perder o registro de que aquele item teve uma ressalva, e sem a negociação ficar presa informalmente fora do sistema.
+
+**Critério de aceite:**
+- Dado um item inegociável com status "exceção", quando o produtor clica em "Aceitar com ressalva" na aba Rider Técnico, então o item passa a um novo status (accepted_with_exception), deixa de contar em hasMandatoryPendingOrException, mas continua visualmente distinto de "Confirmado".
+- Dado o mesmo cenário, quando o produtor clica em "Recusar" e escreve uma mensagem (motivo e/ou alternativa sugerida), então essa mensagem é registrada como réplica vinculada àquele item, e o status permanece "em negociação".
+- Dado uma réplica registrada, quando a casa de show acessa /r/[token] novamente, então ela vê a réplica e pode responder com uma tréplica, reabrindo o ciclo — sem limite fixo de rodadas.
+- Dado qualquer item com histórico de réplica/tréplica em aberto, quando exibido no Relatório de Produção, então aparece um indicador de "Em negociação com a casa" com a mensagem mais recente.
+- Dado uma tréplica registrada pela casa, quando o produtor está logado no app, então recebe uma notificação push avisando da resposta (sujeito à confirmação de viabilidade técnica no ambiente Cloudflare Workers — ver nota de investigação abaixo).
+- Dado uma réplica registrada pelo produtor, quando ele optar por avisar a casa, então o sistema oferece um botão de reenvio via WhatsApp (reaproveitando buildWhatsAppLink já existente), com uma mensagem que resume a réplica e inclui o link /r/[token] com texto explícito deixando claro que a resposta só é considerada oficial/registrada se feita através daquele link — nunca o conteúdo completo da negociação solto na mensagem, evitando que a conversa fique presa informalmente fora do sistema, sem gerar registro para nenhum dos dois lados.
+- Dado um item com status accepted_with_exception, quando o produtor clica em 'Reabrir negociação', então o item volta ao status exception, reaproveitando a mesma mutação autenticada (auth.uid() = show.user_id), sem lógica adicional de limite de reaberturas ou notificação automática nesta versão.
+- Dado um item com histórico de negociação (qualquer mensagem registrada), quando a casa tentar definir o status diretamente como confirmed ou pending pela rota pública, então o servidor rejeita a tentativa — a resolução de itens em negociação depende exclusivamente do aceite explícito do produtor.
+- As transições exception -> confirmed e confirmed -> exception já existem desde a T-10 (updatePublicRiderItem já aceita os três status livremente) e não fazem parte do escopo novo do RF-14.
+
+> **Nota de investigação técnica:** A biblioteca padrão `web-push` (npm) não funciona em Cloudflare Workers por depender de `node:crypto` e `node:https` (ausentes no runtime V8 dos Workers). No entanto, existem bibliotecas projetadas especificamente para edge runtime, baseadas estritamente em Web Crypto API + `fetch`, sem dependência de Node, que funcionam nativamente em Cloudflare Workers — exemplos ativos e mantidos: `@block65/webcrypto-web-push` e `pushforge` (`@pushforge/builder`). A limitação técnica real e sem solução por biblioteca reside no iOS/Safari, que só entrega Web Push se a aplicação estiver instalada como PWA na tela de início do dispositivo. Decisão adotada: notificação in-app (toast + badge) nesta etapa, mantendo o push nativo documentado para evolução futura via PWA ou serviço dedicado.
 
 ---
 
