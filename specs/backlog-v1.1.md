@@ -21,6 +21,10 @@
 - Área de perfil do usuário
 - Drag-and-drop de upload (suporte nativo do navegador, baixo esforço 
   de implementação)
+- Tela de abertura animada (logo em movimento, tipo equalizador de áudio) 
+  exibida por ~800ms ao abrir o app, entre a splash nativa do Android/PWA 
+  (que não é editável — gerada pelo sistema a partir do manifest.json) e a 
+  tela de login — [CONCLUÍDO]
 
 ## Grande aposta (alto impacto, alto esforço) — priorizar, mas planejar bem
 - Área de transparência de roadmap — construir v1 enxuta primeiro 
