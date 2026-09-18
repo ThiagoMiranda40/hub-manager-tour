@@ -12,8 +12,6 @@
 - Revisão geral da interface mobile
 - Aumentar fonte no celular
 - Ajustar visualização de botões/badges em todos os dispositivos
-- Confirmar se o fix do Relatório de Produção no mobile resolveu o 
-  problema original
 - Melhorar cores/contraste do Modo Palco
 - Cards de Total/Confirmados/Exceções/Pendentes do Rider como filtro 
   clicável
