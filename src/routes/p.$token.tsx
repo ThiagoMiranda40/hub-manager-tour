@@ -21,6 +21,7 @@ import { resizeFileForAI, type ReceiptAnalysisResult } from "@/lib/ai-extraction
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FontSizeToggle } from "@/components/FontSizeToggle";
 import { cn } from "@/lib/utils";
 import {
   ALLOWED_EXTENSIONS,
@@ -317,7 +318,8 @@ function PublicUpload() {
   if (!data || !data.show || !data.member) {
     return (
       <div className="relative grid min-h-screen place-items-center px-4 py-12 text-center bg-background">
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <FontSizeToggle />
           <ThemeToggle />
         </div>
         <div className="max-w-md border border-line bg-card p-8 rounded-2xl shadow-sm">
@@ -359,6 +361,7 @@ function PublicUpload() {
             />
           </div>
           <div className="flex items-center gap-2">
+            <FontSizeToggle />
             <ThemeToggle />
             <span className="text-[0.6875rem] font-mono uppercase tracking-wider text-[#9184d9] font-medium bg-[#9184d9]/10 px-2.5 py-1 rounded-full">
               📱 Acesso de Elenco

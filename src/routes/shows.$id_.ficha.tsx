@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FontSizeToggle } from "@/components/FontSizeToggle";
 import {
   computeShowProgress,
   computeMemberRequirementStatus,
@@ -200,6 +201,7 @@ function FichaProducao() {
           ← Voltar para o show
         </Link>
         <div className="flex items-center gap-2.5 sm:gap-3">
+          <FontSizeToggle />
           <ThemeToggle />
           <button
             type="button"

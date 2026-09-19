@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavModeToggle } from "@/components/NavModeToggle";
+import { FontSizeToggle } from "@/components/FontSizeToggle";
 import { useNavigationMode } from "@/hooks/useNavigationMode";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +65,7 @@ export function AppShell({
           </Link>
 
           <div className="flex items-center gap-2">
+            <FontSizeToggle />
             <ThemeToggle />
             <button
               type="button"
@@ -233,6 +235,7 @@ export function AppShell({
                 ) : null}
                 <div className="flex items-center gap-1.5">
                   <NavModeToggle className={isCollapsed ? "size-8 p-0" : undefined} />
+                  <FontSizeToggle className={isCollapsed ? "size-8 p-0" : undefined} />
                   <ThemeToggle className={isCollapsed ? "size-8 p-0" : undefined} />
                 </div>
               </div>
@@ -312,6 +315,7 @@ export function AppShell({
               </nav>
               <div className="ml-auto flex items-center gap-2 sm:gap-3">
                 <NavModeToggle />
+                <FontSizeToggle />
                 <ThemeToggle />
                 {email ? (
                   <span className="hidden font-mono text-[0.6875rem] text-muted-foreground sm:inline">

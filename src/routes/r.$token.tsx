@@ -35,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/Skeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FontSizeToggle } from "@/components/FontSizeToggle";
 
 export const Route = createFileRoute("/r/$token")({
   head: () => ({
@@ -293,7 +294,8 @@ function PublicRiderPage() {
   if (error || !show) {
     return (
       <main className="relative min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <FontSizeToggle />
           <ThemeToggle />
         </div>
         <div className="max-w-md w-full border border-destructive/30 bg-destructive/5 p-6 rounded-2xl text-center space-y-4">
@@ -370,7 +372,8 @@ function PublicRiderPage() {
               )}
             </div>
 
-            {/* Alternador de tema claro/escuro */}
+            {/* Alternador de fonte e tema claro/escuro */}
+            <FontSizeToggle />
             <ThemeToggle />
 
             {/* Botão de Impressão da Cópia de Atendimento */}
