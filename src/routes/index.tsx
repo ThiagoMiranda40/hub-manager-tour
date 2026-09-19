@@ -12,6 +12,7 @@ import {
   formatShowDate,
   formatWeekday,
 } from "@/lib/g3";
+import { cn } from "@/lib/utils";
 import { useCatalog } from "@/hooks/useCatalog";
 import { toast } from "sonner";
 import {
@@ -175,7 +176,18 @@ function Dashboard() {
           </p>
         </div>
         <div className="grid grid-cols-3 gap-px self-end border border-line bg-line lg:col-span-6 rounded-xl overflow-hidden shadow-xs">
-          <div className="bg-card/90 p-4 backdrop-blur-xs">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("all")}
+            title="Filtrar por todos os shows"
+            aria-pressed={statusFilter === "all"}
+            className={cn(
+              "p-4 backdrop-blur-xs text-left cursor-pointer transition-all duration-120 touch-manipulation active:scale-[0.98]",
+              statusFilter === "all"
+                ? "relative z-10 bg-card ring-2 ring-primary/80 border-primary/50 shadow-xs"
+                : "bg-card/90 hover:bg-accent/40",
+            )}
+          >
             <div className="label-mono text-muted-foreground flex items-center gap-1.5">
               <Calendar className="size-3 text-[#9184d9]" />
               Shows
@@ -184,8 +196,19 @@ function Dashboard() {
             <div className="mt-1 font-mono text-[0.625rem] text-muted-foreground">
               {totalRiderItems} itens de rider
             </div>
-          </div>
-          <div className="bg-card/90 p-4 backdrop-blur-xs">
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("pending")}
+            title="Filtrar shows com documentos pendentes"
+            aria-pressed={statusFilter === "pending"}
+            className={cn(
+              "p-4 backdrop-blur-xs text-left cursor-pointer transition-all duration-120 touch-manipulation active:scale-[0.98]",
+              statusFilter === "pending"
+                ? "relative z-10 bg-card ring-2 ring-amber-500/80 border-amber-500/50 bg-amber-500/[0.04] shadow-xs"
+                : "bg-card/90 hover:bg-amber-500/[0.04]",
+            )}
+          >
             <div className="label-mono text-amber-500/90 dark:text-amber-400 flex items-center gap-1.5">
               <AlertTriangle className="size-3" />
               Docs Pendentes
@@ -196,8 +219,19 @@ function Dashboard() {
             <div className="mt-1 font-mono text-[0.625rem] text-muted-foreground">
               {totalRiderExceptions > 0 ? `${totalRiderExceptions} exc. no rider` : "0 exc. no rider"}
             </div>
-          </div>
-          <div className="bg-card/90 p-4 backdrop-blur-xs">
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("complete")}
+            title="Filtrar shows com documentos 100% concluídos"
+            aria-pressed={statusFilter === "complete"}
+            className={cn(
+              "p-4 backdrop-blur-xs text-left cursor-pointer transition-all duration-120 touch-manipulation active:scale-[0.98]",
+              statusFilter === "complete"
+                ? "relative z-10 bg-card ring-2 ring-emerald-500/80 border-emerald-500/50 bg-emerald-500/[0.04] shadow-xs"
+                : "bg-card/90 hover:bg-emerald-500/[0.04]",
+            )}
+          >
             <div className="label-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
               <Check className="size-3" />
               Docs 100%
@@ -208,7 +242,7 @@ function Dashboard() {
             <div className="mt-1 font-mono text-[0.625rem] text-muted-foreground">
               prontos p/ embarque
             </div>
-          </div>
+          </button>
         </div>
       </section>
 
