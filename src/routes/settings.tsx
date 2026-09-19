@@ -513,6 +513,7 @@ function RiderCatalogSection({
   const [riderFile, setRiderFile] = useState<File | null>(null);
   const [riderFileError, setRiderFileError] = useState<string | null>(null);
   const [isSavingImportedItems, setIsSavingImportedItems] = useState(false);
+  const [isDraggingPdf, setIsDraggingPdf] = useState(false);
 
   const extractRiderFn = useServerFn(extractRiderFromPDF);
 
@@ -1148,7 +1149,39 @@ function RiderCatalogSection({
           <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
             {/* Dropzone / Seletor de Arquivo */}
             {!extractedRiderItems && (
-              <div className="border-2 border-dashed border-line hover:border-[#9184d9]/60 rounded-xl p-8 text-center bg-card/50 transition-colors">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isExtractingRider) setIsDraggingPdf(true);
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isExtractingRider) setIsDraggingPdf(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingPdf(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingPdf(false);
+                  if (isExtractingRider) return;
+                  const droppedFile = e.dataTransfer.files?.[0];
+                  if (droppedFile) {
+                    void handleExtractRider(droppedFile);
+                  }
+                }}
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-8 text-center transition-all duration-120 select-none",
+                  isDraggingPdf
+                    ? "border-[#9184d9] bg-[#9184d9]/15 ring-2 ring-[#9184d9]/50 scale-[1.01]"
+                    : "border-line hover:border-[#9184d9]/60 bg-card/50",
+                )}
+              >
                 <input
                   type="file"
                   id="rider-pdf-input"
@@ -1167,7 +1200,14 @@ function RiderCatalogSection({
                     isExtractingRider && "opacity-50 pointer-events-none"
                   )}
                 >
-                  <div className="size-12 rounded-full bg-[#9184d9]/10 text-[#9184d9] flex items-center justify-center">
+                  <div
+                    className={cn(
+                      "size-12 rounded-full flex items-center justify-center transition-colors",
+                      isDraggingPdf
+                        ? "bg-[#9184d9]/25 text-[#9184d9]"
+                        : "bg-[#9184d9]/10 text-[#9184d9]",
+                    )}
+                  >
                     {isExtractingRider ? (
                       <Loader2 className="size-6 animate-spin" />
                     ) : (
@@ -1178,12 +1218,16 @@ function RiderCatalogSection({
                     <p className="font-mono text-xs uppercase tracking-wider font-semibold text-foreground">
                       {isExtractingRider
                         ? "Analisando rider técnico com IA..."
+                        : isDraggingPdf
+                        ? "Solte o PDF aqui para importar"
                         : riderFile
                         ? riderFile.name
-                        : "Clique para selecionar o PDF do rider"}
+                        : "Clique ou arraste o PDF do rider aqui"}
                     </p>
                     <p className="text-[0.6875rem] text-muted-foreground mt-1">
-                      Suporta documentos técnicos e riders em formato PDF (máx. 20 MB)
+                      {isDraggingPdf
+                        ? "Solte para iniciar a extração com IA"
+                        : "Suporta documentos técnicos e riders em formato PDF (máx. 20 MB)"}
                     </p>
                   </div>
                 </label>
