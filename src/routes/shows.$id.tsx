@@ -2941,7 +2941,7 @@ function ShowDetail() {
                   title={
                     reimbursementFilter === "reimbursed"
                       ? "Remover filtro (mostrar todos)"
-                      : "Filtrar por comprovantes reembolsados"
+                      : "Filtrar por reembolsos pagos"
                   }
                   className={cn(
                     "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
@@ -2951,7 +2951,7 @@ function ShowDetail() {
                   )}
                 >
                   <div className="label-mono text-ok flex items-center justify-between">
-                    <span>Reembolsados (Pagos)</span>
+                    <span>Reembolsos Pagos</span>
                     {reimbursementFilter === "reimbursed" ? (
                       <span className="text-[0.625rem] text-emerald-500 font-bold">● Ativo</span>
                     ) : null}
@@ -2982,7 +2982,7 @@ function ShowDetail() {
                   )}
                 >
                   <div className="label-mono text-amber-500 flex items-center justify-between">
-                    <span>Pendentes de Reembolso</span>
+                    <span>Reembolsos Pendentes</span>
                     {reimbursementFilter === "pending" ? (
                       <span className="text-[0.625rem] text-amber-500 font-bold">● Ativo</span>
                     ) : null}
