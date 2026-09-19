@@ -3304,8 +3304,12 @@ function ShowDetail() {
                           </div>
 
                           {/* Coluna 4: Switch de Pagamento (Pago) */}
-                          <div className="shrink-0 flex items-center gap-2">
-                            <button
+                          <div className="shrink-0">
+                            <div className="text-xs text-muted-foreground label-mono hidden lg:block">
+                              Status
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-2">
+                              <button
                               type="button"
                               onClick={() =>
                                 toggleReimbursed.mutate({
@@ -3339,6 +3343,7 @@ function ShowDetail() {
                                 </>
                               )}
                             </button>
+                            </div>
                           </div>
                         </div>
                       );
