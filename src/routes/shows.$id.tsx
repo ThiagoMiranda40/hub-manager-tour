@@ -94,7 +94,7 @@ export const Route = createFileRoute("/shows/$id")({
       {
         property: "og:description",
         content:
-          "Elenco, exigências individuais, conferência de rider técnico e liquidação de reembolsos.",
+          "Elenco, exigências individuais, conferência de rider técnico e pagamento de reembolsos.",
       },
     ],
   }),
@@ -1152,7 +1152,7 @@ function ShowDetail() {
                 active={activeTab === "reimbursements"}
                 onClick={() => setActiveTab("reimbursements")}
                 label="Reembolsos"
-                title="Comprovantes de despesas, pagamentos via Pix e controle de liquidação"
+                title="Comprovantes de despesas, pagamentos via Pix e controle de pagamento"
                 badge={reimbursableDocs.length}
                 badgeTitle={`${reimbursableDocs.length} ${reimbursableDocs.length === 1 ? "comprovante de reembolso" : "comprovantes de reembolso"}`}
                 hasAlert={pendingReimbursementDocs.length > 0}
@@ -3113,7 +3113,7 @@ function ShowDetail() {
                     {formatBRL(totalReimbursedAmount)}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
-                    {reimbursedDocs.length} liquidados
+                    {reimbursedDocs.length} pagos
                   </div>
                 </button>
 
@@ -3176,7 +3176,7 @@ function ShowDetail() {
                     ) : null}
                   </div>
                   <span className="font-mono text-xs text-muted-foreground hidden sm:inline">
-                    Copie a chave Pix em 1 toque e marque como reembolsado
+                    Copie a chave Pix em 1 toque e marque como pago
                   </span>
                 </div>
 
@@ -3303,7 +3303,7 @@ function ShowDetail() {
                             )}
                           </div>
 
-                          {/* Coluna 4: Switch de Liquidação (Reembolsado) */}
+                          {/* Coluna 4: Switch de Pagamento (Pago) */}
                           <div className="shrink-0 flex items-center gap-2">
                             <button
                               type="button"
@@ -3317,11 +3317,11 @@ function ShowDetail() {
                               disabled={toggleReimbursed.isPending}
                               title={
                                 d.is_reimbursed
-                                  ? "Clique para reverter o status para pendente de reembolso"
-                                  : "Clique para marcar esta despesa como reembolsada/paga"
+                                  ? "Reembolso já pago. Clique para voltar para pendente."
+                                  : "Clique depois de pagar o Pix para marcar este reembolso como pago"
                               }
                               className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-lg border active:scale-[0.97] transition-all touch-manipulation cursor-pointer",
+                                "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-lg border active:scale-[0.97] transition-all touch-manipulation cursor-pointer min-w-[12rem]",
                                 d.is_reimbursed
                                   ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
                                   : "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20",
@@ -3330,7 +3330,7 @@ function ShowDetail() {
                               {d.is_reimbursed ? (
                                 <>
                                   <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                                  <span>Reembolsado</span>
+                                  <span>Pago</span>
                                 </>
                               ) : (
                                 <>
