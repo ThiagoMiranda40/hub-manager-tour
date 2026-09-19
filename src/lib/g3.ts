@@ -459,6 +459,28 @@ export function filterRiderItemsByStatus(
   return items;
 }
 
+export type ReimbursementFilter = "all" | "reimbursed" | "pending";
+
+/**
+ * Filtra documentos de reembolso (RF-05 / Backlog V1.1)
+ * - "all": retorna todos os documentos
+ * - "reimbursed": is_reimbursed === true
+ * - "pending": is_reimbursed === false ou ausente/null/undefined
+ */
+export function filterReimbursableDocs<T extends { is_reimbursed?: boolean | null }>(
+  docs: T[],
+  filter: ReimbursementFilter,
+): T[] {
+  if (filter === "all") return docs;
+  if (filter === "reimbursed") {
+    return docs.filter((d) => d.is_reimbursed === true);
+  }
+  if (filter === "pending") {
+    return docs.filter((d) => !d.is_reimbursed);
+  }
+  return docs;
+}
+
 /** Aplica presets de exigências em lote de forma estritamente idempotente */
 export function applyRequirementPreset(
   existingRequirements: ShowRequirement[],

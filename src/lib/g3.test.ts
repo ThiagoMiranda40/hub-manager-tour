@@ -18,6 +18,7 @@ import {
   sanitizeMessageText,
   validateRiderMessageAntiAbuse,
   filterRiderItemsByStatus,
+  filterReimbursableDocs,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -973,6 +974,48 @@ describe("Filtros Clicáveis do Rider Técnico (Backlog V1.1)", () => {
     const stageItems = sortStageRiderItems(sampleItems);
     expect(stageItems).toHaveLength(sampleItems.length);
     expect(stageItems.map((i) => i.id).sort()).toEqual(sampleItems.map((i) => i.id).sort());
+  });
+});
+
+describe("filterReimbursableDocs (Filtros Clicáveis na Aba Reembolsos)", () => {
+  const sampleDocs = [
+    { id: "1", file_name: "Uber.pdf", is_reimbursed: true, amount: 45.5 },
+    { id: "2", file_name: "Almoco.jpg", is_reimbursed: false, amount: 82.0 },
+    { id: "3", file_name: "Estacionamento.png", is_reimbursed: null, amount: 30.0 },
+    { id: "4", file_name: "Cafe.pdf", amount: 15.0 }, // is_reimbursed ausente
+    { id: "5", file_name: "Jantar.jpg", is_reimbursed: true, amount: 120.0 },
+  ];
+
+  it("filtro 'all' retorna todos os comprovantes", () => {
+    const result = filterReimbursableDocs(sampleDocs, "all");
+    expect(result).toHaveLength(5);
+    expect(result.map((d) => d.id)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("filtro 'reimbursed' retorna apenas comprovantes onde is_reimbursed === true", () => {
+    const result = filterReimbursableDocs(sampleDocs, "reimbursed");
+    expect(result).toHaveLength(2);
+    expect(result.map((d) => d.id)).toEqual(["1", "5"]);
+  });
+
+  it("filtro 'pending' retorna comprovantes com is_reimbursed false, null ou ausente", () => {
+    const result = filterReimbursableDocs(sampleDocs, "pending");
+    expect(result).toHaveLength(3);
+    expect(result.map((d) => d.id)).toEqual(["2", "3", "4"]);
+  });
+
+  it("retorna array vazio quando nenhum comprovante corresponde ao filtro", () => {
+    const onlyReimbursed = [
+      { id: "1", is_reimbursed: true },
+      { id: "2", is_reimbursed: true },
+    ];
+    expect(filterReimbursableDocs(onlyReimbursed, "pending")).toHaveLength(0);
+
+    const onlyPending = [
+      { id: "3", is_reimbursed: false },
+      { id: "4", is_reimbursed: null },
+    ];
+    expect(filterReimbursableDocs(onlyPending, "reimbursed")).toHaveLength(0);
   });
 });
 

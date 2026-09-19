@@ -52,6 +52,8 @@ import {
   buildRiderNegotiationWhatsAppMessage,
   sanitizeMessageText,
   filterRiderItemsByStatus,
+  filterReimbursableDocs,
+  type ReimbursementFilter,
   type ShowRequirement,
   type ShowRiderItem,
   type ShowRiderItemMessage,
@@ -132,6 +134,11 @@ function ShowDetail() {
   // Filtro de Status do Rider (Backlog V1.1)
   const [riderStatusFilter, setRiderStatusFilter] = useState<
     "all" | "confirmed" | "exception" | "pending"
+  >("all");
+
+  // Filtro da Listagem de Reembolsos (Backlog V1.1)
+  const [reimbursementFilter, setReimbursementFilter] = useState<
+    "all" | "reimbursed" | "pending"
   >("all");
 
   const { roles, docTypes } = useCatalog(!!session);
@@ -308,6 +315,10 @@ function ShowDetail() {
   }, [riderItems]);
 
   const reimbursableDocs = useMemo(() => docs.filter((d) => d.is_reimbursement), [docs]);
+  const filteredReimbursableDocs = useMemo(
+    () => filterReimbursableDocs(reimbursableDocs, reimbursementFilter),
+    [reimbursableDocs, reimbursementFilter],
+  );
   const withAmount = useMemo(
     () => reimbursableDocs.filter((d) => d.amount != null),
     [reimbursableDocs],
@@ -2405,35 +2416,96 @@ function ShowDetail() {
              ───────────────────────────────────────────────────────────────── */}
           {activeTab === "reimbursements" ? (
             <div className="mt-6 space-y-6">
-              {/* Cards de Métricas Financeiras */}
+              {/* Cards de Métricas Financeiras com Filtros Clicáveis (Backlog V1.1) */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Comprovantes</div>
+                <button
+                  type="button"
+                  onClick={() => setReimbursementFilter("all")}
+                  title={
+                    reimbursementFilter === "all"
+                      ? "Exibindo todas as solicitações"
+                      : "Filtrar por todas as solicitações"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    reimbursementFilter === "all"
+                      ? "ring-2 ring-primary/80 border-primary/50 shadow-sm"
+                      : "border-line hover:border-foreground/30 hover:bg-accent/20",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Comprovantes</span>
+                    {reimbursementFilter === "all" ? (
+                      <span className="text-[0.625rem] text-primary font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold">{reimbursableDocs.length}</div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     solicitações enviadas
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-ok">Reembolsados (Pagos)</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReimbursementFilter((curr) => (curr === "reimbursed" ? "all" : "reimbursed"))
+                  }
+                  title={
+                    reimbursementFilter === "reimbursed"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por comprovantes reembolsados"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    reimbursementFilter === "reimbursed"
+                      ? "ring-2 ring-emerald-500/80 border-emerald-500 bg-emerald-500/[0.04] shadow-sm"
+                      : "border-line hover:border-emerald-500/40 hover:bg-emerald-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-ok flex items-center justify-between">
+                    <span>Reembolsados (Pagos)</span>
+                    {reimbursementFilter === "reimbursed" ? (
+                      <span className="text-[0.625rem] text-emerald-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-ok">
                     {formatBRL(totalReimbursedAmount)}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     {reimbursedDocs.length} liquidados
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-amber-500">Pendentes de Reembolso</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReimbursementFilter((curr) => (curr === "pending" ? "all" : "pending"))
+                  }
+                  title={
+                    reimbursementFilter === "pending"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por reembolsos pendentes"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    reimbursementFilter === "pending"
+                      ? "ring-2 ring-amber-500/80 border-amber-500 bg-amber-500/[0.04] shadow-sm"
+                      : "border-line hover:border-amber-500/40 hover:bg-amber-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-amber-500 flex items-center justify-between">
+                    <span>Pendentes de Reembolso</span>
+                    {reimbursementFilter === "pending" ? (
+                      <span className="text-[0.625rem] text-amber-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-amber-500">
                     {formatBRL(totalPendingReimbursementAmount)}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     {pendingReimbursementDocs.length} a pagar
                   </div>
-                </div>
+                </button>
 
                 <div className="border border-line p-4 rounded-xl bg-card">
                   <div className="label-mono text-muted-foreground">Total Declarado</div>
@@ -2447,10 +2519,22 @@ function ShowDetail() {
               {/* Tabela de Reembolsos Operacionais com Pix (RF-05 / TC-05.1) */}
               <div className="border border-line rounded-xl overflow-hidden bg-card">
                 <div className="border-b border-line px-5 py-3.5 bg-accent/20 flex items-center justify-between">
-                  <span className="label-mono font-medium text-foreground">
-                    Listagem de Reembolsos e Chaves Pix ({reimbursableDocs.length})
-                  </span>
-                  <span className="font-mono text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3">
+                    <span className="label-mono font-medium text-foreground">
+                      Listagem de Reembolsos e Chaves Pix ({filteredReimbursableDocs.length}
+                      {reimbursementFilter !== "all" ? ` de ${reimbursableDocs.length}` : ""})
+                    </span>
+                    {reimbursementFilter !== "all" ? (
+                      <button
+                        type="button"
+                        onClick={() => setReimbursementFilter("all")}
+                        className="font-mono text-[0.6875rem] text-primary hover:underline cursor-pointer"
+                      >
+                        Limpar filtro ✕
+                      </button>
+                    ) : null}
+                  </div>
+                  <span className="font-mono text-xs text-muted-foreground hidden sm:inline">
                     Copie a chave Pix em 1 toque e marque como reembolsado
                   </span>
                 </div>
@@ -2466,9 +2550,22 @@ function ShowDetail() {
                       reembolso&rdquo;, eles aparecerão aqui com valor e chave Pix.
                     </p>
                   </div>
+                ) : filteredReimbursableDocs.length === 0 ? (
+                  <div className="p-10 text-center flex flex-col items-center">
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                      Nenhum reembolso com o status selecionado
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setReimbursementFilter("all")}
+                      className="mt-3 font-mono text-xs text-primary underline cursor-pointer"
+                    >
+                      Mostrar todas as solicitações ({reimbursableDocs.length})
+                    </button>
+                  </div>
                 ) : (
                   <div className="divide-y divide-line">
-                    {reimbursableDocs.map((d) => {
+                    {filteredReimbursableDocs.map((d) => {
                       const member = cast.find((m) => m.id === d.cast_member_id);
                       const person = member ? getPersonForMember(member) : null;
                       const hasPix = Boolean(person?.pix_key);
