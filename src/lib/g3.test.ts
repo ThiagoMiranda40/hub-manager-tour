@@ -17,6 +17,7 @@ import {
   buildRiderNegotiationWhatsAppMessage,
   sanitizeMessageText,
   validateRiderMessageAntiAbuse,
+  filterRiderItemsByStatus,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -915,5 +916,48 @@ describe("RF-14: Negociação de Exceção do Rider Técnico e Reabertura (T-17 
     expect(sanitizeMessageText("")).toBe("");
   });
 });
+
+describe("Filtros Clicáveis do Rider Técnico (Backlog V1.1)", () => {
+  const sampleItems: ShowRiderItem[] = [
+    { id: "1", item_name: "Microfone Shure", status: "confirmed" },
+    { id: "2", item_name: "Bateria Pearl", status: "accepted_with_exception" },
+    { id: "3", item_name: "Amplificador Ampeg", status: "exception" },
+    { id: "4", item_name: "Direct Box Radial", status: "pending" },
+    { id: "5", item_name: "Pedestal Girafa", status: "" },
+  ];
+
+  it("filtro 'all' retorna todos os itens da lista", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "all");
+    expect(result).toHaveLength(5);
+    expect(result.map((i) => i.id)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("filtro 'confirmed' agrupa itens 'confirmed' e 'accepted_with_exception'", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "confirmed");
+    expect(result).toHaveLength(2);
+    expect(result.map((i) => i.id)).toEqual(["1", "2"]);
+  });
+
+  it("filtro 'exception' retorna apenas itens com status 'exception'", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "exception");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("3");
+  });
+
+  it("filtro 'pending' retorna itens com status 'pending' ou vazios/indefinidos", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "pending");
+    expect(result).toHaveLength(2);
+    expect(result.map((i) => i.id)).toEqual(["4", "5"]);
+  });
+
+  it("retorna array vazio quando nenhum item corresponde ao filtro", () => {
+    const onlyConfirmed: ShowRiderItem[] = [
+      { id: "1", item_name: "Item OK", status: "confirmed" },
+    ];
+    expect(filterRiderItemsByStatus(onlyConfirmed, "exception")).toHaveLength(0);
+    expect(filterRiderItemsByStatus(onlyConfirmed, "pending")).toHaveLength(0);
+  });
+});
+
 
 

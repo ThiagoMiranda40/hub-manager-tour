@@ -51,6 +51,7 @@ import {
   buildWhatsAppLink,
   buildRiderNegotiationWhatsAppMessage,
   sanitizeMessageText,
+  filterRiderItemsByStatus,
   type ShowRequirement,
   type ShowRiderItem,
   type ShowRiderItemMessage,
@@ -127,6 +128,11 @@ function ShowDetail() {
   // Negociação de Exceção do Rider (RF-14 / T-17)
   const [producerReplyingItemId, setProducerReplyingItemId] = useState<string | null>(null);
   const [producerReplyTextMap, setProducerReplyTextMap] = useState<Record<string, string>>({});
+
+  // Filtro de Status do Rider (Backlog V1.1)
+  const [riderStatusFilter, setRiderStatusFilter] = useState<
+    "all" | "confirmed" | "exception" | "pending"
+  >("all");
 
   const { roles, docTypes } = useCatalog(!!session);
 
@@ -280,10 +286,16 @@ function ShowDetail() {
     prevVenueMsgCountRef.current = currentVenueMsgs.length;
   }, [riderItems]);
 
+  // Filtro de Status do Rider (Backlog V1.1)
+  const filteredRiderItems = useMemo(
+    () => filterRiderItemsByStatus(riderItems, riderStatusFilter),
+    [riderItems, riderStatusFilter],
+  );
+
   // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco
   const stageRiderItems = useMemo(
-    () => sortStageRiderItems(riderItems),
-    [riderItems],
+    () => sortStageRiderItems(filteredRiderItems),
+    [filteredRiderItems],
   );
 
   const stageStats = useMemo(() => {
@@ -1549,17 +1561,55 @@ function ShowDetail() {
              ───────────────────────────────────────────────────────────────── */}
           {activeTab === "rider" ? (
             <div className="mt-6 space-y-6">
-              {/* Balanço do Rider Técnico (Motor G3) */}
+              {/* Balanço do Rider Técnico (Motor G3 com Filtros Clicáveis) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Total de Itens</div>
+                <button
+                  type="button"
+                  onClick={() => setRiderStatusFilter("all")}
+                  title={
+                    riderStatusFilter === "all"
+                      ? "Exibindo todos os itens"
+                      : "Filtrar por todos os itens"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "all"
+                      ? "ring-2 ring-primary/80 border-primary/50 shadow-sm"
+                      : "border-line hover:border-foreground/30 hover:bg-accent/20",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Total de Itens</span>
+                    {riderStatusFilter === "all" ? (
+                      <span className="text-[0.625rem] text-primary font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold">{riderBalance.total}</div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">especificados</div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-emerald-600 dark:text-emerald-400">
-                    Confirmados
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRiderStatusFilter((curr) => (curr === "confirmed" ? "all" : "confirmed"))
+                  }
+                  title={
+                    riderStatusFilter === "confirmed"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por itens confirmados"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "confirmed"
+                      ? "ring-2 ring-emerald-500/80 border-emerald-500 bg-emerald-500/[0.04] shadow-sm"
+                      : "border-line hover:border-emerald-500/40 hover:bg-emerald-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
+                    <span>Confirmados</span>
+                    {riderStatusFilter === "confirmed" ? (
+                      <span className="text-[0.625rem] text-emerald-500 font-bold">● Ativo</span>
+                    ) : null}
                   </div>
                   <div className="mt-2 text-3xl font-semibold text-ok">
                     {riderBalance.confirmed}
@@ -1572,25 +1622,67 @@ function ShowDetail() {
                       </span>
                     ) : null}
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-purple-600 dark:text-purple-400">Exceções</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRiderStatusFilter((curr) => (curr === "exception" ? "all" : "exception"))
+                  }
+                  title={
+                    riderStatusFilter === "exception"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por exceções sugeridas"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "exception"
+                      ? "ring-2 ring-purple-500/80 border-purple-500 bg-purple-500/[0.04] shadow-sm"
+                      : "border-line hover:border-purple-500/40 hover:bg-purple-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-purple-600 dark:text-purple-400 flex items-center justify-between">
+                    <span>Exceções</span>
+                    {riderStatusFilter === "exception" ? (
+                      <span className="text-[0.625rem] text-purple-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-purple-500">
                     {riderBalance.exceptions}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     alternativas sugeridas
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-amber-600 dark:text-amber-400">Pendentes</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRiderStatusFilter((curr) => (curr === "pending" ? "all" : "pending"))
+                  }
+                  title={
+                    riderStatusFilter === "pending"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por itens pendentes"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "pending"
+                      ? "ring-2 ring-amber-500/80 border-amber-500 bg-amber-500/[0.04] shadow-sm"
+                      : "border-line hover:border-amber-500/40 hover:bg-amber-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-amber-600 dark:text-amber-400 flex items-center justify-between">
+                    <span>Pendentes</span>
+                    {riderStatusFilter === "pending" ? (
+                      <span className="text-[0.625rem] text-amber-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-amber-500">
                     {riderBalance.pending}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">aguardando casa</div>
-                </div>
+                </button>
               </div>
 
               {/* Botão de Compartilhar Rider com a Casa */}
@@ -1632,7 +1724,8 @@ function ShowDetail() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="label-mono font-medium text-foreground">
-                    Itens de Palco e Camarim ({riderItems.length})
+                    Itens de Palco e Camarim ({filteredRiderItems.length}
+                    {riderStatusFilter !== "all" ? ` de ${riderItems.length}` : ""})
                   </span>
                   {stageStats.conformed > 0 ? (
                     <span className="font-mono text-[0.6875rem] text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full font-medium">
@@ -1957,10 +2050,20 @@ function ShowDetail() {
               ) : (
                 /* Lista Padrão dos Itens do Rider do Show */
                 <div className="border border-line rounded-xl overflow-hidden bg-card">
-                  <div className="border-b border-line px-5 py-3.5 bg-accent/20">
+                  <div className="border-b border-line px-5 py-3.5 bg-accent/20 flex items-center justify-between">
                     <span className="label-mono font-medium text-foreground">
-                      Itens de Palco e Camarim ({riderItems.length})
+                      Itens de Palco e Camarim ({filteredRiderItems.length}
+                      {riderStatusFilter !== "all" ? ` de ${riderItems.length}` : ""})
                     </span>
+                    {riderStatusFilter !== "all" ? (
+                      <button
+                        type="button"
+                        onClick={() => setRiderStatusFilter("all")}
+                        className="font-mono text-[0.6875rem] text-primary hover:underline cursor-pointer"
+                      >
+                        Limpar filtro ✕
+                      </button>
+                    ) : null}
                   </div>
 
                   {riderItems.length === 0 ? (
@@ -1985,9 +2088,22 @@ function ShowDetail() {
                           : "Clonar Rider Padrão do Artista Agora"}
                       </button>
                     </div>
+                  ) : filteredRiderItems.length === 0 ? (
+                    <div className="p-10 text-center flex flex-col items-center">
+                      <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                        Nenhum item com o status selecionado
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setRiderStatusFilter("all")}
+                        className="mt-3 font-mono text-xs text-primary underline cursor-pointer"
+                      >
+                        Mostrar todos os itens ({riderItems.length})
+                      </button>
+                    </div>
                   ) : (
                     <div className="divide-y divide-line">
-                      {riderItems.map((item) => {
+                      {filteredRiderItems.map((item) => {
                         const isConfirmed = item.status === "confirmed";
                         const isAcceptedWithException = item.status === "accepted_with_exception";
                         const hasMessages = Boolean(item.messages && item.messages.length > 0);

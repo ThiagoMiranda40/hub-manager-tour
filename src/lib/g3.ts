@@ -431,6 +431,34 @@ export function sortStageRiderItems<
   });
 }
 
+export type RiderStatusFilter = "all" | "confirmed" | "exception" | "pending";
+
+/**
+ * Filtra itens do rider conforme o filtro selecionado nos cards do rider:
+ * - "all": retorna todos os itens sem restrição.
+ * - "confirmed": agrupa confirmed e accepted_with_exception (alinhado com o card).
+ * - "exception": status "exception".
+ * - "pending": status "pending" ou status indefinido/vazio.
+ */
+export function filterRiderItemsByStatus(
+  items: ShowRiderItem[],
+  filter: RiderStatusFilter,
+): ShowRiderItem[] {
+  if (filter === "all") return items;
+  if (filter === "confirmed") {
+    return items.filter(
+      (i) => i.status === "confirmed" || i.status === "accepted_with_exception",
+    );
+  }
+  if (filter === "exception") {
+    return items.filter((i) => i.status === "exception");
+  }
+  if (filter === "pending") {
+    return items.filter((i) => i.status === "pending" || !i.status);
+  }
+  return items;
+}
+
 /** Aplica presets de exigências em lote de forma estritamente idempotente */
 export function applyRequirementPreset(
   existingRequirements: ShowRequirement[],
