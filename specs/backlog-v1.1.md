@@ -21,6 +21,7 @@
 - Ajustar botões/badges em todos os dispositivos
 - Visualização em lista em Pessoas & Equipe
 - Área de perfil do usuário
+- Renomear cards "Reembolsados (Pagos)" → "Reembolsos Pagos" e "Pendentes de Reembolso" → "Reembolsos Pendentes" na aba Reembolsos (UX writing) — [CONCLUÍDO] junto com este mesmo commit.
 - Revisão geral da interface mobile (passada final, depois dos demais)
 
 ## Grande aposta (alto impacto, alto esforço) — priorizar, mas planejar bem
