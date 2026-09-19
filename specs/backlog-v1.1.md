@@ -60,6 +60,22 @@
   junto do documento (hoje o sistema só grava o valor final em BRL, 
   sem metadado de moeda) — definir antes do desenho técnico qual API 
   de cotação usar.
+- Novas opções de visualização da Agenda/Prancheta de Turnê: alternar 
+  entre Lista (compacta), Cards (padrão atual) e Calendário (shows 
+  posicionados por data, navegação por mês). A parte de Lista/Cards é 
+  simples (mesmo dado, troca de layout); a parte de Calendário é bem 
+  mais esforço (componente de calendário completo) — considerar 
+  separar em dois itens na hora de priorizar de verdade.
+- Página individual do integrante na aba Elenco & Exigências: clicar 
+  no nome de um integrante escalado abre uma visão completa só dele 
+  para aquele show — dados pessoais, função, observações, documentos 
+  enviados, documentos exigidos, documentos pendentes, e status de 
+  reembolso. Complementa e amplia o filtro "Pessoas com Documentos" já 
+  construído (que hoje só mostra documentos) — boa parte da infra de 
+  busca por cast_member_id já existe e pode ser reaproveitada. Decisão 
+  de UI em aberto para quando for priorizado: página/rota dedicada 
+  (mais robusta, deep-linkável) ou modal/drawer (mais barato de 
+  construir).
 
 ## Preenchimento (baixo impacto, baixo esforço) — fazer quando sobrar tempo
 - Melhorar mecanismo de busca da Agenda
