@@ -459,6 +459,27 @@ export function filterRiderItemsByStatus(
   return items;
 }
 
+export type PhysicalCheckFilter = "all" | "unchecked" | "conformed" | "divergent";
+
+/**
+ * Filtra itens do rider pelo status de conferência física presencial no palco (Modo Palco)
+ * - "all": retorna todos os itens
+ * - "unchecked": itens sem conferência física (null, undefined ou "unchecked")
+ * - "conformed": itens marcados como conferidos conforme ("conformed")
+ * - "divergent": itens marcados com divergência física no palco ("divergent")
+ */
+export function filterByPhysicalCheck<T extends { physical_check?: string | null }>(
+  items: T[],
+  filter: PhysicalCheckFilter,
+): T[] {
+  if (filter === "all") return items;
+  if (filter === "unchecked") {
+    return items.filter((i) => !i.physical_check || i.physical_check === "unchecked");
+  }
+  return items.filter((i) => i.physical_check === filter);
+}
+
+
 export type ReimbursementFilter = "all" | "reimbursed" | "pending";
 
 /**
