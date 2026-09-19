@@ -331,11 +331,11 @@ function PublicRiderPage() {
             <div className="h-7 w-px bg-line hidden sm:block" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-[#9184d9] font-semibold">
+                <span className="font-mono text-[0.625rem] uppercase tracking-widest text-[#9184d9] font-semibold">
                   Rider Técnico
                 </span>
-                <span className="text-[10px] text-muted-foreground print:hidden">·</span>
-                <span className="text-[10px] text-muted-foreground print:hidden">Acesso Convidado</span>
+                <span className="text-[0.625rem] text-muted-foreground print:hidden">·</span>
+                <span className="text-[0.625rem] text-muted-foreground print:hidden">Acesso Convidado</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5">
                 {show.artist || "Artista não especificado"}
@@ -557,7 +557,7 @@ function PublicRiderPage() {
                     {/* Detalhes do Item */}
                     <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 border border-line bg-accent/30 rounded font-medium">
+                        <span className="font-mono text-[0.625rem] uppercase tracking-wider px-2 py-0.5 border border-line bg-accent/30 rounded font-medium">
                           {RIDER_CATEGORIES.find((c) => c.id === item.category)?.label ??
                             item.category}
                         </span>
@@ -572,30 +572,30 @@ function PublicRiderPage() {
 
                         {/* Badge de Inegociável / Desejável */}
                         {isMandatory ? (
-                          <span className="text-[10px] font-mono border border-destructive/40 text-destructive bg-destructive/10 px-2 py-0.5 rounded font-semibold">
+                          <span className="text-[0.625rem] font-mono border border-destructive/40 text-destructive bg-destructive/10 px-2 py-0.5 rounded font-semibold">
                             Inegociável
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono border border-line text-muted-foreground px-2 py-0.5 rounded">
+                          <span className="text-[0.625rem] font-mono border border-line text-muted-foreground px-2 py-0.5 rounded">
                             Desejável
                           </span>
                         )}
 
                         {/* Status Atual do Item */}
                         {isConfirmed && (
-                          <span className="text-[10px] font-mono border border-emerald-500/40 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                          <span className="text-[0.625rem] font-mono border border-emerald-500/40 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
                             <Check className="size-3" /> Confirmado pela Casa
                           </span>
                         )}
 
                         {isAcceptedWithException && (
-                          <span className="text-[10px] font-mono border border-teal-500/40 text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                          <span className="text-[0.625rem] font-mono border border-teal-500/40 text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
                             <CheckCheck className="size-3" /> Aceito c/ ressalva
                           </span>
                         )}
 
                         {isInNegotiation && (
-                          <span className="text-[10px] font-mono border border-blue-500/40 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                          <span className="text-[0.625rem] font-mono border border-blue-500/40 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
                             <MessagesSquare className="size-3" /> Em negociação
                           </span>
                         )}
@@ -603,7 +603,7 @@ function PublicRiderPage() {
                         {isException && !isInNegotiation && (
                           <span
                             className={cn(
-                              "text-[10px] font-mono px-2 py-0.5 rounded font-medium flex items-center gap-1 border",
+                              "text-[0.625rem] font-mono px-2 py-0.5 rounded font-medium flex items-center gap-1 border",
                               isMandatory
                                 ? "border-destructive/50 text-destructive bg-destructive/20 font-bold"
                                 : "border-amber-500/40 text-amber-400 bg-amber-500/10",
@@ -614,7 +614,7 @@ function PublicRiderPage() {
                         )}
 
                         {isPending && (
-                          <span className="text-[10px] font-mono border border-line text-muted-foreground px-2 py-0.5 rounded">
+                          <span className="text-[0.625rem] font-mono border border-line text-muted-foreground px-2 py-0.5 rounded">
                             Pendente
                           </span>
                         )}
@@ -637,7 +637,7 @@ function PublicRiderPage() {
                               : "bg-amber-500/10 border-amber-500/30 text-foreground",
                           )}
                         >
-                          <span className="font-semibold block text-[11px] font-mono text-muted-foreground mb-0.5">
+                          <span className="font-semibold block text-[0.6875rem] font-mono text-muted-foreground mb-0.5">
                             Nota de atendimento / alternativa oferecida:
                           </span>
                           {item.exception_note}
@@ -707,7 +707,7 @@ function PublicRiderPage() {
                   {/* ───────────────────────────────────────────────────────── */}
                   {isEditingException && (
                     <div className="mt-3 pt-3 border-t border-line/60 space-y-2 animate-in fade-in slide-in-from-top-2 duration-180 print:hidden">
-                      <label className="block text-[11px] font-mono text-muted-foreground">
+                      <label className="block text-[0.6875rem] font-mono text-muted-foreground">
                         Descreva a alternativa que a casa possui ou o motivo da impossibilidade:
                       </label>
                       <textarea
@@ -743,7 +743,7 @@ function PublicRiderPage() {
                   {/* Histórico da Thread de Negociação (RF-14 / T-17) */}
                   {item.messages && item.messages.length > 0 && (
                     <div className="mt-3 p-3 rounded-xl border border-line bg-muted/20 space-y-2.5">
-                      <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[#9184d9] font-semibold">
+                      <div className="flex items-center gap-1.5 font-mono text-[0.625rem] uppercase tracking-wider text-[#9184d9] font-semibold">
                         <MessagesSquare className="size-3.5" />
                         <span>Histórico de Negociação</span>
                       </div>
@@ -760,7 +760,7 @@ function PublicRiderPage() {
                                   : "bg-[#9184d9]/10 border-[#9184d9]/30 text-foreground",
                               )}
                             >
-                              <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mb-1">
+                              <div className="flex items-center justify-between text-[0.625rem] font-mono text-muted-foreground mb-1">
                                 <span className="font-semibold text-foreground">
                                   {isVenue ? "🏠 Casa de Show" : "👤 Produção do Artista"}
                                 </span>
@@ -818,7 +818,7 @@ function PublicRiderPage() {
                   {/* Formulário Inline de Tréplica */}
                   {isReplying && (
                     <div className="mt-3 pt-3 border-t border-line/60 space-y-2 animate-in fade-in slide-in-from-top-2 duration-180 print:hidden">
-                      <label className="block text-[11px] font-mono text-muted-foreground">
+                      <label className="block text-[0.6875rem] font-mono text-muted-foreground">
                         Digite sua contraproposta ou resposta técnica para a produção:
                       </label>
                       <textarea
@@ -863,7 +863,7 @@ function PublicRiderPage() {
           <p>
             Todas as alterações são salvas automaticamente e notificadas à produção do artista.
           </p>
-          <p className="font-mono text-[11px]">
+          <p className="font-mono text-[0.6875rem]">
             Em caso de dúvidas técnicas, entre em contato diretamente com a produção da turnê.
           </p>
         </footer>

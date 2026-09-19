@@ -99,14 +99,14 @@ export function AppShell({
 
             <div className="border-t border-line pt-3 flex items-center justify-between">
               {email ? (
-                <span className="font-mono text-[11px] text-muted-foreground truncate max-w-[200px]">
+                <span className="font-mono text-[0.6875rem] text-muted-foreground truncate max-w-[200px]">
                   {email}
                 </span>
               ) : <div />}
               <button
                 type="button"
                 onClick={signOut}
-                className="flex items-center gap-2 rounded-md border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-nocturne hover:bg-primary hover:text-primary-foreground hover:border-primary touch-feedback cursor-pointer"
+                className="flex items-center gap-2 rounded-md border border-line px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] transition-nocturne hover:bg-primary hover:text-primary-foreground hover:border-primary touch-feedback cursor-pointer"
               >
                 <LogOut className="size-3" />
                 Sair
@@ -229,7 +229,7 @@ export function AppShell({
                 )}
               >
                 {!isCollapsed ? (
-                  <span className="label-mono text-[10px] text-muted-foreground">Preferências</span>
+                  <span className="label-mono text-[0.625rem] text-muted-foreground">Preferências</span>
                 ) : null}
                 <div className="flex items-center gap-1.5">
                   <NavModeToggle className={isCollapsed ? "size-8 p-0" : undefined} />
@@ -238,7 +238,7 @@ export function AppShell({
               </div>
 
               {!isCollapsed && email ? (
-                <p className="label-mono text-[10px] text-muted-foreground truncate px-1">
+                <p className="label-mono text-[0.625rem] text-muted-foreground truncate px-1">
                   {email}
                 </p>
               ) : null}
@@ -257,7 +257,7 @@ export function AppShell({
                 <button
                   type="button"
                   onClick={signOut}
-                  className="flex w-full items-center justify-center gap-2 rounded-md border border-line py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-nocturne hover:bg-primary hover:text-primary-foreground hover:border-primary touch-feedback cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-line py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] transition-nocturne hover:bg-primary hover:text-primary-foreground hover:border-primary touch-feedback cursor-pointer"
                 >
                   <LogOut className="size-3" />
                   Sair
@@ -298,7 +298,7 @@ export function AppShell({
                   className="h-9 sm:h-11 w-auto object-contain hidden dark:block"
                 />
               </Link>
-              <nav className="flex items-center gap-1 sm:gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              <nav className="flex items-center gap-1 sm:gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
                 {NAV_ITEMS.map((item) => (
                   <Link
                     key={item.to}
@@ -314,14 +314,14 @@ export function AppShell({
                 <NavModeToggle />
                 <ThemeToggle />
                 {email ? (
-                  <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">
+                  <span className="hidden font-mono text-[0.6875rem] text-muted-foreground sm:inline">
                     {email}
                   </span>
                 ) : null}
                 <button
                   type="button"
                   onClick={signOut}
-                  className="rounded-md border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-nocturne hover:bg-primary hover:text-primary-foreground hover:border-primary touch-feedback cursor-pointer"
+                  className="rounded-md border border-line px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] transition-nocturne hover:bg-primary hover:text-primary-foreground hover:border-primary touch-feedback cursor-pointer"
                 >
                   Sair
                 </button>

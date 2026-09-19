@@ -181,7 +181,7 @@ function Dashboard() {
               Shows
             </div>
             <div className="mt-2 font-display text-3xl leading-none text-foreground">{shows.length}</div>
-            <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+            <div className="mt-1 font-mono text-[0.625rem] text-muted-foreground">
               {totalRiderItems} itens de rider
             </div>
           </div>
@@ -193,7 +193,7 @@ function Dashboard() {
             <div className="mt-2 font-display text-3xl leading-none text-amber-600 dark:text-amber-400">
               {pendingDocs}
             </div>
-            <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+            <div className="mt-1 font-mono text-[0.625rem] text-muted-foreground">
               {totalRiderExceptions > 0 ? `${totalRiderExceptions} exc. no rider` : "0 exc. no rider"}
             </div>
           </div>
@@ -205,7 +205,7 @@ function Dashboard() {
             <div className="mt-2 font-display text-3xl leading-none text-emerald-600 dark:text-emerald-400">
               {completeDocs}
             </div>
-            <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+            <div className="mt-1 font-mono text-[0.625rem] text-muted-foreground">
               prontos p/ embarque
             </div>
           </div>
@@ -217,13 +217,13 @@ function Dashboard() {
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="label-mono flex items-center gap-2">
             <span>(b) Próximas datas da temporada</span>
-            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] text-muted-foreground font-mono">
+            <span className="rounded-full bg-accent px-2 py-0.5 text-[0.625rem] text-muted-foreground font-mono">
               {filteredStats.length} {filteredStats.length === 1 ? "data" : "datas"}
             </span>
           </div>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center gap-2 bg-foreground px-4 py-2.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.14em] text-background transition-all duration-120 hover:bg-[#9184d9] hover:text-white active:scale-[0.96] active:opacity-90 touch-manipulation cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-2 bg-foreground px-4 py-2.5 rounded-lg font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-background transition-all duration-120 hover:bg-[#9184d9] hover:text-white active:scale-[0.96] active:opacity-90 touch-manipulation cursor-pointer shadow-xs"
           >
             {open ? (
               "Fechar formulário"
@@ -281,7 +281,7 @@ function Dashboard() {
                   key={key}
                   type="button"
                   onClick={() => setStatusFilter(key)}
-                  className={`flex-1 rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all duration-120 active:scale-[0.95] touch-manipulation cursor-pointer ${
+                  className={`flex-1 rounded-md px-2 py-1.5 font-mono text-[0.625rem] uppercase tracking-wider transition-all duration-120 active:scale-[0.95] touch-manipulation cursor-pointer ${
                     statusFilter === key
                       ? "bg-[#9184d9] text-white font-medium shadow-2xs"
                       : "text-muted-foreground hover:text-foreground"
@@ -299,7 +299,7 @@ function Dashboard() {
           {filteredStats.length === 0 ? (
             <div className="rounded-xl border border-dashed border-line/80 py-16 text-center">
               <ClipboardList className="mx-auto size-9 text-muted-foreground/50 stroke-[1.5]" />
-              <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="mt-3 font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
                 {stats.length === 0
                   ? "Nenhum show cadastrado ainda na temporada"
                   : "Nenhum show encontrado para os filtros selecionados"}
@@ -331,7 +331,7 @@ function Dashboard() {
                   {/* Coluna 1: Data & Dia da Semana */}
                   <div className="flex items-center gap-3 sm:block">
                     <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-lg border border-line bg-background/80 font-mono sm:size-14">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9184d9]">
+                      <span className="text-[0.625rem] font-semibold uppercase tracking-wider text-[#9184d9]">
                         {formatWeekday(show.show_date)}
                       </span>
                       <span className="font-display text-xl leading-none text-foreground sm:text-2xl">
@@ -339,10 +339,10 @@ function Dashboard() {
                       </span>
                     </div>
                     <div className="sm:mt-2">
-                      <div className="font-mono text-[11px] text-muted-foreground uppercase">
+                      <div className="font-mono text-[0.6875rem] text-muted-foreground uppercase">
                         {formatShowDate(show.show_date)}
                       </div>
-                      <div className="mt-0.5 flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+                      <div className="mt-0.5 flex items-center gap-1 font-mono text-[0.625rem] text-muted-foreground">
                         <Users className="size-3 text-[#9184d9]" />
                         <span>
                           {memberCount} {memberCount === 1 ? "integrante" : "integrantes"}
@@ -357,11 +357,11 @@ function Dashboard() {
                       {show.artists?.name ?? "SEM ARTISTA"}
                     </div>
                     {show.tours?.name ? (
-                      <div className="mt-1 inline-flex items-center gap-1 rounded bg-accent/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground/80">
+                      <div className="mt-1 inline-flex items-center gap-1 rounded bg-accent/60 px-1.5 py-0.5 font-mono text-[0.625rem] text-foreground/80">
                         <span>Turnê: {show.tours.name}</span>
                       </div>
                     ) : null}
-                    <div className="mt-1.5 flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+                    <div className="mt-1.5 flex items-center gap-1.5 font-mono text-[0.6875rem] text-muted-foreground">
                       <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
                       <span className="font-medium text-foreground/90">{show.city}</span>
                       {show.venue ? (
@@ -376,7 +376,7 @@ function Dashboard() {
                   {/* Coluna 3: Progresso de Documentos */}
                   <div>
                     <div className="mb-1.5 flex items-center justify-between gap-1.5">
-                      <span className="label-mono text-[10px] text-muted-foreground">Docs</span>
+                      <span className="label-mono text-[0.625rem] text-muted-foreground">Docs</span>
                       {!hasRequirement ? (
                         <StatusBadge status="no_requirement" label="Sem exigência" size="sm" />
                       ) : done ? (
@@ -402,12 +402,12 @@ function Dashboard() {
                       ) : null}
                     </div>
 
-                    <div className="mt-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+                    <div className="mt-1 flex items-center justify-between font-mono text-[0.625rem] text-muted-foreground">
                       <span>
                         {hasRequirement ? `${received}/${expected} arquivos` : `${memberCount} no elenco`}
                       </span>
                       {hasRequirement && unrequiredPeople > 0 ? (
-                        <span className="italic text-[9px] text-muted-foreground/80">
+                        <span className="italic text-[0.5625rem] text-muted-foreground/80">
                           {unrequiredPeople} dispensado{unrequiredPeople === 1 ? "" : "s"}
                         </span>
                       ) : null}
@@ -417,7 +417,7 @@ function Dashboard() {
                   {/* Coluna 4: Resumo do Rider Técnico */}
                   <div>
                     <div className="mb-1.5 flex items-center justify-between gap-1.5">
-                      <span className="label-mono text-[10px] text-muted-foreground">Rider</span>
+                      <span className="label-mono text-[0.625rem] text-muted-foreground">Rider</span>
                       {rider.total === 0 ? (
                         <StatusBadge status="no_requirement" label="Sem rider" size="sm" />
                       ) : rider.isComplete ? (
@@ -453,7 +453,7 @@ function Dashboard() {
                       ) : null}
                     </div>
 
-                    <div className="mt-1 font-mono text-[10px] text-muted-foreground truncate">
+                    <div className="mt-1 font-mono text-[0.625rem] text-muted-foreground truncate">
                       {rider.total > 0
                         ? `${rider.confirmed}/${rider.total} confirmados`
                         : "Não instanciado"}
@@ -777,7 +777,7 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
                   setNewArtistName("");
                 }
               }}
-              className="font-mono text-[10px] text-[#9184d9] hover:underline cursor-pointer"
+              className="font-mono text-[0.625rem] text-[#9184d9] hover:underline cursor-pointer"
             >
               {mode === "select" ? "+ Novo Artista" : "Selecionar existente"}
             </button>
@@ -898,7 +898,7 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
             </h3>
           </div>
           {suggestedPeople.length > 0 ? (
-            <div className="flex items-center gap-2 font-mono text-[10px]">
+            <div className="flex items-center gap-2 font-mono text-[0.625rem]">
               <button
                 type="button"
                 onClick={selectAllPeople}
@@ -954,10 +954,10 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate text-foreground">{person.name}</div>
-                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 font-mono text-[0.625rem] text-muted-foreground">
                       <span>{person.default_role}</span>
                       {person.is_general_crew ? (
-                        <span className="rounded bg-accent px-1 text-[9px] text-[#9184d9]">
+                        <span className="rounded bg-accent px-1 text-[0.5625rem] text-[#9184d9]">
                           Equipe Geral
                         </span>
                       ) : null}
@@ -987,7 +987,7 @@ function NewShowForm({ onDone }: { onDone: () => void }) {
               </span>
             </div>
           ) : (
-            <p className="text-muted-foreground font-mono text-[11px]">
+            <p className="text-muted-foreground font-mono text-[0.6875rem]">
               {selectedArtistId
                 ? "Este artista ainda não possui rider padrão cadastrado no catálogo. O rider poderá ser preenchido na prancheta do show."
                 : "Selecione um artista cadastrado para verificar itens de rider padrão a serem instanciados."}

@@ -331,7 +331,7 @@ function PublicUpload() {
             Não foi possível encontrar este acesso. Verifique se o endereço foi copiado por completo ou
             solicite um novo link à produção da turnê.
           </p>
-          <div className="mt-6 border-t border-line pt-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground/70">
+          <div className="mt-6 border-t border-line pt-4 font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground/70">
             Hub Manager Tour · Acesso de Elenco
           </div>
         </div>
@@ -360,7 +360,7 @@ function PublicUpload() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <span className="text-[11px] font-mono uppercase tracking-wider text-[#9184d9] font-medium bg-[#9184d9]/10 px-2.5 py-1 rounded-full">
+            <span className="text-[0.6875rem] font-mono uppercase tracking-wider text-[#9184d9] font-medium bg-[#9184d9]/10 px-2.5 py-1 rounded-full">
               📱 Acesso de Elenco
             </span>
           </div>
@@ -381,13 +381,13 @@ function PublicUpload() {
             {initials(activeMember.name)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-[#9184d9] font-semibold">
+            <div className="text-[0.6875rem] font-mono uppercase tracking-wider text-[#9184d9] font-semibold">
               Checklist Pessoal
             </div>
             <div className="text-sm font-semibold truncate text-foreground">
               {activeMember.name}
             </div>
-            <div className="text-[11px] font-mono text-muted-foreground">
+            <div className="text-[0.6875rem] font-mono text-muted-foreground">
               {activeMember.role}
             </div>
           </div>
@@ -527,7 +527,7 @@ function PublicUpload() {
                           ({d.fileName ?? "arquivo"})
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+                      <span className="text-[0.625rem] font-mono text-muted-foreground shrink-0">
                         {formatSubmissionDate(d.createdAt)}
                       </span>
                     </div>
@@ -632,7 +632,7 @@ function PublicUpload() {
                 )}
               </span>
 
-              <span className="label-mono mt-1 text-[11px] text-muted-foreground">
+              <span className="label-mono mt-1 text-[0.6875rem] text-muted-foreground">
                 {file
                   ? `(${(file.size / (1024 * 1024)).toFixed(2)} MB) · Toque para trocar`
                   : "JPG, PNG, WEBP ou PDF · até 20 MB"}
@@ -648,7 +648,7 @@ function PublicUpload() {
                     <p className="text-xs font-medium text-foreground">
                       Analisando comprovante com IA (Gemini)...
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[0.6875rem] text-muted-foreground">
                       Identificando tipo de documento, despesas e valores.
                     </p>
                   </div>
@@ -656,7 +656,7 @@ function PublicUpload() {
                 <button
                   type="button"
                   onClick={() => setIsAnalyzingAI(false)}
-                  className="text-[11px] font-mono text-muted-foreground hover:text-foreground underline underline-offset-2 touch-manipulation"
+                  className="text-[0.6875rem] font-mono text-muted-foreground hover:text-foreground underline underline-offset-2 touch-manipulation"
                 >
                   Pular
                 </button>
@@ -672,7 +672,7 @@ function PublicUpload() {
                     <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[#9184d9] dark:text-[#b4a9f0]">
                       Sugestão Inteligente (Gemini)
                     </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#9184d9]/20 text-[#9184d9] dark:text-[#b4a9f0]">
+                    <span className="text-[0.625rem] font-mono px-1.5 py-0.5 rounded bg-[#9184d9]/20 text-[#9184d9] dark:text-[#b4a9f0]">
                       {Math.round(aiSuggestion.confidence * 100)}% confiança
                     </span>
                   </div>
@@ -692,7 +692,7 @@ function PublicUpload() {
                     <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                     <div>
                       <p className="font-medium">Atenção para a moeda detectada:</p>
-                      <p className="text-[11px] mt-0.5">{aiSuggestion.currencyWarning}</p>
+                      <p className="text-[0.6875rem] mt-0.5">{aiSuggestion.currencyWarning}</p>
                     </div>
                   </div>
                 ) : null}
@@ -703,7 +703,7 @@ function PublicUpload() {
                     <Clock className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                     <div>
                       <p className="font-medium">Comprovante de reembolso sem valor identificado:</p>
-                      <p className="text-[11px] mt-0.5">
+                      <p className="text-[0.6875rem] mt-0.5">
                         Não foi possível ler o valor com precisão no documento. Por favor, digite o valor no campo abaixo.
                       </p>
                     </div>
@@ -713,7 +713,7 @@ function PublicUpload() {
                 {/* Comparação lado a lado (Atual vs Sugerido) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
                   <div className="p-2.5 rounded-lg bg-background/80 border border-line space-y-1">
-                    <span className="label-mono text-[10px] text-muted-foreground block">Tipo de Documento</span>
+                    <span className="label-mono text-[0.625rem] text-muted-foreground block">Tipo de Documento</span>
                     <p className="font-medium text-foreground">
                       {aiSuggestion.docTypeName ?? "Não identificado"}
                     </p>
@@ -721,7 +721,7 @@ function PublicUpload() {
                       <button
                         type="button"
                         onClick={() => setDocTypeId(aiSuggestion.docTypeId!)}
-                        className="text-[11px] font-mono text-[#9184d9] hover:underline touch-manipulation"
+                        className="text-[0.6875rem] font-mono text-[#9184d9] hover:underline touch-manipulation"
                       >
                         Aplicar este tipo
                       </button>
@@ -729,7 +729,7 @@ function PublicUpload() {
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-background/80 border border-line space-y-1">
-                    <span className="label-mono text-[10px] text-muted-foreground block">
+                    <span className="label-mono text-[0.625rem] text-muted-foreground block">
                       {aiSuggestion.isReimbursement ? "Reembolso e Valor" : "Finalidade"}
                     </span>
                     <p className="font-medium text-foreground">
@@ -740,7 +740,7 @@ function PublicUpload() {
                         : "Documento de turnê (sem reembolso)"}
                     </p>
                     {aiSuggestion.note ? (
-                      <p className="text-[11px] text-muted-foreground truncate">
+                      <p className="text-[0.6875rem] text-muted-foreground truncate">
                         {aiSuggestion.note}
                       </p>
                     ) : null}
@@ -748,7 +748,7 @@ function PublicUpload() {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#9184d9]/20">
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[0.6875rem] text-muted-foreground">
                     Revise as sugestões antes de confirmar o envio.
                   </span>
                   <div className="flex items-center gap-2">
@@ -806,7 +806,7 @@ function PublicUpload() {
                     className="mt-1.5 w-full border border-line bg-background px-3 py-2.5 text-sm font-mono outline-none focus:border-[#9184d9] rounded-lg"
                   />
                 </label>
-                <p className="text-[11px] font-mono text-muted-foreground">
+                <p className="text-[0.6875rem] font-mono text-muted-foreground">
                   Valor auto-declarado para conferência da produção (deve ser maior que R$ 0,00).
                 </p>
               </div>
@@ -867,7 +867,7 @@ function PublicUpload() {
 
       {/* Rodapé Informativo */}
       <footer className="text-center pt-6 border-t border-line space-y-1">
-        <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+        <p className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">
           Hub Manager Tour · Sistema de Produção de Shows
         </p>
         <p className="text-xs text-muted-foreground/60">

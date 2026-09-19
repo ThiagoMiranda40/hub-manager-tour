@@ -217,7 +217,7 @@ function SettingsPage() {
       </div>
 
       {error ? (
-        <p className="mt-4 border border-destructive px-3 py-2 font-mono text-[11px] text-destructive">
+        <p className="mt-4 border border-destructive px-3 py-2 font-mono text-[0.6875rem] text-destructive">
           {error}
         </p>
       ) : null}
@@ -227,7 +227,7 @@ function SettingsPage() {
           <div className="label-mono mb-4">Funções do elenco</div>
           <div className="border border-line">
             {roles.length === 0 ? (
-              <p className="px-5 py-8 text-center font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="px-5 py-8 text-center font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
                 Nenhuma função cadastrada
               </p>
             ) : null}
@@ -262,7 +262,7 @@ function SettingsPage() {
           <div className="label-mono mb-4">Tipos de documento</div>
           <div className="border border-line">
             {docTypes.length === 0 ? (
-              <p className="px-5 py-8 text-center font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="px-5 py-8 text-center font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
                 Nenhum tipo cadastrado
               </p>
             ) : null}
@@ -420,12 +420,12 @@ function DeleteButton({
         <button
           type="button"
           onClick={() => setWarn(true)}
-          className="border border-line px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground active:scale-[0.97] transition-all duration-120 touch-manipulation"
+          className="border border-line px-3 py-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground active:scale-[0.97] transition-all duration-120 touch-manipulation"
         >
           Excluir
         </button>
         {warn ? (
-          <p className="mt-1 font-mono text-[10px] text-destructive">
+          <p className="mt-1 font-mono text-[0.625rem] text-destructive">
             Não é possível excluir: {blockedMessage}.
           </p>
         ) : null}
@@ -437,8 +437,8 @@ function DeleteButton({
     <div className="text-right">
       <ConfirmButton
         onConfirm={onDelete}
-        className="border border-line px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors hover:border-destructive hover:text-destructive"
-        confirmClassName="border border-destructive bg-destructive/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-destructive"
+        className="border border-line px-3 py-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] transition-colors hover:border-destructive hover:text-destructive"
+        confirmClassName="border border-destructive bg-destructive/10 px-3 py-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-destructive"
       />
     </div>
   );
@@ -472,7 +472,7 @@ function CreateRow({
       />
       <button
         type="submit"
-        className="bg-foreground px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.18em] text-background active:scale-[0.97] active:opacity-90 transition-all duration-120 touch-manipulation"
+        className="bg-foreground px-4 py-2.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-background active:scale-[0.97] active:opacity-90 transition-all duration-120 touch-manipulation"
       >
         Adicionar
       </button>
@@ -865,7 +865,7 @@ function RiderCatalogSection({
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                 <div className="sm:col-span-3">
-                  <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+                  <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
                     Categoria *
                   </label>
                   <select
@@ -882,7 +882,7 @@ function RiderCatalogSection({
                 </div>
 
                 <div className="sm:col-span-5">
-                  <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+                  <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
                     Nome do Item *
                   </label>
                   <input
@@ -895,7 +895,7 @@ function RiderCatalogSection({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+                  <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
                     Qtd. *
                   </label>
                   <input
@@ -931,7 +931,7 @@ function RiderCatalogSection({
               </div>
 
               <div>
-                <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+                <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
                   Especificação Técnica Detalhada (opcional)
                 </label>
                 <input
@@ -967,7 +967,7 @@ function RiderCatalogSection({
               type="button"
               onClick={() => setCategoryFilter("all")}
               className={cn(
-                "px-3 py-1 font-mono text-[11px] uppercase tracking-wider rounded-lg transition-colors border",
+                "px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-wider rounded-lg transition-colors border",
                 categoryFilter === "all"
                   ? "bg-foreground text-background border-foreground font-semibold"
                   : "border-line bg-background hover:bg-accent text-muted-foreground",
@@ -985,7 +985,7 @@ function RiderCatalogSection({
                   type="button"
                   onClick={() => setCategoryFilter(cat.id)}
                   className={cn(
-                    "px-3 py-1 font-mono text-[11px] uppercase tracking-wider rounded-lg transition-colors border",
+                    "px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-wider rounded-lg transition-colors border",
                     isActive
                       ? "bg-foreground text-background border-foreground font-semibold"
                       : "border-line bg-background hover:bg-accent text-muted-foreground",
@@ -1075,7 +1075,7 @@ function RiderCatalogSection({
 
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 border border-line bg-accent/30 rounded font-medium">
+                            <span className="font-mono text-[0.625rem] uppercase tracking-wider px-2 py-0.5 border border-line bg-accent/30 rounded font-medium">
                               {RIDER_CATEGORIES.find((c) => c.id === item.category)?.label ??
                                 item.category}
                             </span>
@@ -1087,11 +1087,11 @@ function RiderCatalogSection({
                             </span>
 
                             {item.is_mandatory ? (
-                              <span className="text-[10px] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-2 py-0.5 rounded font-medium">
+                              <span className="text-[0.625rem] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-2 py-0.5 rounded font-medium">
                                 Inegociável
                               </span>
                             ) : (
-                              <span className="text-[10px] font-mono border border-line text-muted-foreground px-2 py-0.5 rounded">
+                              <span className="text-[0.625rem] font-mono border border-line text-muted-foreground px-2 py-0.5 rounded">
                                 Desejável
                               </span>
                             )}
@@ -1182,7 +1182,7 @@ function RiderCatalogSection({
                         ? riderFile.name
                         : "Clique para selecionar o PDF do rider"}
                     </p>
-                    <p className="text-[11px] text-muted-foreground mt-1">
+                    <p className="text-[0.6875rem] text-muted-foreground mt-1">
                       Suporta documentos técnicos e riders em formato PDF (máx. 20 MB)
                     </p>
                   </div>
@@ -1208,7 +1208,7 @@ function RiderCatalogSection({
                     <button
                       type="button"
                       onClick={() => setSelectedItemIndices(new Set(extractedRiderItems.map((_, i) => i)))}
-                      className="text-[11px] font-mono text-[#9184d9] hover:underline cursor-pointer"
+                      className="text-[0.6875rem] font-mono text-[#9184d9] hover:underline cursor-pointer"
                     >
                       Selecionar todos
                     </button>
@@ -1216,7 +1216,7 @@ function RiderCatalogSection({
                     <button
                       type="button"
                       onClick={() => setSelectedItemIndices(new Set())}
-                      className="text-[11px] font-mono text-muted-foreground hover:text-foreground cursor-pointer"
+                      className="text-[0.6875rem] font-mono text-muted-foreground hover:text-foreground cursor-pointer"
                     >
                       Desmarcar todos
                     </button>
@@ -1227,7 +1227,7 @@ function RiderCatalogSection({
                         setExtractedRiderItems(null);
                         setRiderFile(null);
                       }}
-                      className="text-[11px] font-mono text-muted-foreground hover:text-destructive cursor-pointer"
+                      className="text-[0.6875rem] font-mono text-muted-foreground hover:text-destructive cursor-pointer"
                     >
                       Trocar PDF
                     </button>
@@ -1267,18 +1267,18 @@ function RiderCatalogSection({
                             <span className="text-sm font-semibold text-foreground">
                               {item.itemName}
                             </span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-[#9184d9]/30 bg-[#9184d9]/10 text-[#9184d9] font-medium">
+                            <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded-full border border-[#9184d9]/30 bg-[#9184d9]/10 text-[#9184d9] font-medium">
                               {catLabel}
                             </span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            <span className="text-[0.625rem] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                               Qtd: {item.quantity}
                             </span>
                             {item.isMandatory ? (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                              <span className="text-[0.625rem] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
                                 Obrigatório
                               </span>
                             ) : (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              <span className="text-[0.625rem] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                                 Opcional
                               </span>
                             )}
@@ -1372,7 +1372,7 @@ function EditRiderItemForm({
     >
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
         <div className="sm:col-span-3">
-          <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+          <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
             Categoria *
           </label>
           <select
@@ -1389,7 +1389,7 @@ function EditRiderItemForm({
         </div>
 
         <div className="sm:col-span-5">
-          <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+          <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
             Nome do Item *
           </label>
           <input
@@ -1402,7 +1402,7 @@ function EditRiderItemForm({
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+          <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
             Qtd. *
           </label>
           <input
@@ -1438,7 +1438,7 @@ function EditRiderItemForm({
       </div>
 
       <div>
-        <label className="block text-[11px] font-mono text-muted-foreground mb-1">
+        <label className="block text-[0.6875rem] font-mono text-muted-foreground mb-1">
           Especificação Técnica Detalhada (opcional)
         </label>
         <input

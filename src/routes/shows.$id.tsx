@@ -895,7 +895,7 @@ function ShowDetail() {
                 )}
               </div>
 
-              <div className="font-mono text-[11px] text-muted-foreground text-left sm:text-right">
+              <div className="font-mono text-[0.6875rem] text-muted-foreground text-left sm:text-right">
                 {progress.summaryText}
               </div>
 
@@ -917,7 +917,7 @@ function ShowDetail() {
                 <Link
                   to="/shows/$id/ficha"
                   params={{ id }}
-                  className="border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation"
+                  className="border border-line px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation"
                 >
                   Relatório de Produção
                 </Link>
@@ -927,7 +927,7 @@ function ShowDetail() {
                     setConfirmDelete(false);
                     setActionError(null);
                   }}
-                  className="border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation"
+                  className="border border-line px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation"
                 >
                   {editing ? "Fechar edição" : "Editar"}
                 </button>
@@ -938,7 +938,7 @@ function ShowDetail() {
                     setConfirmText("");
                     setActionError(null);
                   }}
-                  className="border border-destructive px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-all duration-120 touch-manipulation"
+                  className="border border-destructive px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-all duration-120 touch-manipulation"
                 >
                   Excluir
                 </button>
@@ -1215,7 +1215,7 @@ function ShowDetail() {
                                 {memberPerson?.pix_key ? (
                                   <span
                                     title={`Chave Pix cadastrada (${memberPerson.pix_type ?? "Pix"})`}
-                                    className="text-[10px] font-mono px-1.5 py-0.2 border border-line text-muted-foreground rounded"
+                                    className="text-[0.625rem] font-mono px-1.5 py-0.2 border border-line text-muted-foreground rounded"
                                   >
                                     PIX
                                   </span>
@@ -1269,7 +1269,7 @@ function ShowDetail() {
                                   <span
                                     key={t.id}
                                     title={`${t.name} entregue`}
-                                    className="inline-flex items-center gap-1 border border-ok bg-ok/10 text-ok px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider rounded-md"
+                                    className="inline-flex items-center gap-1 border border-ok bg-ok/10 text-ok px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded-md"
                                   >
                                     <Check className="size-3" /> {t.name}
                                   </span>
@@ -1289,7 +1289,7 @@ function ShowDetail() {
                                       })
                                     }
                                     title={`Toque para dispensar ${t.name}`}
-                                    className="inline-flex items-center gap-1 border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider rounded-md hover:bg-amber-500/20 active:scale-[0.97] transition-all touch-manipulation"
+                                    className="inline-flex items-center gap-1 border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded-md hover:bg-amber-500/20 active:scale-[0.97] transition-all touch-manipulation"
                                   >
                                     <Clock className="size-3" /> {t.name}
                                   </button>
@@ -1309,7 +1309,7 @@ function ShowDetail() {
                                     })
                                   }
                                   title={`Toque para exigir ${t.name}`}
-                                  className="inline-flex items-center gap-1 border border-dashed border-line text-muted-foreground hover:text-foreground hover:border-foreground/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider rounded-md active:scale-[0.97] transition-all touch-manipulation"
+                                  className="inline-flex items-center gap-1 border border-dashed border-line text-muted-foreground hover:text-foreground hover:border-foreground/40 px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded-md active:scale-[0.97] transition-all touch-manipulation"
                                 >
                                   <Plus className="size-3" /> {t.name}
                                 </button>
@@ -1336,7 +1336,7 @@ function ShowDetail() {
                                 onConfirm={() => removeMember.mutate(m.id)}
                                 label=""
                                 className="shrink-0 p-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded"
-                                confirmClassName="shrink-0 border border-destructive bg-destructive/10 px-2 py-1 font-mono text-[10px] uppercase text-destructive rounded"
+                                confirmClassName="shrink-0 border border-destructive bg-destructive/10 px-2 py-1 font-mono text-[0.625rem] uppercase text-destructive rounded"
                               />
                             )}
                           </div>
@@ -1497,11 +1497,11 @@ function ShowDetail() {
                               <span className="font-medium text-sm">
                                 {member?.name ?? "Integrante avulso"}
                               </span>
-                              <span className="border border-ok bg-ok/10 text-ok px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider rounded">
+                              <span className="border border-ok bg-ok/10 text-ok px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded">
                                 {labelFrom(docTypes, d.doc_type)}
                               </span>
                               {d.is_reimbursement ? (
-                                <span className="border border-[#9184d9] bg-[#9184d9]/10 text-[#9184d9] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider rounded">
+                                <span className="border border-[#9184d9] bg-[#9184d9]/10 text-[#9184d9] px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded">
                                   Reembolso
                                 </span>
                               ) : null}
@@ -1635,12 +1635,12 @@ function ShowDetail() {
                     Itens de Palco e Camarim ({riderItems.length})
                   </span>
                   {stageStats.conformed > 0 ? (
-                    <span className="font-mono text-[11px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full font-medium">
+                    <span className="font-mono text-[0.6875rem] text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full font-medium">
                       {stageStats.conformed}/{riderItems.length} conferidos no palco
                     </span>
                   ) : null}
                   {stageStats.divergent > 0 ? (
-                    <span className="font-mono text-[11px] text-amber-500 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full font-medium">
+                    <span className="font-mono text-[0.6875rem] text-amber-500 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full font-medium">
                       {stageStats.divergent} divergência(s)
                     </span>
                   ) : null}
@@ -1735,22 +1735,22 @@ function ShowDetail() {
                             <div className="flex flex-wrap items-start justify-between gap-2">
                               <div className="space-y-1 flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium">
+                                  <span className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium">
                                     {item.category}
                                   </span>
 
                                   {item.is_mandatory ? (
-                                    <span className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded border border-destructive/50 bg-destructive/20 text-destructive font-bold">
+                                    <span className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-destructive/50 bg-destructive/20 text-destructive font-bold">
                                       Inegociável
                                     </span>
                                   ) : (
-                                    <span className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-400">
+                                    <span className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-400">
                                       Desejável
                                     </span>
                                   )}
 
                                   {isMandatoryUrgent ? (
-                                    <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-destructive text-white font-bold animate-pulse">
+                                    <span className="font-mono text-[0.625rem] uppercase tracking-wider px-2 py-0.5 rounded bg-destructive text-white font-bold animate-pulse">
                                       Atenção Prioritária
                                     </span>
                                   ) : null}
@@ -1774,17 +1774,17 @@ function ShowDetail() {
                                 {/* Status vindo da Casa de Show */}
                                 <div className="pt-1 text-xs">
                                   {item.status === "confirmed" ? (
-                                    <span className="inline-flex items-center gap-1.5 text-emerald-400 font-mono text-[11px]">
+                                    <span className="inline-flex items-center gap-1.5 text-emerald-400 font-mono text-[0.6875rem]">
                                       <CheckCircle2 className="size-3.5" />
                                       Confirmado pelo espaço
                                     </span>
                                   ) : item.status === "accepted_with_exception" ? (
-                                    <span className="inline-flex items-center gap-1.5 text-teal-400 font-mono text-[11px]">
+                                    <span className="inline-flex items-center gap-1.5 text-teal-400 font-mono text-[0.6875rem]">
                                       <CheckCheck className="size-3.5" />
                                       Aceito com ressalva pela produção
                                     </span>
                                   ) : item.messages && item.messages.length > 0 ? (
-                                    <span className="inline-flex items-center gap-1.5 text-blue-400 font-mono text-[11px]">
+                                    <span className="inline-flex items-center gap-1.5 text-blue-400 font-mono text-[0.6875rem]">
                                       <MessagesSquare className="size-3.5" />
                                       Em negociação com a casa
                                     </span>
@@ -1793,7 +1793,7 @@ function ShowDetail() {
                                       <strong>Exceção da casa:</strong> {item.exception_note || "Sem detalhe"}
                                     </div>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1.5 text-amber-400/90 font-mono text-[11px]">
+                                    <span className="inline-flex items-center gap-1.5 text-amber-400/90 font-mono text-[0.6875rem]">
                                       <Clock className="size-3.5" />
                                       Pendente de resposta da casa
                                     </span>
@@ -1823,7 +1823,7 @@ function ShowDetail() {
                             {item.physical_divergence_note && !isEditingDivergence ? (
                               <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs flex items-start justify-between gap-2">
                                 <div>
-                                  <span className="font-bold font-mono uppercase text-[10px] text-amber-400 block">
+                                  <span className="font-bold font-mono uppercase text-[0.625rem] text-amber-400 block">
                                     Divergência Presencial:
                                   </span>
                                   <p className="mt-0.5">{item.physical_divergence_note}</p>
@@ -1834,7 +1834,7 @@ function ShowDetail() {
                                     setDivergenceNoteEditingId(item.id);
                                     setDivergenceNoteText(item.physical_divergence_note || "");
                                   }}
-                                  className="text-[11px] font-mono underline hover:text-white"
+                                  className="text-[0.6875rem] font-mono underline hover:text-white"
                                 >
                                   Editar
                                 </button>
@@ -1843,7 +1843,7 @@ function ShowDetail() {
 
                             {isEditingDivergence ? (
                               <div className="p-3 rounded-xl bg-zinc-950 border border-amber-500/50 space-y-2">
-                                <label className="label-mono text-[10px] text-amber-400 font-semibold block">
+                                <label className="label-mono text-[0.625rem] text-amber-400 font-semibold block">
                                   Observação da Divergência (Áudio/Texto):
                                 </label>
                                 <textarea
@@ -1942,7 +1942,7 @@ function ShowDetail() {
                                       note: null,
                                     });
                                   }}
-                                  className="text-[11px] font-mono text-zinc-500 hover:text-zinc-300 underline"
+                                  className="text-[0.6875rem] font-mono text-zinc-500 hover:text-zinc-300 underline"
                                 >
                                   Desmarcar conferência física
                                 </button>
@@ -2020,11 +2020,11 @@ function ShowDetail() {
                                     x{item.quantity}
                                   </span>
                                   {item.is_mandatory ? (
-                                    <span className="text-[10px] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium">
+                                    <span className="text-[0.625rem] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium">
                                       Inegociável
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded">
+                                    <span className="text-[0.625rem] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded">
                                       Desejável
                                     </span>
                                   )}
@@ -2055,12 +2055,12 @@ function ShowDetail() {
 
                               <div className="flex flex-wrap items-center gap-2">
                                 {item.physical_check === "conformed" ? (
-                                  <span className="font-mono text-[10px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold">
+                                  <span className="font-mono text-[0.625rem] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold">
                                     Palco: OK ✓
                                   </span>
                                 ) : item.physical_check === "divergent" ? (
                                   <span
-                                    className="font-mono text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-semibold"
+                                    className="font-mono text-[0.625rem] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-semibold"
                                     title={item.physical_divergence_note || ""}
                                   >
                                     Palco: Divergência ⚠
@@ -2107,13 +2107,13 @@ function ShowDetail() {
                                         <div className="flex items-center justify-between gap-2 mb-1">
                                           <span
                                             className={cn(
-                                              "font-mono text-[10px] uppercase font-bold tracking-wider",
+                                              "font-mono text-[0.625rem] uppercase font-bold tracking-wider",
                                               isProducer ? "text-[#9184d9]" : "text-muted-foreground",
                                             )}
                                           >
                                             {isProducer ? "Produção (Você)" : "Casa de Show"}
                                           </span>
-                                          <span className="font-mono text-[10px] text-muted-foreground">
+                                          <span className="font-mono text-[0.625rem] text-muted-foreground">
                                             {msg.created_at
                                               ? new Date(msg.created_at).toLocaleTimeString("pt-BR", {
                                                   hour: "2-digit",
@@ -2218,7 +2218,7 @@ function ShowDetail() {
                             {/* Formulário de Réplica do Produtor */}
                             {producerReplyingItemId === item.id && (
                               <div className="p-3 rounded-xl border border-primary/30 bg-primary/5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-180">
-                                <label className="block text-[11px] font-mono text-muted-foreground">
+                                <label className="block text-[0.6875rem] font-mono text-muted-foreground">
                                   Sua justificativa de recusa ou especificação de alternativa para a
                                   casa:
                                 </label>
@@ -2375,7 +2375,7 @@ function ShowDetail() {
                             </div>
 
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              <span className="border border-line px-1.5 py-0.5 rounded font-mono uppercase text-[10px]">
+                              <span className="border border-line px-1.5 py-0.5 rounded font-mono uppercase text-[0.625rem]">
                                 {labelFrom(docTypes, d.doc_type)}
                               </span>
                               <button
@@ -2433,7 +2433,7 @@ function ShowDetail() {
                                 <span>Pix não cadastrado</span>
                                 <Link
                                   to="/people"
-                                  className="underline underline-offset-2 hover:text-foreground not-italic font-mono text-[10px] ml-1"
+                                  className="underline underline-offset-2 hover:text-foreground not-italic font-mono text-[0.625rem] ml-1"
                                 >
                                   (Cadastrar)
                                 </Link>
@@ -2499,7 +2499,7 @@ function ShowDetail() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-base">Links do Elenco 📱</h3>
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#9184d9]">
+                          <span className="text-[0.625rem] font-mono uppercase tracking-wider text-[#9184d9]">
                             Links individuais por integrante
                           </span>
                         </div>
@@ -2544,11 +2544,11 @@ function ShowDetail() {
                                   <span className="font-medium text-sm truncate text-foreground">
                                     {m.name}
                                   </span>
-                                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-full shrink-0">
+                                  <span className="text-[0.625rem] font-mono uppercase tracking-wider text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-full shrink-0">
                                     {memberRoleName}
                                   </span>
                                 </div>
-                                <div className="mt-1 font-mono text-[11px] text-muted-foreground/80 truncate">
+                                <div className="mt-1 font-mono text-[0.6875rem] text-muted-foreground/80 truncate">
                                   {memberUrl || "Token pendente"}
                                 </div>
                               </div>
@@ -2624,7 +2624,7 @@ function ShowDetail() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-base">Link do Rider 🏛️</h3>
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                          <span className="text-[0.625rem] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                             Para a Casa de Show / Contratante
                           </span>
                         </div>
@@ -2720,7 +2720,7 @@ function TabButton({ active, onClick, label, badge, hasAlert }: TabButtonProps) 
       {badge !== undefined ? (
         <span
           className={cn(
-            "text-[10px] px-1.5 py-0.2 rounded-full",
+            "text-[0.625rem] px-1.5 py-0.2 rounded-full",
             active ? "bg-[#9184d9] text-white" : "bg-accent text-muted-foreground",
           )}
         >

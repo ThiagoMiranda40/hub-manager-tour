@@ -117,7 +117,7 @@ export function AppIntroSplash() {
           <rect className="eq-bar eq-bar-6" x="57" y="19" width="5" height="6" rx="2.5" />
         </svg>
 
-        <span className="text-[11px] font-mono tracking-widest text-muted-foreground uppercase select-none">
+        <span className="text-[0.6875rem] font-mono tracking-widest text-muted-foreground uppercase select-none">
           Hub Manager Tour
         </span>
       </div>

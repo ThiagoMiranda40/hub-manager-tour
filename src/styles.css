@@ -192,7 +192,7 @@
 
 @utility label-mono {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 0.625rem;
   line-height: 1.2;
   letter-spacing: 0.18em;
   text-transform: uppercase;
