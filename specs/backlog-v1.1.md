@@ -6,11 +6,18 @@
 ![Matriz de priorização do Backlog V1.1](./backlog-priorizacao-v1.1.png)
 
 ## Ganho rápido (alto impacto, baixo esforço) — fazer primeiro
-- [CONCLUÍDO] Aumentar fonte no celular → resolvido em duas partes: correção de unidade (px → rem) + controle manual A-/A+ em 3 níveis (Opção B), disponível para produtor e rotas públicas.
-- [CONCLUÍDO] Tela de abertura animada (item adicional, fora da lista original, adicionado durante a execução).
+- [CONCLUÍDO] Aumentar fonte no celular → correção de unidade (px → rem) + controle manual A-/A+ em 3 níveis.
+- [CONCLUÍDO] Tela de abertura animada.
+- [CONCLUÍDO] Cards do Rider Técnico como filtro clicável (com correção de isolamento de segurança para o Modo Palco).
+- [CONCLUÍDO] Cards da Agenda/Prancheta de Turnê como filtro clicável.
+- [CONCLUÍDO] Cards da aba Reembolsos como filtro clicável.
+- [CONCLUÍDO] Cards da aba Documentos como filtro clicável (Documentos Recebidos / Documentos para Reembolso).
+- [CONCLUÍDO] Card "Pessoas com Documentos" com filtro por integrante (popover/sheet responsivo).
+- [CONCLUÍDO] Filtros nativos do Modo Palco (conferência física + status da casa, com 3 estados vazios).
+- [CONCLUÍDO] Drag-and-drop de upload (comprovante do integrante e PDF de rider legado) — confirmado funcionando por Thiago.
 - Cores/contraste do Modo Palco
-- [CONCLUÍDO] Cards do Rider como filtro clicável
-- Drag-and-drop de upload
+- Conferir no celular os filtros nativos do Modo Palco
+- Corrigir sobreposição de texto na aba Reembolsos (mobile)
 - Ajustar botões/badges em todos os dispositivos
 - Visualização em lista em Pessoas & Equipe
 - Área de perfil do usuário
@@ -43,6 +50,16 @@
   técnico: onde o comprovante fica armazenado, se o upload é 
   obrigatório ou complementar ao toggle manual, e se a marcação 
   automática é definitiva ou ainda passa por confirmação.
+- Conversão automática de moeda estrangeira: ao detectar moeda 
+  diferente de BRL num documento, buscar a cotação do dia e sugerir o 
+  valor já convertido (hoje só alerta que a moeda é diferente, sem 
+  converter). Se o reembolso não for pago no mesmo dia do envio, 
+  recalcular a cotação no momento em que o produtor efetivamente for 
+  realizar o pagamento, não usar a cotação do dia do upload. Precisa 
+  de mudança de dado: guardar moeda original e valor bruto estrangeiro 
+  junto do documento (hoje o sistema só grava o valor final em BRL, 
+  sem metadado de moeda) — definir antes do desenho técnico qual API 
+  de cotação usar.
 
 ## Preenchimento (baixo impacto, baixo esforço) — fazer quando sobrar tempo
 - Melhorar mecanismo de busca da Agenda
