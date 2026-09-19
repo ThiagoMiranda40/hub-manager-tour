@@ -6,25 +6,15 @@
 ![Matriz de priorização do Backlog V1.1](./backlog-priorizacao-v1.1.png)
 
 ## Ganho rápido (alto impacto, baixo esforço) — fazer primeiro
-- Estrutura da página de tutorial (código simples; conteúdo — textos e 
-  vídeos — é produzido por Thiago incrementalmente depois de a 
-  estrutura existir)
-- Revisão geral da interface mobile
-- Aumentar fonte no celular
-- Ajustar visualização de botões/badges em todos os dispositivos
-- Melhorar cores/contraste do Modo Palco
-- Cards de Total/Confirmados/Exceções/Pendentes do Rider como filtro 
-  clicável
+- [CONCLUÍDO] Aumentar fonte no celular → resolvido em duas partes: correção de unidade (px → rem) + controle manual A-/A+ em 3 níveis (Opção B), disponível para produtor e rotas públicas.
+- [CONCLUÍDO] Tela de abertura animada (item adicional, fora da lista original, adicionado durante a execução).
+- Cores/contraste do Modo Palco
+- Cards do Rider como filtro clicável
+- Drag-and-drop de upload
+- Ajustar botões/badges em todos os dispositivos
 - Visualização em lista em Pessoas & Equipe
-- Canal para usuários reportarem bugs
-- Área de solicitação de novas funcionalidades
 - Área de perfil do usuário
-- Drag-and-drop de upload (suporte nativo do navegador, baixo esforço 
-  de implementação)
-- Tela de abertura animada (logo em movimento, tipo equalizador de áudio) 
-  exibida por ~800ms ao abrir o app, entre a splash nativa do Android/PWA 
-  (que não é editável — gerada pelo sistema a partir do manifest.json) e a 
-  tela de login — [CONCLUÍDO]
+- Revisão geral da interface mobile (passada final, depois dos demais)
 
 ## Grande aposta (alto impacto, alto esforço) — priorizar, mas planejar bem
 - Área de transparência de roadmap — construir v1 enxuta primeiro 
