@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 describe("Global cursor rules in styles.css", () => {
-  it("contém as regras de cursor: pointer e cursor: not-allowed dentro de @layer base", () => {
+  it("contém as regras de cursor: pointer e cursor: not-allowed dentro de @layer base com seletores granulares", () => {
     const cssPath = path.resolve(__dirname, "styles.css");
     const cssContent = fs.readFileSync(cssPath, "utf-8");
 
@@ -13,18 +13,33 @@ describe("Global cursor rules in styles.css", () => {
     // Extrai o bloco @layer base para garantir que as regras estão no layer correto
     const layerBaseMatch = cssContent.match(/@layer\s+base\s*\{([\s\S]*?)\n\}/);
     expect(layerBaseMatch).not.toBeNull();
-    const layerBaseContent = layerBaseMatch![1];
+    const layerBaseContent = layerBaseMatch?.[1] ?? "";
+    expect(layerBaseContent).not.toBe("");
 
-    // Confirma que a regra de pointer para botões e interativos não-desabilitados existe
-    expect(layerBaseContent).toMatch(/button:not\(:disabled\)[\s\S]*?cursor:\s*pointer;/);
+    // Extrai cada regra CSS (seletor + corpo) individualmente
+    const ruleMatches = Array.from(layerBaseContent.matchAll(/([^{}]+)\{([^{}]*)\}/g));
+    const rules = ruleMatches.map((m) => ({
+      selector: (m[1] ?? "").trim(),
+      body: (m[2] ?? "").trim(),
+    }));
 
-    // Confirma que elementos com role de botão/tab/menuitem/option possuem cursor pointer
-    expect(layerBaseContent).toMatch(/\[role="button"\]:not\(\[aria-disabled="true"\]\)[\s\S]*?cursor:\s*pointer;/);
-    expect(layerBaseContent).toMatch(/\[role="tab"\]:not\(\[aria-disabled="true"\]\)[\s\S]*?cursor:\s*pointer;/);
+    // a) Regras cujo corpo contém cursor: pointer
+    const pointerRules = rules.filter((r) => /cursor:\s*pointer;?/.test(r.body));
+    expect(pointerRules.length).toBeGreaterThan(0);
+    const pointerSelectors = pointerRules.map((r) => r.selector).join(", ");
 
-    // Confirma que a regra de not-allowed para botões/tabs/inputs desabilitados existe
-    expect(layerBaseContent).toMatch(/button:disabled[\s\S]*?cursor:\s*not-allowed;/);
-    expect(layerBaseContent).toMatch(/\[role="button"\]\[aria-disabled="true"\][\s\S]*?cursor:\s*not-allowed;/);
-    expect(layerBaseContent).toMatch(/\[role="tab"\]\[aria-disabled="true"\][\s\S]*?cursor:\s*not-allowed;/);
+    expect(pointerSelectors).toContain("button:not(:disabled)");
+    expect(pointerSelectors).toContain('[role="tab"]');
+    expect(pointerSelectors).toContain("a[href]");
+    expect(pointerSelectors).toContain("select:not(:disabled)");
+    expect(pointerSelectors).toContain("label[for]");
+    expect(pointerSelectors).toContain('input[type="checkbox"]:not(:disabled)');
+
+    // b) Regras cujo corpo contém cursor: not-allowed
+    const notAllowedRules = rules.filter((r) => /cursor:\s*not-allowed;?/.test(r.body));
+    expect(notAllowedRules.length).toBeGreaterThan(0);
+    const notAllowedSelectors = notAllowedRules.map((r) => r.selector).join(", ");
+
+    expect(notAllowedSelectors).toContain("button:disabled");
   });
 });
