@@ -110,6 +110,7 @@ function PublicUpload() {
   const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
   const [isReimbursement, setIsReimbursement] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Estados da análise inteligente por IA (Gemini 3.6 Flash)
   const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
@@ -592,11 +593,37 @@ function PublicUpload() {
           <div>
             <span className="label-mono text-xs">Arquivo ou Foto</span>
             <label
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                const droppedFile = e.dataTransfer.files?.[0] ?? null;
+                if (droppedFile) {
+                  void handleFileChange(droppedFile);
+                }
+              }}
               className={cn(
                 "mt-2 grid cursor-pointer place-items-center border-2 border-dashed rounded-xl p-6 text-center select-none touch-manipulation transition-all duration-120 active:scale-[0.98]",
-                file
-                  ? "border-emerald-500 bg-emerald-500/10"
-                  : "border-line bg-background hover:bg-accent/20",
+                isDragging
+                  ? "border-[#9184d9] bg-[#9184d9]/10 ring-2 ring-[#9184d9]/50 scale-[1.01]"
+                  : file
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-line bg-background hover:bg-accent/20",
               )}
             >
               <input
@@ -615,7 +642,14 @@ function PublicUpload() {
                   className="mb-3 max-h-48 w-auto rounded-lg border border-line object-contain shadow-sm"
                 />
               ) : (
-                <div className="grid size-12 place-items-center rounded-xl bg-accent/40 border border-line text-muted-foreground mb-3">
+                <div
+                  className={cn(
+                    "grid size-12 place-items-center rounded-xl border mb-3 transition-colors",
+                    isDragging
+                      ? "bg-[#9184d9]/20 border-[#9184d9]/50 text-[#9184d9]"
+                      : "bg-accent/40 border border-line text-muted-foreground",
+                  )}
+                >
                   <Upload className="size-6" />
                 </div>
               )}
@@ -623,22 +657,30 @@ function PublicUpload() {
               <span
                 className={cn(
                   "font-mono text-xs uppercase tracking-wider font-medium",
-                  file ? "text-emerald-600 dark:text-emerald-400" : "text-foreground",
+                  isDragging
+                    ? "text-[#9184d9] font-bold"
+                    : file
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-foreground",
                 )}
               >
-                {file ? (
+                {isDragging ? (
+                  "Solte o arquivo aqui"
+                ) : file ? (
                   <span className="flex items-center gap-1.5">
                     <Check className="size-4" /> {file.name}
                   </span>
                 ) : (
-                  "Toque para escolher foto ou PDF"
+                  "Toque ou arraste foto ou PDF"
                 )}
               </span>
 
               <span className="label-mono mt-1 text-[0.6875rem] text-muted-foreground">
-                {file
-                  ? `(${(file.size / (1024 * 1024)).toFixed(2)} MB) · Toque para trocar`
-                  : "JPG, PNG, WEBP ou PDF · até 20 MB"}
+                {isDragging
+                  ? "Solte para iniciar a leitura e envio"
+                  : file
+                    ? `(${(file.size / (1024 * 1024)).toFixed(2)} MB) · Toque ou arraste para trocar`
+                    : "JPG, PNG, WEBP ou PDF · até 20 MB"}
               </span>
             </label>
 
