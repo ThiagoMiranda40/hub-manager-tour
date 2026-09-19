@@ -1507,7 +1507,7 @@ function ShowDetail() {
                   title={
                     docsFilter === "reimbursement"
                       ? "Remover filtro (mostrar todos)"
-                      : "Filtrar por comprovantes de reembolso"
+                      : "Filtrar por documentos para reembolso"
                   }
                   className={cn(
                     "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
@@ -1517,7 +1517,7 @@ function ShowDetail() {
                   )}
                 >
                   <div className="label-mono text-muted-foreground flex items-center justify-between">
-                    <span>Comprovantes de Reembolso</span>
+                    <span>Documentos para Reembolso</span>
                     {docsFilter === "reimbursement" ? (
                       <span className="text-[0.625rem] text-[#9184d9] font-bold">● Ativo</span>
                     ) : null}
