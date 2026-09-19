@@ -1,7 +1,7 @@
 # Backlog V1.1 — Hub Manager Tour
 
-> Priorizado em 17/09/2026 via matriz Impacto × Esforço. Sequência 
-> recomendada: Ganho Rápido → Grande Aposta → Preenchimento.
+> Priorizado em 17/09/2026 via matriz Impacto × Esforço, atualizado em 19/09/2026 (matriz v12).
+> Sequência recomendada: Ganho Rápido → Grande Aposta → Preenchimento.
 
 ![Matriz de priorização do Backlog V1.1](./backlog-priorizacao-v1.1.png)
 
@@ -15,6 +15,7 @@
 - [CONCLUÍDO] Card "Pessoas com Documentos" com filtro por integrante (popover/sheet responsivo).
 - [CONCLUÍDO] Filtros nativos do Modo Palco (conferência física + status da casa, com 3 estados vazios).
 - [CONCLUÍDO] Drag-and-drop de upload (comprovante do integrante e PDF de rider legado) — confirmado funcionando por Thiago.
+- [CONCLUÍDO] Cursor "mãozinha" global (regra no @layer base de styles.css) + tooltips nativos (atributo title) em botões, badges, abas e textos truncados — commit 64c3f7b (+ correções do follow-up). Limitação conhecida: no celular não existe hover, então tooltips não aparecem ao toque.
 - Cores/contraste do Modo Palco
 - Conferir no celular os filtros nativos do Modo Palco
 - Corrigir sobreposição de texto na aba Reembolsos (mobile)
@@ -22,6 +23,8 @@
 - Visualização em lista em Pessoas & Equipe
 - Área de perfil do usuário
 - Renomear cards "Reembolsados (Pagos)" → "Reembolsos Pagos" e "Pendentes de Reembolso" → "Reembolsos Pendentes" na aba Reembolsos (UX writing) — [CONCLUÍDO] junto com este mesmo commit.
+- Botões de envio do link individual na aba Elenco & Exigências: hoje copiar link, enviar por WhatsApp (mensagem pronta) e abrir a página do integrante só existem na aba Ações Rápidas & Links, então quem vê o integrante pendente no Elenco precisa trocar de aba. Reaproveitar os recursos existentes (copiar link, link de WhatsApp, abrir página) na linha de cada integrante. Esforço baixo (lógica pronta), mas precisa de desenho de UI/UX curto ANTES do código: a linha já tem status, chips de documentos e lixeira, e o mobile tem pouco espaço. Decisões em aberto: quais ações entram, só ícones com tooltip ou com rótulo, mostrar para todos ou destacar só quem tem pendência, e o comportamento sem telefone cadastrado (hoje: toast explicativo).
+- Corrigir vazamento de ícones da sidebar com fonte aumentada (A+/A++): bug de acessibilidade em funcionalidade já entregue. Causa identificada: o aumento de fonte é `html { font-size: 115% | 130% }` (rem), mas a largura da sidebar é fixa em px (`w-[240px]` expandida e `w-[76px]` recolhida em AppShell.tsx), então a linha "Preferências" (rótulo + 3 botões) não cabe e os ícones vazam; os rótulos do menu também são cortados ("PESSOAS & EQ…"). Direção provável: largura em rem e/ou quebrar a linha de Preferências em duas. Testar: expandida e recolhida, 115% e 130%, tema claro e escuro, modo cabeçalho e menu mobile. Prioridade alta dentro do Ganho rápido.
 - Revisão geral da interface mobile (passada final, depois dos demais)
 
 ## Grande aposta (alto impacto, alto esforço) — priorizar, mas planejar bem
@@ -86,6 +89,11 @@
 - Tirar criação de Artista/Equipe/Rider de Configurações
 - Consolidar documentos (passagens/notas/cupons) num relatório único
 
+## Evitar por agora — sem spec própria (baixo impacto)
+Esta seção guarda itens de baixo impacto que NÃO viram spec própria; ideias grandes o bastante para virar spec continuam em specs/candidatos-novas-specs.md.
+
+- Migrar tooltips nativos (title) para Radix Tooltip. O pacote @radix-ui/react-tooltip e src/components/ui/tooltip.tsx já existem no projeto, mas nenhuma tela usa. Escopo enxuto quando for feito: um componente único <Tip> + um TooltipProvider na raiz, migrando só as abas do show, o Modo Palco e a Agenda; o resto continua com title. Ganho: visual Nocturne e foco por teclado. Não resolve mobile (sem hover). Riscos: botões desabilitados precisam de wrapper; regressão no Modo Palco. Revisitar quando: houver a 'Revisão geral da interface mobile', uma auditoria de acessibilidade, ou se o tooltip nativo incomodar no tema escuro.
+
 ## Já entregue (fora deste backlog)
 - Tema claro/escuro (RF-12)
 - Navegação adaptável cabeçalho/sidebar (RF-13)
@@ -101,4 +109,3 @@
 
 > Desenho de UI/UX do card 'Pessoas com Documentos': specs/design/pessoas-com-documentos-uiux.md
 > Desenho de UI/UX dos filtros nativos do Modo Palco: specs/design/modo-palco-filtros-uiux.md
-
