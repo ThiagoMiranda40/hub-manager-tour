@@ -957,6 +957,23 @@ describe("Filtros Clicáveis do Rider Técnico (Backlog V1.1)", () => {
     expect(filterRiderItemsByStatus(onlyConfirmed, "exception")).toHaveLength(0);
     expect(filterRiderItemsByStatus(onlyConfirmed, "pending")).toHaveLength(0);
   });
+
+  it("garante que a lista do Modo Palco preserva 100% dos itens sem vazamento do filtro de status (segurança de uso)", () => {
+    // Simula os filtros que poderiam estar ativos na aba Rider
+    const filteredConfirmed = filterRiderItemsByStatus(sampleItems, "confirmed");
+    const filteredExceptions = filterRiderItemsByStatus(sampleItems, "exception");
+    const filteredPending = filterRiderItemsByStatus(sampleItems, "pending");
+
+    // As listas filtradas sofrem redução
+    expect(filteredConfirmed).toHaveLength(2);
+    expect(filteredExceptions).toHaveLength(1);
+    expect(filteredPending).toHaveLength(2);
+
+    // A conferência do Modo Palco (sortStageRiderItems) recebe riderItems integral e preserva todos os 5 itens
+    const stageItems = sortStageRiderItems(sampleItems);
+    expect(stageItems).toHaveLength(sampleItems.length);
+    expect(stageItems.map((i) => i.id).sort()).toEqual(sampleItems.map((i) => i.id).sort());
+  });
 });
 
 

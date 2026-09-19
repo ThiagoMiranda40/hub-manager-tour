@@ -292,10 +292,10 @@ function ShowDetail() {
     [riderItems, riderStatusFilter],
   );
 
-  // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco
+  // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco (sempre 100% dos itens)
   const stageRiderItems = useMemo(
-    () => sortStageRiderItems(filteredRiderItems),
-    [filteredRiderItems],
+    () => sortStageRiderItems(riderItems),
+    [riderItems],
   );
 
   const stageStats = useMemo(() => {
@@ -1724,8 +1724,11 @@ function ShowDetail() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="label-mono font-medium text-foreground">
-                    Itens de Palco e Camarim ({filteredRiderItems.length}
-                    {riderStatusFilter !== "all" ? ` de ${riderItems.length}` : ""})
+                    Itens de Palco e Camarim (
+                    {isStageMode
+                      ? riderItems.length
+                      : `${filteredRiderItems.length}${riderStatusFilter !== "all" ? ` de ${riderItems.length}` : ""}`}
+                    )
                   </span>
                   {stageStats.conformed > 0 ? (
                     <span className="font-mono text-[0.6875rem] text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full font-medium">
