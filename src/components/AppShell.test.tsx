@@ -94,8 +94,9 @@ describe("T-15 / RF-13: AppShell Adaptive Navigation Component", () => {
 
     // Cabeçalho desktop visível e sidebar oculta
     expect(html).toContain("header class=\"hidden sm:block sticky top-0");
-    // Botão de alternância rápida de navegação presente ao lado de ThemeToggle
+    // Botão de alternância rápida de navegação presente ao lado de ThemeToggle e FontSizeToggle
     expect(html).toContain('title="Alternar para barra lateral"');
+    expect(html).toContain('title="Tamanho da fonte: Normal (100%) (clique para alternar)"');
   });
 
   it("TC-13.1: renderiza barra lateral (sidebar) expandida com 240px quando navigation_mode=sidebar", () => {
@@ -131,8 +132,9 @@ describe("T-15 / RF-13: AppShell Adaptive Navigation Component", () => {
     expect(html).toContain("w-[76px]");
     expect(html).toContain("marca-simbolo-colorido.png");
     expect(html).toContain("title=\"Expandir barra lateral (240px)\"");
-    // Ambos os botões rápidos (NavModeToggle e ThemeToggle) presentes e centralizados
+    // Todos os botões rápidos (NavModeToggle, FontSizeToggle e ThemeToggle) presentes e centralizados
     expect(html).toContain('title="Alternar para cabeçalho superior"');
+    expect(html).toContain('title="Tamanho da fonte: Normal (100%) (clique para alternar)"');
     expect(html).toContain('title="Alternar para tema escuro"');
   });
 

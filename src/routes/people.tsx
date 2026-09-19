@@ -549,21 +549,21 @@ function PeoplePage() {
                     {/* Vínculos */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {isGeneral ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-accent/70 px-2 py-0.5 text-[11px] font-semibold text-foreground border border-line">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-accent/70 px-2 py-0.5 text-[0.6875rem] font-semibold text-foreground border border-line">
                           ★ Equipe Geral
                         </span>
                       ) : null}
                       {artistLinks.map((al) => (
                         <span
                           key={al.id}
-                          className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground border border-line"
+                          className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-[0.6875rem] text-secondary-foreground border border-line"
                         >
                           <Music className="size-3 opacity-60" />
                           {al.artists?.name}
                         </span>
                       ))}
                       {!isGeneral && artistLinks.length === 0 ? (
-                        <span className="text-[11px] text-muted-foreground italic">
+                        <span className="text-[0.6875rem] text-muted-foreground italic">
                           Sem vínculos de artista
                         </span>
                       ) : null}
@@ -597,7 +597,7 @@ function PeoplePage() {
                           <div className="min-w-0 flex items-center gap-2">
                             <QrCode className="size-4 shrink-0 text-primary" />
                             <div className="min-w-0">
-                              <div className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
+                              <div className="text-[0.625rem] uppercase font-mono tracking-wider text-muted-foreground">
                                 Pix ({person.pix_type ?? "Chave"})
                               </div>
                               <div className="text-xs font-mono font-medium text-foreground truncate">
@@ -622,7 +622,7 @@ function PeoplePage() {
 
                     {/* Observações */}
                     {person.notes ? (
-                      <p className="pt-1 text-[11px] text-muted-foreground line-clamp-2 italic">
+                      <p className="pt-1 text-[0.6875rem] text-muted-foreground line-clamp-2 italic">
                         "{person.notes}"
                       </p>
                     ) : null}
@@ -748,7 +748,7 @@ function PeoplePage() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div>
-                    <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                    <label className="block text-[0.6875rem] font-medium text-muted-foreground mb-1">
                       Tipo de Chave
                     </label>
                     <select
@@ -771,7 +771,7 @@ function PeoplePage() {
                     </select>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                    <label className="block text-[0.6875rem] font-medium text-muted-foreground mb-1">
                       Chave Pix
                     </label>
                     <input
@@ -831,7 +831,7 @@ function PeoplePage() {
                     <span className="font-semibold text-xs text-foreground block">
                       ★ Equipe Geral (Todos os Artistas e Shows)
                     </span>
-                    <span className="text-[11px] text-muted-foreground block">
+                    <span className="text-[0.6875rem] text-muted-foreground block">
                       Marque se este profissional atua em todas as turnês do
                       produtor (ex: produtor geral, roadie principal).
                     </span>
@@ -841,7 +841,7 @@ function PeoplePage() {
                 {/* Checkboxes de Artistas Específicos */}
                 {!formData.is_general_crew ? (
                   <div className="space-y-1.5 pt-1">
-                    <span className="text-[11px] font-medium text-muted-foreground block">
+                    <span className="text-[0.6875rem] font-medium text-muted-foreground block">
                       Ou vincule a artistas específicos:
                     </span>
                     {artists.length === 0 ? (

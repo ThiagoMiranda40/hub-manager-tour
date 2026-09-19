@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FontSizeToggle } from "@/components/FontSizeToggle";
 import {
   computeShowProgress,
   computeMemberRequirementStatus,
@@ -200,11 +201,12 @@ function FichaProducao() {
           ← Voltar para o show
         </Link>
         <div className="flex items-center gap-2.5 sm:gap-3">
+          <FontSizeToggle />
           <ThemeToggle />
           <button
             type="button"
             onClick={() => window.print()}
-            className="bg-foreground px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-background transition-colors hover:bg-signal active:scale-[0.97] active:opacity-90 duration-120 touch-manipulation cursor-pointer"
+            className="bg-foreground px-4 py-2.5 font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-background transition-colors hover:bg-signal active:scale-[0.97] active:opacity-90 duration-120 touch-manipulation cursor-pointer"
           >
             Imprimir / Exportar PDF
           </button>
@@ -237,7 +239,7 @@ function FichaProducao() {
               <h2 className="label-mono text-base font-bold text-foreground">
                 Elenco & Logística · {cast.length} pessoas
               </h2>
-              <span className="font-mono text-[11px] text-muted-foreground print:text-black">
+              <span className="font-mono text-[0.6875rem] text-muted-foreground print:text-black">
                 {progress.activePeople} ativos · {progress.unrequiredPeople} sem exigência
               </span>
             </div>
@@ -247,7 +249,7 @@ function FichaProducao() {
             ) : (
               groupsByRole.map((g) => (
                 <div key={g.role} className="mb-5 break-inside-avoid">
-                  <div className="border-b border-line pb-1 font-mono text-[11px] uppercase tracking-[0.18em] font-semibold">
+                  <div className="border-b border-line pb-1 font-mono text-[0.6875rem] uppercase tracking-[0.18em] font-semibold">
                     {g.role} · {g.people.length}
                   </div>
                   <table className="w-full text-sm">
@@ -266,7 +268,7 @@ function FichaProducao() {
                             <td className="w-2/5 py-2 pr-3">
                               <span className="font-medium text-foreground block">{m.name}</span>
                               {person ? (
-                                <span className="font-mono text-[10px] text-muted-foreground print:text-black block">
+                                <span className="font-mono text-[0.625rem] text-muted-foreground print:text-black block">
                                   {[
                                     person.phone,
                                     person.email,
@@ -277,12 +279,12 @@ function FichaProducao() {
                                 </span>
                               ) : null}
                             </td>
-                            <td className="py-2 pr-3 font-mono text-[11px]">
+                            <td className="py-2 pr-3 font-mono text-[0.6875rem]">
                               {mine.length
                                 ? mine.map((d) => labelFrom(docTypes, d.doc_type)).join(" · ")
                                 : "nada enviado"}
                             </td>
-                            <td className="w-48 py-2 text-right font-mono text-[11px]">
+                            <td className="w-48 py-2 text-right font-mono text-[0.6875rem]">
                               {reqStatus.isUnrequired ? (
                                 <span className="text-muted-foreground print:text-black">
                                   sem exigência
@@ -308,7 +310,7 @@ function FichaProducao() {
                 </div>
               ))
             )}
-            <p className="font-mono text-[11px] text-muted-foreground print:text-black">
+            <p className="font-mono text-[0.6875rem] text-muted-foreground print:text-black">
               Progresso: {progress.received}/{progress.expected} documentos obrigatórios ({progress.pct}%) ·{" "}
               {progress.pendingPeople} pessoa(s) pendente(s)
             </p>
@@ -369,7 +371,7 @@ function FichaProducao() {
               <div className="overflow-x-auto print:overflow-visible -mx-1 px-1">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-foreground text-left font-mono text-[10px] uppercase tracking-wider text-muted-foreground print:text-black">
+                    <tr className="border-b border-foreground text-left font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground print:text-black">
                       <th className="py-2 pr-3 w-2/5">Item & Especificação</th>
                       <th className="py-2 pr-2 w-24">Categoria</th>
                       <th className="py-2 pr-2 w-12 text-center">Qtd</th>
@@ -389,35 +391,35 @@ function FichaProducao() {
                           <td className="py-2 pr-3">
                             <span className="font-semibold text-foreground">{item.item_name}</span>
                             {item.specification ? (
-                              <p className="font-mono text-[10px] text-muted-foreground print:text-black mt-0.5">
+                              <p className="font-mono text-[0.625rem] text-muted-foreground print:text-black mt-0.5">
                                 {item.specification}
                               </p>
                             ) : null}
                             {item.exception_note ? (
-                              <p className="text-[10px] text-purple-700 dark:text-purple-300 print:text-black font-sans mt-0.5">
+                              <p className="text-[0.625rem] text-purple-700 dark:text-purple-300 print:text-black font-sans mt-0.5">
                                 <strong>Nota da Casa:</strong> {item.exception_note}
                               </p>
                             ) : null}
                             {item.physical_divergence_note ? (
-                              <p className="text-[10px] text-amber-700 dark:text-amber-400 print:text-black font-sans mt-0.5">
+                              <p className="text-[0.625rem] text-amber-700 dark:text-amber-400 print:text-black font-sans mt-0.5">
                                 <strong>Divergência Palco:</strong> {item.physical_divergence_note}
                               </p>
                             ) : null}
                           </td>
-                          <td className="py-2 pr-2 font-mono text-[11px] uppercase text-muted-foreground print:text-black">
+                          <td className="py-2 pr-2 font-mono text-[0.6875rem] uppercase text-muted-foreground print:text-black">
                             {item.category}
                           </td>
-                          <td className="py-2 pr-2 font-mono text-[11px] text-center font-bold">
+                          <td className="py-2 pr-2 font-mono text-[0.6875rem] text-center font-bold">
                             {item.quantity}
                           </td>
-                          <td className="py-2 pr-2 font-mono text-[10px] uppercase">
+                          <td className="py-2 pr-2 font-mono text-[0.625rem] uppercase">
                             {item.is_mandatory ? (
                               <span className="font-bold text-destructive print:text-black">Inegociável</span>
                             ) : (
                               <span className="text-muted-foreground print:text-black">Desejável</span>
                             )}
                           </td>
-                          <td className="py-2 pr-2 font-mono text-[11px]">
+                          <td className="py-2 pr-2 font-mono text-[0.6875rem]">
                             {item.status === "confirmed" ? (
                               <span className="text-ok font-medium">✓ Confirmado</span>
                             ) : item.status === "accepted_with_exception" ? (
@@ -426,7 +428,7 @@ function FichaProducao() {
                                   ✓ Aceito c/ ressalva
                                 </span>
                                 {lastMsg ? (
-                                  <p className="font-sans text-[10px] text-muted-foreground print:text-black line-clamp-2 mt-0.5">
+                                  <p className="font-sans text-[0.625rem] text-muted-foreground print:text-black line-clamp-2 mt-0.5">
                                     {lastMsg.message}
                                   </p>
                                 ) : null}
@@ -436,7 +438,7 @@ function FichaProducao() {
                                 <span className="text-blue-700 dark:text-blue-400 print:text-black font-semibold">
                                   💬 Em negociação
                                 </span>
-                                <p className="font-sans text-[10px] text-muted-foreground print:text-black line-clamp-2 mt-0.5">
+                                <p className="font-sans text-[0.625rem] text-muted-foreground print:text-black line-clamp-2 mt-0.5">
                                   Úl.:{" "}
                                   {lastMsg.author_type === "producer"
                                     ? "Produção: "
@@ -450,7 +452,7 @@ function FichaProducao() {
                               <span className="text-muted-foreground print:text-black">Pendente</span>
                             )}
                           </td>
-                        <td className="py-2 text-right font-mono text-[11px]">
+                        <td className="py-2 text-right font-mono text-[0.6875rem]">
                           {item.physical_check === "conformed" ? (
                             <span className="text-ok font-semibold">✓ Conforme</span>
                           ) : item.physical_check === "divergent" ? (
@@ -480,7 +482,7 @@ function FichaProducao() {
             ) : (
               groupsByType.map((g) => (
                 <div key={g.type} className="mb-5 break-inside-avoid">
-                  <div className="border-b border-line pb-1 font-mono text-[11px] uppercase tracking-[0.18em] font-semibold">
+                  <div className="border-b border-line pb-1 font-mono text-[0.6875rem] uppercase tracking-[0.18em] font-semibold">
                     {g.type} · {g.items.length}
                   </div>
                   <table className="w-full text-sm">
@@ -488,10 +490,10 @@ function FichaProducao() {
                       {g.items.map((d) => (
                         <tr key={d.id} className="border-b border-line">
                           <td className="w-1/3 py-2 pr-3">{memberName(d.cast_member_id)}</td>
-                          <td className="py-2 pr-3 font-mono text-[11px] break-all">
+                          <td className="py-2 pr-3 font-mono text-[0.6875rem] break-all">
                             {formatDocumentDescription(d)}
                           </td>
-                          <td className="w-32 py-2 text-right font-mono text-[11px]">
+                          <td className="w-32 py-2 text-right font-mono text-[0.6875rem]">
                             {d.amount != null ? formatBRL(Number(d.amount)) : "—"}
                           </td>
                         </tr>
@@ -531,12 +533,12 @@ function FichaProducao() {
                         <td className="w-1/3 py-2 pr-3">
                           <span className="font-medium block">{m.name}</span>
                           {person?.pix_key ? (
-                            <span className="font-mono text-[10px] text-muted-foreground print:text-black">
+                            <span className="font-mono text-[0.625rem] text-muted-foreground print:text-black">
                               Pix ({person.pix_type ?? "chave"}): {person.pix_key}
                             </span>
                           ) : null}
                         </td>
-                        <td className="py-2 pr-3 font-mono text-[11px]">
+                        <td className="py-2 pr-3 font-mono text-[0.6875rem]">
                           {items
                             .map(
                               (d) =>
@@ -544,7 +546,7 @@ function FichaProducao() {
                             )
                             .join(" · ")}
                         </td>
-                        <td className="w-32 py-2 text-right font-mono text-[11px]">
+                        <td className="w-32 py-2 text-right font-mono text-[0.6875rem]">
                           {formatBRL(subtotal)}
                         </td>
                       </tr>
@@ -553,12 +555,12 @@ function FichaProducao() {
                 </tbody>
               </table>
             ) : (
-              <p className="mt-3 font-mono text-[11px] text-muted-foreground">
+              <p className="mt-3 font-mono text-[0.6875rem] text-muted-foreground">
                 Nenhum valor informado até agora.
               </p>
             )}
 
-            <p className="mt-4 border-t border-line pt-3 font-mono text-[10px] leading-relaxed text-muted-foreground print:text-black">
+            <p className="mt-4 border-t border-line pt-3 font-mono text-[0.625rem] leading-relaxed text-muted-foreground print:text-black">
               Valores auto-declarados por quem enviou o documento, com validação e quitação pela
               produção. Este é um resumo operacional para conferência, não um relatório contábil definitivo.
             </p>

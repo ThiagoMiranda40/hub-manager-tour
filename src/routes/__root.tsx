@@ -152,6 +152,11 @@ function RootShell({ children }: { children: ReactNode }) {
             __html: `(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&m)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var f=localStorage.getItem('hub_font_size');if(f==='large'){document.documentElement.style.fontSize='115%';document.documentElement.setAttribute('data-font-size','large');}else if(f==='xlarge'){document.documentElement.style.fontSize='130%';document.documentElement.setAttribute('data-font-size','xlarge');}else if(f==='normal'){document.documentElement.style.fontSize='';document.documentElement.setAttribute('data-font-size','normal');}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         {children}
