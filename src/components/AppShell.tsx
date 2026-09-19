@@ -329,7 +329,7 @@ export function AppShell({
                 <ThemeToggle />
                 {email ? (
                   <span
-                    className="hidden font-mono text-[0.6875rem] text-muted-foreground sm:inline truncate max-w-[200px]"
+                    className="hidden font-mono text-[0.6875rem] text-muted-foreground sm:inline"
                     title={email}
                   >
                     {email}

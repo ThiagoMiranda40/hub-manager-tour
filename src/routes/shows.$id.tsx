@@ -2439,14 +2439,14 @@ function ShowDetail() {
 
                                   {item.is_mandatory ? (
                                     <span
-                                      title="Item inegociável: indispensável para a apresentação"
+                                      title="Item inegociável: a casa de show precisa fornecer, sem alternativa aceitável."
                                       className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-destructive/50 bg-destructive/20 text-destructive font-bold"
                                     >
                                       Inegociável
                                     </span>
                                   ) : (
                                     <span
-                                      title="Item desejável: recomendação técnica sem impedimento do show"
+                                      title="Item desejável: pode ser negociado ou substituído sem inviabilizar o show."
                                       className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-400"
                                     >
                                       Desejável
@@ -2772,14 +2772,14 @@ function ShowDetail() {
                                   </span>
                                   {item.is_mandatory ? (
                                     <span
-                                      title="Item inegociável: indispensável para a apresentação"
+                                      title="Item inegociável: a casa de show precisa fornecer, sem alternativa aceitável."
                                       className="text-[0.625rem] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium"
                                     >
                                       Inegociável
                                     </span>
                                   ) : (
                                     <span
-                                      title="Item desejável: recomendação técnica sem impedimento do show"
+                                      title="Item desejável: pode ser negociado ou substituído sem inviabilizar o show."
                                       className="text-[0.625rem] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded"
                                     >
                                       Desejável
@@ -3454,7 +3454,7 @@ function ShowDetail() {
                                           : "Token pendente para este integrante.",
                                       )
                                     }
-                                    className="inline-flex items-center justify-center border border-line min-h-[44px] min-w-[44px] p-2.5 rounded-lg opacity-40 cursor-not-allowed text-muted-foreground active:scale-[0.98] transition-all touch-manipulation"
+                                    className="inline-flex items-center justify-center border border-line min-h-[44px] min-w-[44px] p-2.5 rounded-lg opacity-40 text-muted-foreground active:scale-[0.98] transition-all touch-manipulation"
                                     title={
                                       !memberPhone
                                         ? "Cadastre o telefone dessa pessoa em Pessoas & Equipe para habilitar o envio direto."
