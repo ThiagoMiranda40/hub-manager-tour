@@ -62,3 +62,8 @@
 - Benchmarking tecrider.com, integração com contabilidade e emissão de 
   nota fiscal saíram deste backlog por exigirem escopo próprio — 
   registrados em arquivo separado.
+
+---
+
+> Desenho de UI/UX do card 'Pessoas com Documentos': specs/design/pessoas-com-documentos-uiux.md
+
