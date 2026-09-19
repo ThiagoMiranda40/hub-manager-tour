@@ -27,15 +27,30 @@ import {
   CheckCheck,
   RotateCcw,
   Share2,
+  ChevronDown,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
   computeShowProgress,
@@ -51,6 +66,13 @@ import {
   buildWhatsAppLink,
   buildRiderNegotiationWhatsAppMessage,
   sanitizeMessageText,
+  filterRiderItemsByStatus,
+  filterReimbursableDocs,
+  type ReimbursementFilter,
+  filterDocsByReimbursement,
+  type DocsFilter,
+  getCastMembersWithDocs,
+  filterDocsList,
   type ShowRequirement,
   type ShowRiderItem,
   type ShowRiderItemMessage,
@@ -127,6 +149,22 @@ function ShowDetail() {
   // Negociação de Exceção do Rider (RF-14 / T-17)
   const [producerReplyingItemId, setProducerReplyingItemId] = useState<string | null>(null);
   const [producerReplyTextMap, setProducerReplyTextMap] = useState<Record<string, string>>({});
+
+  // Filtro de Status do Rider (Backlog V1.1)
+  const [riderStatusFilter, setRiderStatusFilter] = useState<
+    "all" | "confirmed" | "exception" | "pending"
+  >("all");
+
+  // Filtro da Listagem de Reembolsos (Backlog V1.1)
+  const [reimbursementFilter, setReimbursementFilter] = useState<
+    "all" | "reimbursed" | "pending"
+  >("all");
+
+  // Filtro da Listagem de Documentos (Backlog V1.1)
+  const [docsFilter, setDocsFilter] = useState<"all" | "reimbursement">("all");
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [isMemberPopoverOpen, setIsMemberPopoverOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const { roles, docTypes } = useCatalog(!!session);
 
@@ -280,7 +318,13 @@ function ShowDetail() {
     prevVenueMsgCountRef.current = currentVenueMsgs.length;
   }, [riderItems]);
 
-  // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco
+  // Filtro de Status do Rider (Backlog V1.1)
+  const filteredRiderItems = useMemo(
+    () => filterRiderItemsByStatus(riderItems, riderStatusFilter),
+    [riderItems, riderStatusFilter],
+  );
+
+  // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco (sempre 100% dos itens)
   const stageRiderItems = useMemo(
     () => sortStageRiderItems(riderItems),
     [riderItems],
@@ -295,7 +339,31 @@ function ShowDetail() {
     return { conformed, divergent, unchecked };
   }, [riderItems]);
 
+  const filteredDocs = useMemo(
+    () => filterDocsList(docs, { docsFilter, selectedMemberId }),
+    [docs, docsFilter, selectedMemberId],
+  );
+
+  const membersWithDocs = useMemo(
+    () => getCastMembersWithDocs(cast, docs),
+    [cast, docs],
+  );
+
+  const selectedMember = useMemo(
+    () => (selectedMemberId ? cast.find((m) => m.id === selectedMemberId) : null),
+    [cast, selectedMemberId],
+  );
+
+  const selectedMemberDocsCount = useMemo(
+    () => (selectedMemberId ? docs.filter((d) => d.cast_member_id === selectedMemberId).length : 0),
+    [docs, selectedMemberId],
+  );
+
   const reimbursableDocs = useMemo(() => docs.filter((d) => d.is_reimbursement), [docs]);
+  const filteredReimbursableDocs = useMemo(
+    () => filterReimbursableDocs(reimbursableDocs, reimbursementFilter),
+    [reimbursableDocs, reimbursementFilter],
+  );
   const withAmount = useMemo(
     () => reimbursableDocs.filter((d) => d.amount != null),
     [reimbursableDocs],
@@ -1427,43 +1495,267 @@ function ShowDetail() {
              ───────────────────────────────────────────────────────────────── */}
           {activeTab === "docs" ? (
             <div className="mt-6 space-y-6">
-              {/* Resumo de Documentação */}
+              {/* Resumo de Documentação com Filtros Clicáveis (Backlog V1.1) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Documentos Recebidos</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedMemberId(null);
+                    setDocsFilter("all");
+                  }}
+                  title={
+                    docsFilter === "all" && !selectedMemberId
+                      ? "Exibindo todos os documentos"
+                      : "Filtrar por todos os documentos"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    docsFilter === "all" && !selectedMemberId
+                      ? "ring-2 ring-primary/80 border-primary/50 shadow-sm"
+                      : "border-line hover:border-foreground/30 hover:bg-accent/20",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Documentos Recebidos</span>
+                    {docsFilter === "all" && !selectedMemberId ? (
+                      <span className="text-[0.625rem] text-primary font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold">{docs.length}</div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     de {cast.length} integrantes
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Pessoas com Documentos</div>
-                  <div className="mt-2 text-3xl font-semibold text-ok">
-                    {progress.peopleWithDocs}
-                  </div>
-                  <div className="mt-1 font-mono text-xs text-muted-foreground">
-                    ao menos 1 arquivo entregue
-                  </div>
-                </div>
+                {(() => {
+                  const memberFilterListContent = (
+                    <div>
+                      <div className="p-3 border-b border-line flex items-center justify-between">
+                        <span className="label-mono font-semibold text-xs text-foreground">
+                          Filtrar por integrante ({membersWithDocs.length})
+                        </span>
+                      </div>
+                      <div className="max-h-72 overflow-y-auto divide-y divide-line/40">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedMemberId(null);
+                            setDocsFilter("all");
+                            setIsMemberPopoverOpen(false);
+                          }}
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-left flex items-center justify-between hover:bg-accent/30 transition-colors min-h-[44px] cursor-pointer",
+                            selectedMemberId === null && "bg-accent/20",
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Users className="size-4 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground">
+                              Todos os integrantes
+                            </span>
+                          </div>
+                          {selectedMemberId === null ? (
+                            <Check className="size-4 text-primary" />
+                          ) : null}
+                        </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Comprovantes de Reembolso</div>
+                        {membersWithDocs.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedMemberId(m.id);
+                              setDocsFilter("all");
+                              setIsMemberPopoverOpen(false);
+                            }}
+                            className={cn(
+                              "w-full px-3.5 py-2.5 text-left flex items-center justify-between hover:bg-accent/30 transition-colors min-h-[44px] cursor-pointer",
+                              selectedMemberId === m.id && "bg-emerald-500/10",
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="size-7 rounded-full bg-accent/60 flex items-center justify-center text-xs font-mono font-bold shrink-0">
+                                {initials(m.name)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">
+                                  {m.name}
+                                </div>
+                                <div className="font-mono text-xs text-muted-foreground truncate">
+                                  {labelFrom(roles, m.role)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="font-mono text-xs text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-md">
+                                {m.docsCount} {m.docsCount === 1 ? "doc" : "docs"}
+                              </span>
+                              {selectedMemberId === m.id ? (
+                                <Check className="size-4 text-emerald-500" />
+                              ) : null}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+
+                  const cardTrigger = (
+                    <button
+                      type="button"
+                      disabled={progress.peopleWithDocs === 0}
+                      aria-haspopup="listbox"
+                      aria-expanded={isMemberPopoverOpen}
+                      title={
+                        progress.peopleWithDocs === 0
+                          ? "Nenhum integrante enviou arquivos ainda"
+                          : selectedMemberId
+                            ? `Filtrado por ${selectedMember?.name}. Clique para trocar.`
+                            : "Filtrar por integrante com documentos"
+                      }
+                      className={cn(
+                        "p-4 rounded-xl bg-card text-left transition-all border active:scale-[0.98] w-full",
+                        progress.peopleWithDocs === 0
+                          ? "border-line opacity-50 cursor-not-allowed"
+                          : selectedMemberId
+                            ? "ring-2 ring-emerald-500/80 border-emerald-500/50 bg-emerald-500/[0.04] shadow-sm cursor-pointer"
+                            : "border-line hover:border-foreground/30 hover:bg-accent/20 cursor-pointer",
+                      )}
+                    >
+                      <div className="label-mono text-muted-foreground flex items-center justify-between">
+                        <span>Pessoas com Documentos</span>
+                        {selectedMemberId ? (
+                          <span className="text-[0.625rem] text-emerald-500 font-bold truncate max-w-[120px]">
+                            ● {selectedMember?.name ?? "Ativo"}
+                          </span>
+                        ) : (
+                          <ChevronDown
+                            className={cn(
+                              "size-3.5 text-muted-foreground transition-transform duration-180",
+                              isMemberPopoverOpen && "rotate-180",
+                            )}
+                          />
+                        )}
+                      </div>
+                      <div className="mt-2 text-3xl font-semibold text-ok">
+                        {selectedMemberId ? selectedMemberDocsCount : progress.peopleWithDocs}
+                      </div>
+                      <div className="mt-1 font-mono text-xs text-muted-foreground flex items-center justify-between">
+                        <span>
+                          {selectedMemberId
+                            ? `docs de ${selectedMember?.name}`
+                            : "ao menos 1 arquivo entregue"}
+                        </span>
+                        {selectedMemberId ? (
+                          <ChevronDown
+                            className={cn(
+                              "size-3 text-emerald-500/70 transition-transform duration-180",
+                              isMemberPopoverOpen && "rotate-180",
+                            )}
+                          />
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+
+                  if (isMobile) {
+                    return (
+                      <Sheet open={isMemberPopoverOpen} onOpenChange={setIsMemberPopoverOpen}>
+                        <SheetTrigger asChild>{cardTrigger}</SheetTrigger>
+                        <SheetContent
+                          side="bottom"
+                          className="p-0 rounded-t-2xl max-h-[80vh] overflow-hidden bg-card border-line"
+                        >
+                          <SheetHeader className="p-4 border-b border-line text-left">
+                            <SheetTitle className="text-base font-semibold">
+                              Filtrar por integrante
+                            </SheetTitle>
+                            <SheetDescription className="text-xs text-muted-foreground">
+                              Selecione um integrante para visualizar apenas seus documentos
+                            </SheetDescription>
+                          </SheetHeader>
+                          <div className="max-h-[60vh] overflow-y-auto">
+                            {memberFilterListContent}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
+                    );
+                  }
+
+                  return (
+                    <Popover open={isMemberPopoverOpen} onOpenChange={setIsMemberPopoverOpen}>
+                      <PopoverTrigger asChild>{cardTrigger}</PopoverTrigger>
+                      <PopoverContent
+                        align="center"
+                        className="w-80 p-0 rounded-xl bg-card border-line shadow-lg overflow-hidden"
+                      >
+                        {memberFilterListContent}
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedMemberId(null);
+                    setDocsFilter((curr) =>
+                      curr === "reimbursement" ? "all" : "reimbursement",
+                    );
+                  }}
+                  title={
+                    docsFilter === "reimbursement" && !selectedMemberId
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por documentos para reembolso"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    docsFilter === "reimbursement" && !selectedMemberId
+                      ? "ring-2 ring-[#9184d9]/80 border-[#9184d9] bg-[#9184d9]/[0.04] shadow-sm"
+                      : "border-line hover:border-[#9184d9]/40 hover:bg-[#9184d9]/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Documentos para Reembolso</span>
+                    {docsFilter === "reimbursement" && !selectedMemberId ? (
+                      <span className="text-[0.625rem] text-[#9184d9] font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-[#9184d9]">
                     {reimbursableDocs.length}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     soma: {formatBRL(totalAmount)}
                   </div>
-                </div>
+                </button>
               </div>
 
               {/* Lista dos Documentos */}
               <div className="border border-line rounded-xl overflow-hidden bg-card">
-                <div className="border-b border-line px-5 py-3.5 bg-accent/20">
-                  <span className="label-mono font-medium text-foreground">
-                    Lista de Comprovantes e Vouchers ({docs.length})
-                  </span>
+                <div className="border-b border-line px-5 py-3.5 bg-accent/20 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="label-mono font-medium text-foreground">
+                      Lista de Comprovantes e Vouchers ({filteredDocs.length}
+                      {selectedMemberId
+                        ? ` de ${docs.length} — ${selectedMember?.name ?? "Integrante"}`
+                        : docsFilter !== "all"
+                          ? ` de ${docs.length}`
+                          : ""}
+                      )
+                    </span>
+                    {selectedMemberId || docsFilter !== "all" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberId(null);
+                          setDocsFilter("all");
+                        }}
+                        className="font-mono text-[0.6875rem] text-primary hover:underline cursor-pointer"
+                      >
+                        Limpar filtro ✕
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 {docs.length === 0 ? (
@@ -1483,9 +1775,22 @@ function ShowDetail() {
                       <Smartphone className="size-3.5" /> Ver Links do Elenco
                     </button>
                   </div>
+                ) : filteredDocs.length === 0 ? (
+                  <div className="p-10 text-center flex flex-col items-center">
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                      Nenhum documento com o filtro selecionado
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setDocsFilter("all")}
+                      className="mt-3 font-mono text-xs text-primary underline cursor-pointer"
+                    >
+                      Mostrar todos os documentos ({docs.length})
+                    </button>
+                  </div>
                 ) : (
                   <div className="divide-y divide-line">
-                    {docs.map((d) => {
+                    {filteredDocs.map((d) => {
                       const member = cast.find((m) => m.id === d.cast_member_id);
                       return (
                         <div
@@ -1549,17 +1854,55 @@ function ShowDetail() {
              ───────────────────────────────────────────────────────────────── */}
           {activeTab === "rider" ? (
             <div className="mt-6 space-y-6">
-              {/* Balanço do Rider Técnico (Motor G3) */}
+              {/* Balanço do Rider Técnico (Motor G3 com Filtros Clicáveis) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Total de Itens</div>
+                <button
+                  type="button"
+                  onClick={() => setRiderStatusFilter("all")}
+                  title={
+                    riderStatusFilter === "all"
+                      ? "Exibindo todos os itens"
+                      : "Filtrar por todos os itens"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "all"
+                      ? "ring-2 ring-primary/80 border-primary/50 shadow-sm"
+                      : "border-line hover:border-foreground/30 hover:bg-accent/20",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Total de Itens</span>
+                    {riderStatusFilter === "all" ? (
+                      <span className="text-[0.625rem] text-primary font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold">{riderBalance.total}</div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">especificados</div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-emerald-600 dark:text-emerald-400">
-                    Confirmados
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRiderStatusFilter((curr) => (curr === "confirmed" ? "all" : "confirmed"))
+                  }
+                  title={
+                    riderStatusFilter === "confirmed"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por itens confirmados"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "confirmed"
+                      ? "ring-2 ring-emerald-500/80 border-emerald-500 bg-emerald-500/[0.04] shadow-sm"
+                      : "border-line hover:border-emerald-500/40 hover:bg-emerald-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
+                    <span>Confirmados</span>
+                    {riderStatusFilter === "confirmed" ? (
+                      <span className="text-[0.625rem] text-emerald-500 font-bold">● Ativo</span>
+                    ) : null}
                   </div>
                   <div className="mt-2 text-3xl font-semibold text-ok">
                     {riderBalance.confirmed}
@@ -1572,25 +1915,67 @@ function ShowDetail() {
                       </span>
                     ) : null}
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-purple-600 dark:text-purple-400">Exceções</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRiderStatusFilter((curr) => (curr === "exception" ? "all" : "exception"))
+                  }
+                  title={
+                    riderStatusFilter === "exception"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por exceções sugeridas"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "exception"
+                      ? "ring-2 ring-purple-500/80 border-purple-500 bg-purple-500/[0.04] shadow-sm"
+                      : "border-line hover:border-purple-500/40 hover:bg-purple-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-purple-600 dark:text-purple-400 flex items-center justify-between">
+                    <span>Exceções</span>
+                    {riderStatusFilter === "exception" ? (
+                      <span className="text-[0.625rem] text-purple-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-purple-500">
                     {riderBalance.exceptions}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     alternativas sugeridas
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-amber-600 dark:text-amber-400">Pendentes</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRiderStatusFilter((curr) => (curr === "pending" ? "all" : "pending"))
+                  }
+                  title={
+                    riderStatusFilter === "pending"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por itens pendentes"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    riderStatusFilter === "pending"
+                      ? "ring-2 ring-amber-500/80 border-amber-500 bg-amber-500/[0.04] shadow-sm"
+                      : "border-line hover:border-amber-500/40 hover:bg-amber-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-amber-600 dark:text-amber-400 flex items-center justify-between">
+                    <span>Pendentes</span>
+                    {riderStatusFilter === "pending" ? (
+                      <span className="text-[0.625rem] text-amber-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-amber-500">
                     {riderBalance.pending}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">aguardando casa</div>
-                </div>
+                </button>
               </div>
 
               {/* Botão de Compartilhar Rider com a Casa */}
@@ -1632,7 +2017,11 @@ function ShowDetail() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="label-mono font-medium text-foreground">
-                    Itens de Palco e Camarim ({riderItems.length})
+                    Itens de Palco e Camarim (
+                    {isStageMode
+                      ? riderItems.length
+                      : `${filteredRiderItems.length}${riderStatusFilter !== "all" ? ` de ${riderItems.length}` : ""}`}
+                    )
                   </span>
                   {stageStats.conformed > 0 ? (
                     <span className="font-mono text-[0.6875rem] text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full font-medium">
@@ -1957,10 +2346,20 @@ function ShowDetail() {
               ) : (
                 /* Lista Padrão dos Itens do Rider do Show */
                 <div className="border border-line rounded-xl overflow-hidden bg-card">
-                  <div className="border-b border-line px-5 py-3.5 bg-accent/20">
+                  <div className="border-b border-line px-5 py-3.5 bg-accent/20 flex items-center justify-between">
                     <span className="label-mono font-medium text-foreground">
-                      Itens de Palco e Camarim ({riderItems.length})
+                      Itens de Palco e Camarim ({filteredRiderItems.length}
+                      {riderStatusFilter !== "all" ? ` de ${riderItems.length}` : ""})
                     </span>
+                    {riderStatusFilter !== "all" ? (
+                      <button
+                        type="button"
+                        onClick={() => setRiderStatusFilter("all")}
+                        className="font-mono text-[0.6875rem] text-primary hover:underline cursor-pointer"
+                      >
+                        Limpar filtro ✕
+                      </button>
+                    ) : null}
                   </div>
 
                   {riderItems.length === 0 ? (
@@ -1985,9 +2384,22 @@ function ShowDetail() {
                           : "Clonar Rider Padrão do Artista Agora"}
                       </button>
                     </div>
+                  ) : filteredRiderItems.length === 0 ? (
+                    <div className="p-10 text-center flex flex-col items-center">
+                      <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                        Nenhum item com o status selecionado
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setRiderStatusFilter("all")}
+                        className="mt-3 font-mono text-xs text-primary underline cursor-pointer"
+                      >
+                        Mostrar todos os itens ({riderItems.length})
+                      </button>
+                    </div>
                   ) : (
                     <div className="divide-y divide-line">
-                      {riderItems.map((item) => {
+                      {filteredRiderItems.map((item) => {
                         const isConfirmed = item.status === "confirmed";
                         const isAcceptedWithException = item.status === "accepted_with_exception";
                         const hasMessages = Boolean(item.messages && item.messages.length > 0);
@@ -2286,35 +2698,96 @@ function ShowDetail() {
              ───────────────────────────────────────────────────────────────── */}
           {activeTab === "reimbursements" ? (
             <div className="mt-6 space-y-6">
-              {/* Cards de Métricas Financeiras */}
+              {/* Cards de Métricas Financeiras com Filtros Clicáveis (Backlog V1.1) */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Comprovantes</div>
+                <button
+                  type="button"
+                  onClick={() => setReimbursementFilter("all")}
+                  title={
+                    reimbursementFilter === "all"
+                      ? "Exibindo todas as solicitações"
+                      : "Filtrar por todas as solicitações"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    reimbursementFilter === "all"
+                      ? "ring-2 ring-primary/80 border-primary/50 shadow-sm"
+                      : "border-line hover:border-foreground/30 hover:bg-accent/20",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Comprovantes</span>
+                    {reimbursementFilter === "all" ? (
+                      <span className="text-[0.625rem] text-primary font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold">{reimbursableDocs.length}</div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     solicitações enviadas
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-ok">Reembolsados (Pagos)</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReimbursementFilter((curr) => (curr === "reimbursed" ? "all" : "reimbursed"))
+                  }
+                  title={
+                    reimbursementFilter === "reimbursed"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por comprovantes reembolsados"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    reimbursementFilter === "reimbursed"
+                      ? "ring-2 ring-emerald-500/80 border-emerald-500 bg-emerald-500/[0.04] shadow-sm"
+                      : "border-line hover:border-emerald-500/40 hover:bg-emerald-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-ok flex items-center justify-between">
+                    <span>Reembolsados (Pagos)</span>
+                    {reimbursementFilter === "reimbursed" ? (
+                      <span className="text-[0.625rem] text-emerald-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-ok">
                     {formatBRL(totalReimbursedAmount)}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     {reimbursedDocs.length} liquidados
                   </div>
-                </div>
+                </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-amber-500">Pendentes de Reembolso</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReimbursementFilter((curr) => (curr === "pending" ? "all" : "pending"))
+                  }
+                  title={
+                    reimbursementFilter === "pending"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por reembolsos pendentes"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    reimbursementFilter === "pending"
+                      ? "ring-2 ring-amber-500/80 border-amber-500 bg-amber-500/[0.04] shadow-sm"
+                      : "border-line hover:border-amber-500/40 hover:bg-amber-500/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-amber-500 flex items-center justify-between">
+                    <span>Pendentes de Reembolso</span>
+                    {reimbursementFilter === "pending" ? (
+                      <span className="text-[0.625rem] text-amber-500 font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-amber-500">
                     {formatBRL(totalPendingReimbursementAmount)}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     {pendingReimbursementDocs.length} a pagar
                   </div>
-                </div>
+                </button>
 
                 <div className="border border-line p-4 rounded-xl bg-card">
                   <div className="label-mono text-muted-foreground">Total Declarado</div>
@@ -2328,10 +2801,22 @@ function ShowDetail() {
               {/* Tabela de Reembolsos Operacionais com Pix (RF-05 / TC-05.1) */}
               <div className="border border-line rounded-xl overflow-hidden bg-card">
                 <div className="border-b border-line px-5 py-3.5 bg-accent/20 flex items-center justify-between">
-                  <span className="label-mono font-medium text-foreground">
-                    Listagem de Reembolsos e Chaves Pix ({reimbursableDocs.length})
-                  </span>
-                  <span className="font-mono text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3">
+                    <span className="label-mono font-medium text-foreground">
+                      Listagem de Reembolsos e Chaves Pix ({filteredReimbursableDocs.length}
+                      {reimbursementFilter !== "all" ? ` de ${reimbursableDocs.length}` : ""})
+                    </span>
+                    {reimbursementFilter !== "all" ? (
+                      <button
+                        type="button"
+                        onClick={() => setReimbursementFilter("all")}
+                        className="font-mono text-[0.6875rem] text-primary hover:underline cursor-pointer"
+                      >
+                        Limpar filtro ✕
+                      </button>
+                    ) : null}
+                  </div>
+                  <span className="font-mono text-xs text-muted-foreground hidden sm:inline">
                     Copie a chave Pix em 1 toque e marque como reembolsado
                   </span>
                 </div>
@@ -2347,9 +2832,22 @@ function ShowDetail() {
                       reembolso&rdquo;, eles aparecerão aqui com valor e chave Pix.
                     </p>
                   </div>
+                ) : filteredReimbursableDocs.length === 0 ? (
+                  <div className="p-10 text-center flex flex-col items-center">
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                      Nenhum reembolso com o status selecionado
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setReimbursementFilter("all")}
+                      className="mt-3 font-mono text-xs text-primary underline cursor-pointer"
+                    >
+                      Mostrar todas as solicitações ({reimbursableDocs.length})
+                    </button>
+                  </div>
                 ) : (
                   <div className="divide-y divide-line">
-                    {reimbursableDocs.map((d) => {
+                    {filteredReimbursableDocs.map((d) => {
                       const member = cast.find((m) => m.id === d.cast_member_id);
                       const person = member ? getPersonForMember(member) : null;
                       const hasPix = Boolean(person?.pix_key);

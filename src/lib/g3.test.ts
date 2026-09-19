@@ -17,6 +17,11 @@ import {
   buildRiderNegotiationWhatsAppMessage,
   sanitizeMessageText,
   validateRiderMessageAntiAbuse,
+  filterRiderItemsByStatus,
+  filterReimbursableDocs,
+  filterDocsByReimbursement,
+  getCastMembersWithDocs,
+  filterDocsList,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -915,5 +920,229 @@ describe("RF-14: Negociação de Exceção do Rider Técnico e Reabertura (T-17 
     expect(sanitizeMessageText("")).toBe("");
   });
 });
+
+describe("Filtros Clicáveis do Rider Técnico (Backlog V1.1)", () => {
+  const sampleItems: ShowRiderItem[] = [
+    { id: "1", item_name: "Microfone Shure", status: "confirmed" },
+    { id: "2", item_name: "Bateria Pearl", status: "accepted_with_exception" },
+    { id: "3", item_name: "Amplificador Ampeg", status: "exception" },
+    { id: "4", item_name: "Direct Box Radial", status: "pending" },
+    { id: "5", item_name: "Pedestal Girafa", status: "" },
+  ];
+
+  it("filtro 'all' retorna todos os itens da lista", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "all");
+    expect(result).toHaveLength(5);
+    expect(result.map((i) => i.id)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("filtro 'confirmed' agrupa itens 'confirmed' e 'accepted_with_exception'", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "confirmed");
+    expect(result).toHaveLength(2);
+    expect(result.map((i) => i.id)).toEqual(["1", "2"]);
+  });
+
+  it("filtro 'exception' retorna apenas itens com status 'exception'", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "exception");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("3");
+  });
+
+  it("filtro 'pending' retorna itens com status 'pending' ou vazios/indefinidos", () => {
+    const result = filterRiderItemsByStatus(sampleItems, "pending");
+    expect(result).toHaveLength(2);
+    expect(result.map((i) => i.id)).toEqual(["4", "5"]);
+  });
+
+  it("retorna array vazio quando nenhum item corresponde ao filtro", () => {
+    const onlyConfirmed: ShowRiderItem[] = [
+      { id: "1", item_name: "Item OK", status: "confirmed" },
+    ];
+    expect(filterRiderItemsByStatus(onlyConfirmed, "exception")).toHaveLength(0);
+    expect(filterRiderItemsByStatus(onlyConfirmed, "pending")).toHaveLength(0);
+  });
+
+  it("garante que a lista do Modo Palco preserva 100% dos itens sem vazamento do filtro de status (segurança de uso)", () => {
+    // Simula os filtros que poderiam estar ativos na aba Rider
+    const filteredConfirmed = filterRiderItemsByStatus(sampleItems, "confirmed");
+    const filteredExceptions = filterRiderItemsByStatus(sampleItems, "exception");
+    const filteredPending = filterRiderItemsByStatus(sampleItems, "pending");
+
+    // As listas filtradas sofrem redução
+    expect(filteredConfirmed).toHaveLength(2);
+    expect(filteredExceptions).toHaveLength(1);
+    expect(filteredPending).toHaveLength(2);
+
+    // A conferência do Modo Palco (sortStageRiderItems) recebe riderItems integral e preserva todos os 5 itens
+    const stageItems = sortStageRiderItems(sampleItems);
+    expect(stageItems).toHaveLength(sampleItems.length);
+    expect(stageItems.map((i) => i.id).sort()).toEqual(sampleItems.map((i) => i.id).sort());
+  });
+});
+
+describe("filterReimbursableDocs (Filtros Clicáveis na Aba Reembolsos)", () => {
+  const sampleDocs = [
+    { id: "1", file_name: "Uber.pdf", is_reimbursed: true, amount: 45.5 },
+    { id: "2", file_name: "Almoco.jpg", is_reimbursed: false, amount: 82.0 },
+    { id: "3", file_name: "Estacionamento.png", is_reimbursed: null, amount: 30.0 },
+    { id: "4", file_name: "Cafe.pdf", amount: 15.0 }, // is_reimbursed ausente
+    { id: "5", file_name: "Jantar.jpg", is_reimbursed: true, amount: 120.0 },
+  ];
+
+  it("filtro 'all' retorna todos os comprovantes", () => {
+    const result = filterReimbursableDocs(sampleDocs, "all");
+    expect(result).toHaveLength(5);
+    expect(result.map((d) => d.id)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("filtro 'reimbursed' retorna apenas comprovantes onde is_reimbursed === true", () => {
+    const result = filterReimbursableDocs(sampleDocs, "reimbursed");
+    expect(result).toHaveLength(2);
+    expect(result.map((d) => d.id)).toEqual(["1", "5"]);
+  });
+
+  it("filtro 'pending' retorna comprovantes com is_reimbursed false, null ou ausente", () => {
+    const result = filterReimbursableDocs(sampleDocs, "pending");
+    expect(result).toHaveLength(3);
+    expect(result.map((d) => d.id)).toEqual(["2", "3", "4"]);
+  });
+
+  it("retorna array vazio quando nenhum comprovante corresponde ao filtro", () => {
+    const onlyReimbursed = [
+      { id: "1", is_reimbursed: true },
+      { id: "2", is_reimbursed: true },
+    ];
+    expect(filterReimbursableDocs(onlyReimbursed, "pending")).toHaveLength(0);
+
+    const onlyPending = [
+      { id: "3", is_reimbursed: false },
+      { id: "4", is_reimbursed: null },
+    ];
+    expect(filterReimbursableDocs(onlyPending, "reimbursed")).toHaveLength(0);
+  });
+});
+
+describe("filterDocsByReimbursement (Filtros Clicáveis na Aba Documentos)", () => {
+  const sampleDocs = [
+    { id: "1", file_name: "Passagem.pdf", is_reimbursement: false },
+    { id: "2", file_name: "Hotel.pdf", is_reimbursement: null },
+    { id: "3", file_name: "Uber.pdf", is_reimbursement: true },
+    { id: "4", file_name: "Almoco.jpg", is_reimbursement: true },
+    { id: "5", file_name: "Nota.pdf" }, // is_reimbursement ausente
+  ];
+
+  it("filtro 'all' retorna todos os documentos", () => {
+    const result = filterDocsByReimbursement(sampleDocs, "all");
+    expect(result).toHaveLength(5);
+    expect(result.map((d) => d.id)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("filtro 'reimbursement' retorna apenas documentos onde is_reimbursement é true", () => {
+    const result = filterDocsByReimbursement(sampleDocs, "reimbursement");
+    expect(result).toHaveLength(2);
+    expect(result.map((d) => d.id)).toEqual(["3", "4"]);
+  });
+
+  it("retorna array vazio quando nenhum documento é de reembolso", () => {
+    const withoutReimbursements = [
+      { id: "1", is_reimbursement: false },
+      { id: "2", is_reimbursement: null },
+    ];
+    expect(filterDocsByReimbursement(withoutReimbursements, "reimbursement")).toHaveLength(0);
+  });
+});
+
+describe("getCastMembersWithDocs (Agrupamento de documentos por pessoa)", () => {
+  const cast = [
+    { id: "m-1", name: "Zeca Silva", role: "role-1" },
+    { id: "m-2", name: "Ana Souza", role: "role-2" },
+    { id: "m-3", name: "Carlos Mello", role: "role-1" },
+  ];
+
+  it("agrupa documentos por integrante e inclui contagem de documentos", () => {
+    const docs = [
+      { id: "d-1", cast_member_id: "m-1" },
+      { id: "d-2", cast_member_id: "m-1" },
+      { id: "d-3", cast_member_id: "m-3" },
+    ];
+
+    const result = getCastMembersWithDocs(cast, docs);
+    // m-2 não tem documentos, então não deve constar
+    expect(result).toHaveLength(2);
+
+    // Deve vir ordenado alfabeticamente: Carlos antes de Zeca
+    expect(result[0]?.id).toBe("m-3");
+    expect(result[0]?.name).toBe("Carlos Mello");
+    expect(result[0]?.docsCount).toBe(1);
+
+    expect(result[1]?.id).toBe("m-1");
+    expect(result[1]?.name).toBe("Zeca Silva");
+    expect(result[1]?.docsCount).toBe(2);
+  });
+
+  it("caso peopleWithDocs === 0: retorna array vazio quando nenhum integrante tem documentos", () => {
+    const docs: { id: string; cast_member_id: string }[] = [];
+    const result = getCastMembersWithDocs(cast, docs);
+    expect(result).toHaveLength(0);
+  });
+
+  it("caso peopleWithDocs === 0: retorna array vazio quando o elenco está vazio", () => {
+    const docs = [{ id: "d-1", cast_member_id: "m-1" }];
+    const result = getCastMembersWithDocs([], docs);
+    expect(result).toHaveLength(0);
+  });
+
+  it("ignora documentos sem cast_member_id válido", () => {
+    const docs = [
+      { id: "d-1", cast_member_id: "" },
+      { id: "d-2", cast_member_id: null },
+      { id: "d-3", cast_member_id: "m-2" },
+    ];
+    const result = getCastMembersWithDocs(cast, docs);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("m-2");
+    expect(result[0]?.docsCount).toBe(1);
+  });
+});
+
+describe("filterDocsList (Exclusão Mútua entre Filtros na Aba Documentos)", () => {
+  const docs = [
+    { id: "d-1", cast_member_id: "m-1", is_reimbursement: false },
+    { id: "d-2", cast_member_id: "m-1", is_reimbursement: true },
+    { id: "d-3", cast_member_id: "m-2", is_reimbursement: true },
+    { id: "d-4", cast_member_id: "m-3", is_reimbursement: false },
+  ];
+
+  it("sem filtros ativos (selectedMemberId: null, docsFilter: 'all') retorna todos os documentos", () => {
+    const result = filterDocsList(docs, { selectedMemberId: null, docsFilter: "all" });
+    expect(result).toHaveLength(4);
+  });
+
+  it("filtro por pessoa selecionada retorna apenas documentos do integrante", () => {
+    const result = filterDocsList(docs, { selectedMemberId: "m-1", docsFilter: "all" });
+    expect(result).toHaveLength(2);
+    expect(result.map((d) => d.id)).toEqual(["d-1", "d-2"]);
+  });
+
+  it("filtro por reembolso retorna apenas comprovantes de reembolso quando nenhuma pessoa está selecionada", () => {
+    const result = filterDocsList(docs, { selectedMemberId: null, docsFilter: "reimbursement" });
+    expect(result).toHaveLength(2);
+    expect(result.map((d) => d.id)).toEqual(["d-2", "d-3"]);
+  });
+
+  it("garante exclusão mútua: se selectedMemberId estiver preenchido, o filtro por pessoa prevalece sobre reimbursement", () => {
+    // Mesmo se docsFilter for "reimbursement", ter selectedMemberId filtra estritamente pela pessoa
+    const result = filterDocsList(docs, { selectedMemberId: "m-1", docsFilter: "reimbursement" });
+    expect(result).toHaveLength(2);
+    expect(result.map((d) => d.id)).toEqual(["d-1", "d-2"]);
+  });
+
+  it("retorna array vazio quando o integrante selecionado não possui documentos", () => {
+    const result = filterDocsList(docs, { selectedMemberId: "m-99", docsFilter: "all" });
+    expect(result).toHaveLength(0);
+  });
+});
+
+
 
 

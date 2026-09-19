@@ -431,6 +431,129 @@ export function sortStageRiderItems<
   });
 }
 
+export type RiderStatusFilter = "all" | "confirmed" | "exception" | "pending";
+
+/**
+ * Filtra itens do rider conforme o filtro selecionado nos cards do rider:
+ * - "all": retorna todos os itens sem restrição.
+ * - "confirmed": agrupa confirmed e accepted_with_exception (alinhado com o card).
+ * - "exception": status "exception".
+ * - "pending": status "pending" ou status indefinido/vazio.
+ */
+export function filterRiderItemsByStatus(
+  items: ShowRiderItem[],
+  filter: RiderStatusFilter,
+): ShowRiderItem[] {
+  if (filter === "all") return items;
+  if (filter === "confirmed") {
+    return items.filter(
+      (i) => i.status === "confirmed" || i.status === "accepted_with_exception",
+    );
+  }
+  if (filter === "exception") {
+    return items.filter((i) => i.status === "exception");
+  }
+  if (filter === "pending") {
+    return items.filter((i) => i.status === "pending" || !i.status);
+  }
+  return items;
+}
+
+export type ReimbursementFilter = "all" | "reimbursed" | "pending";
+
+/**
+ * Filtra documentos de reembolso (RF-05 / Backlog V1.1)
+ * - "all": retorna todos os documentos
+ * - "reimbursed": is_reimbursed === true
+ * - "pending": is_reimbursed === false ou ausente/null/undefined
+ */
+export function filterReimbursableDocs<T extends { is_reimbursed?: boolean | null }>(
+  docs: T[],
+  filter: ReimbursementFilter,
+): T[] {
+  if (filter === "all") return docs;
+  if (filter === "reimbursed") {
+    return docs.filter((d) => d.is_reimbursed === true);
+  }
+  if (filter === "pending") {
+    return docs.filter((d) => !d.is_reimbursed);
+  }
+  return docs;
+}
+
+export type DocsFilter = "all" | "reimbursement";
+
+/**
+ * Filtra documentos recebidos na aba Documentos (Backlog V1.1)
+ * - "all": retorna todos os documentos
+ * - "reimbursement": apenas documentos com is_reimbursement === true
+ */
+export function filterDocsByReimbursement<T extends { is_reimbursement?: boolean | null }>(
+  docs: T[],
+  filter: DocsFilter,
+): T[] {
+  if (filter === "reimbursement") {
+    return docs.filter((d) => Boolean(d.is_reimbursement));
+  }
+  return docs;
+}
+
+export type CastMemberWithDocs = {
+  id: string;
+  name: string;
+  role?: string | null;
+  docsCount: number;
+};
+
+/**
+ * Agrupa integrantes do elenco que possuem ao menos 1 documento entregue no show.
+ * Retorna lista ordenada alfabeticamente pelo nome do integrante.
+ */
+export function getCastMembersWithDocs<
+  TMember extends { id: string; name: string; role?: string | null },
+  TDoc extends { cast_member_id?: string | null },
+>(cast: TMember[], docs: TDoc[]): (TMember & { docsCount: number })[] {
+  const countsByMember = new Map<string, number>();
+  for (const d of docs) {
+    if (d.cast_member_id) {
+      countsByMember.set(d.cast_member_id, (countsByMember.get(d.cast_member_id) ?? 0) + 1);
+    }
+  }
+
+  return cast
+    .filter((m) => (countsByMember.get(m.id) ?? 0) > 0)
+    .map((m) => ({
+      ...m,
+      docsCount: countsByMember.get(m.id) ?? 0,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+}
+
+/**
+ * Filtra documentos combinando as regras de filtro por pessoa OU reembolso (Backlog V1.1 / Decisão 2).
+ * Exclusão mútua: se selectedMemberId estiver ativo, filtra exclusivamente por aquele integrante.
+ * Se docsFilter === "reimbursement", filtra exclusivamente por documentos para reembolso.
+ * Caso contrário ("all" e sem membro selecionado), retorna a lista completa de documentos.
+ */
+export function filterDocsList<
+  TDoc extends { cast_member_id?: string | null; is_reimbursement?: boolean | null },
+>(
+  docs: TDoc[],
+  options: {
+    docsFilter?: DocsFilter;
+    selectedMemberId?: string | null;
+  },
+): TDoc[] {
+  if (options.selectedMemberId) {
+    return docs.filter((d) => d.cast_member_id === options.selectedMemberId);
+  }
+  if (options.docsFilter === "reimbursement") {
+    return docs.filter((d) => Boolean(d.is_reimbursement));
+  }
+  return docs;
+}
+
+
 /** Aplica presets de exigências em lote de forma estritamente idempotente */
 export function applyRequirementPreset(
   existingRequirements: ShowRequirement[],
