@@ -9,7 +9,7 @@
 - [CONCLUÍDO] Aumentar fonte no celular → resolvido em duas partes: correção de unidade (px → rem) + controle manual A-/A+ em 3 níveis (Opção B), disponível para produtor e rotas públicas.
 - [CONCLUÍDO] Tela de abertura animada (item adicional, fora da lista original, adicionado durante a execução).
 - Cores/contraste do Modo Palco
-- Cards do Rider como filtro clicável
+- [CONCLUÍDO] Cards do Rider como filtro clicável
 - Drag-and-drop de upload
 - Ajustar botões/badges em todos os dispositivos
 - Visualização em lista em Pessoas & Equipe
@@ -17,9 +17,14 @@
 - Revisão geral da interface mobile (passada final, depois dos demais)
 
 ## Grande aposta (alto impacto, alto esforço) — priorizar, mas planejar bem
-- Área de transparência de roadmap — construir v1 enxuta primeiro 
-  (lista estática editada só por Thiago, sem votação/interação do 
-  usuário), sofisticar depois se fizer sentido
+- RF-15 — Central de Conteúdo e Administração (rascunho, ainda não 
+  formalizado com critério de aceite completo): consolida em uma 
+  única funcionalidade o tutorial (texto + vídeo via link/embed do 
+  Panda Vídeo, sem upload de arquivo), o changelog/roadmap de 
+  novidades, e o canal de feedback (bug/sugestão) com notificação 
+  por e-mail para contato@triadetecnologiaesolucoes.com.br. Acesso 
+  de administrador restrito por e-mail via variável de ambiente 
+  (ADMIN_EMAIL), sem sistema de papéis completo nesta fase.
 - Rider do show precisa refletir atualizações feitas depois no rider 
   padrão do artista
 - Editar rider de um show específico sem alterar o rider padrão do 
@@ -27,6 +32,17 @@
 - Sininho de notificações não lidas no menu
 - Suporte offline real (IndexedDB) para o Modo Palco
 - Área de admin do sistema (Tríade)
+- Upload de comprovante de pagamento na aba Reembolsos: ao marcar 
+  um reembolso como pago, permitir ao produtor anexar o comprovante 
+  do Pix realizado (guardado junto ao registro), com possibilidade 
+  de a marcação de 'reembolsado' acontecer automaticamente ao subir 
+  o arquivo, em vez de (ou além de) alternar manualmente o switch 
+  atual. Esforço médio (reaproveita padrão de upload já existente 
+  no sistema, sem rota pública envolvida) — próximo candidato 
+  depois do RF-15. Precisa de definição de produto antes do desenho 
+  técnico: onde o comprovante fica armazenado, se o upload é 
+  obrigatório ou complementar ao toggle manual, e se a marcação 
+  automática é definitiva ou ainda passa por confirmação.
 
 ## Preenchimento (baixo impacto, baixo esforço) — fazer quando sobrar tempo
 - Melhorar mecanismo de busca da Agenda
