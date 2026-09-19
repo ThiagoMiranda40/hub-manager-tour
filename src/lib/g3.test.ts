@@ -22,6 +22,7 @@ import {
   filterDocsByReimbursement,
   getCastMembersWithDocs,
   filterDocsList,
+  filterByPhysicalCheck,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -1142,6 +1143,75 @@ describe("filterDocsList (Exclusão Mútua entre Filtros na Aba Documentos)", ()
     expect(result).toHaveLength(0);
   });
 });
+
+describe("filterByPhysicalCheck (Filtros Nativos do Modo Palco)", () => {
+  const sampleItems = [
+    { id: "1", item_name: "Microfone SM58", physical_check: "unchecked" },
+    { id: "2", item_name: "Cabo XLR", physical_check: null },
+    { id: "3", item_name: "Pedestal Girafa" }, // undefined
+    { id: "4", item_name: "Amplificador Baixo", physical_check: "conformed" },
+    { id: "5", item_name: "Monitor de Chão", physical_check: "divergent" },
+  ];
+
+  it("filtro 'all' retorna todos os itens", () => {
+    const result = filterByPhysicalCheck(sampleItems, "all");
+    expect(result).toHaveLength(5);
+  });
+
+  it("filtro 'unchecked' cobre BVA: 'unchecked' explícito, null e undefined", () => {
+    const result = filterByPhysicalCheck(sampleItems, "unchecked");
+    expect(result).toHaveLength(3);
+    expect(result.map((i) => i.id)).toEqual(["1", "2", "3"]);
+  });
+
+  it("filtro 'conformed' retorna apenas itens conformes", () => {
+    const result = filterByPhysicalCheck(sampleItems, "conformed");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("4");
+    expect(result[0]?.item_name).toBe("Amplificador Baixo");
+  });
+
+  it("filtro 'divergent' retorna apenas itens com divergência", () => {
+    const result = filterByPhysicalCheck(sampleItems, "divergent");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("5");
+    expect(result[0]?.item_name).toBe("Monitor de Chão");
+  });
+
+  it("retorna array vazio quando nenhum item corresponde ao filtro", () => {
+    const onlyConformed = [{ id: "1", physical_check: "conformed" }];
+    expect(filterByPhysicalCheck(onlyConformed, "divergent")).toHaveLength(0);
+    expect(filterByPhysicalCheck(onlyConformed, "unchecked")).toHaveLength(0);
+  });
+});
+
+describe("Combinação de Filtros do Modo Palco (Status da Casa + Conferência Física)", () => {
+  const stageItems: ShowRiderItem[] = [
+    { id: "1", status: "confirmed", physical_check: "unchecked" },
+    { id: "2", status: "confirmed", physical_check: "conformed" },
+    { id: "3", status: "exception", physical_check: "divergent" },
+    { id: "4", status: "pending", physical_check: "unchecked" },
+  ];
+
+  it("combina status 'confirmed' com physical_check 'unchecked'", () => {
+    const byStatus = filterRiderItemsByStatus(stageItems, "confirmed");
+    const combined = filterByPhysicalCheck(byStatus, "unchecked");
+    expect(combined).toHaveLength(1);
+    expect(combined[0]?.id).toBe("1");
+  });
+
+  it("interseção vazia com pendências reais: retorna array vazio quando a combinação não tem itens", () => {
+    // Exceções da casa com status físico "unchecked" (não há nenhum, o item 3 já é divergent)
+    const byStatus = filterRiderItemsByStatus(stageItems, "exception");
+    const combined = filterByPhysicalCheck(byStatus, "unchecked");
+    expect(combined).toHaveLength(0);
+
+    // No entanto, ainda existem itens "unchecked" globais no rider (itens 1 e 4)
+    const globalUnchecked = filterByPhysicalCheck(stageItems, "unchecked");
+    expect(globalUnchecked).toHaveLength(2);
+  });
+});
+
 
 
 

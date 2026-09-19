@@ -67,6 +67,9 @@ import {
   buildRiderNegotiationWhatsAppMessage,
   sanitizeMessageText,
   filterRiderItemsByStatus,
+  type RiderStatusFilter,
+  filterByPhysicalCheck,
+  type PhysicalCheckFilter,
   filterReimbursableDocs,
   type ReimbursementFilter,
   filterDocsByReimbursement,
@@ -145,6 +148,16 @@ function ShowDetail() {
   const [isStageMode, setIsStageMode] = useState(false);
   const [divergenceNoteEditingId, setDivergenceNoteEditingId] = useState<string | null>(null);
   const [divergenceNoteText, setDivergenceNoteText] = useState("");
+  const [stagePhysicalFilter, setStagePhysicalFilter] = useState<PhysicalCheckFilter>("all");
+  const [stageStatusFilter, setStageStatusFilter] = useState<RiderStatusFilter>("all");
+
+  // Reset de segurança (Heurística 5): nunca persistir filtros entre sessões do Modo Palco
+  useEffect(() => {
+    if (isStageMode) {
+      setStagePhysicalFilter("all");
+      setStageStatusFilter("all");
+    }
+  }, [isStageMode]);
 
   // Negociação de Exceção do Rider (RF-14 / T-17)
   const [producerReplyingItemId, setProducerReplyingItemId] = useState<string | null>(null);
@@ -324,11 +337,12 @@ function ShowDetail() {
     [riderItems, riderStatusFilter],
   );
 
-  // Modo Palco (RF-08 & RF-11): Itens ordenados para auditoria física no palco (sempre 100% dos itens)
-  const stageRiderItems = useMemo(
-    () => sortStageRiderItems(riderItems),
-    [riderItems],
-  );
+  // Modo Palco (RF-08 & RF-11): Itens com filtros nativos combinados e ordenados para auditoria física no palco
+  const stageRiderItems = useMemo(() => {
+    const byStatus = filterRiderItemsByStatus(riderItems, stageStatusFilter);
+    const byPhysical = filterByPhysicalCheck(byStatus, stagePhysicalFilter);
+    return sortStageRiderItems(byPhysical);
+  }, [riderItems, stageStatusFilter, stagePhysicalFilter]);
 
   const stageStats = useMemo(() => {
     const conformed = riderItems.filter((i) => i.physical_check === "conformed").length;
@@ -336,7 +350,7 @@ function ShowDetail() {
     const unchecked = riderItems.filter(
       (i) => !i.physical_check || i.physical_check === "unchecked",
     ).length;
-    return { conformed, divergent, unchecked };
+    return { conformed, divergent, unchecked, total: riderItems.length };
   }, [riderItems]);
 
   const filteredDocs = useMemo(
@@ -2019,7 +2033,7 @@ function ShowDetail() {
                   <span className="label-mono font-medium text-foreground">
                     Itens de Palco e Camarim (
                     {isStageMode
-                      ? riderItems.length
+                      ? `${stageRiderItems.length}${stagePhysicalFilter !== "all" || stageStatusFilter !== "all" ? ` de ${riderItems.length}` : ""}`
                       : `${filteredRiderItems.length}${riderStatusFilter !== "all" ? ` de ${riderItems.length}` : ""}`}
                     )
                   </span>
@@ -2058,44 +2072,236 @@ function ShowDetail() {
                    Cards amplos, contraste para luz baixa, botões ≥ 48px
                    ───────────────────────────────────────────────────────────── */
                 <div className="space-y-4">
-                  {/* Painel do Modo Palco */}
-                  <div className="p-4 sm:p-5 rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-100 shadow-md">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="size-2.5 rounded-full bg-[#9184d9] animate-pulse" />
-                          <h4 className="font-bold text-sm sm:text-base text-white tracking-wide">
-                            Modo Palco · Conferência Física Presencial
-                          </h4>
-                        </div>
-                        <p className="mt-1 text-xs text-zinc-400">
-                          Interface otimizada para iluminação baixa e toque amplo de polegar no smartphone (≥ 48px).
-                          Audite o equipamento entregue no palco antes da passagem de som.
-                        </p>
+                  {/* Painel do Modo Palco com Filtros Nativos */}
+                  <div className="p-4 sm:p-5 rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-100 shadow-md space-y-3.5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-full bg-[#9184d9] animate-pulse" />
+                        <h4 className="font-bold text-sm sm:text-base text-white tracking-wide">
+                          Modo Palco · Conferência Física Presencial
+                        </h4>
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-400">
+                        Interface otimizada para iluminação baixa e toque amplo de polegar no smartphone (≥ 48px).
+                        Audite o equipamento entregue no palco antes da passagem de som.
+                      </p>
+                    </div>
+
+                    {/* Linha 1 (primária): Conferência no Palco */}
+                    <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-zinc-400 font-semibold">
+                          Conferência no Palco (Filtro Primário)
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Pílula: Todos */}
+                        <button
+                          type="button"
+                          onClick={() => setStagePhysicalFilter("all")}
+                          className={cn(
+                            "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
+                            stagePhysicalFilter === "all"
+                              ? "bg-zinc-800 text-white ring-2 ring-primary border border-zinc-600 shadow-sm"
+                              : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-850 hover:text-white",
+                          )}
+                        >
+                          {stagePhysicalFilter === "all" ? (
+                            <span className="size-2 rounded-full bg-primary" />
+                          ) : null}
+                          <span>Todos ({stageStats.total})</span>
+                        </button>
+
+                        {/* Pílula: A conferir */}
+                        <button
+                          type="button"
+                          onClick={() => setStagePhysicalFilter("unchecked")}
+                          className={cn(
+                            "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
+                            stagePhysicalFilter === "unchecked"
+                              ? "bg-zinc-900 text-emerald-300 ring-2 ring-emerald-400 border border-emerald-500/50 shadow-sm"
+                              : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-850 hover:text-white",
+                          )}
+                        >
+                          <span className="size-2 rounded-full bg-emerald-400" />
+                          <span>{stageStats.unchecked} a conferir</span>
+                        </button>
+
+                        {/* Pílula: Conformes / OK */}
+                        <button
+                          type="button"
+                          onClick={() => setStagePhysicalFilter("conformed")}
+                          className={cn(
+                            "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
+                            stagePhysicalFilter === "conformed"
+                              ? "bg-emerald-950/90 text-emerald-300 ring-2 ring-emerald-500 border border-emerald-500/70 font-bold shadow-sm"
+                              : "bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/60",
+                          )}
+                        >
+                          <CheckCircle2 className="size-3.5 text-emerald-400" />
+                          <span>{stageStats.conformed} OK</span>
+                        </button>
+
+                        {/* Pílula: Divergências */}
+                        <button
+                          type="button"
+                          onClick={() => setStagePhysicalFilter("divergent")}
+                          className={cn(
+                            "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
+                            stagePhysicalFilter === "divergent"
+                              ? "bg-amber-950/90 text-amber-300 ring-2 ring-amber-500 border border-amber-500/70 font-bold shadow-sm"
+                              : "bg-amber-950/40 border border-amber-500/30 text-amber-400 hover:bg-amber-950/60",
+                          )}
+                        >
+                          <AlertTriangle className="size-3.5 text-amber-400" />
+                          <span>{stageStats.divergent} Diverg.{stageStats.divergent === 1 ? "" : "s"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Linha 2 (secundária): Status da Casa */}
+                    <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-zinc-400 font-semibold">
+                          Status da Casa (Filtro Secundário):
+                        </span>
+                        {(stagePhysicalFilter !== "all" || stageStatusFilter !== "all") ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStagePhysicalFilter("all");
+                              setStageStatusFilter("all");
+                            }}
+                            className="font-mono text-[0.6875rem] text-[#9184d9] hover:underline cursor-pointer flex items-center gap-1 py-0.5"
+                          >
+                            Limpar filtros ✕
+                          </button>
+                        ) : null}
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs font-mono">
-                        <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300">
-                          {stageStats.unchecked} a conferir
-                        </span>
-                        <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 font-bold">
-                          {stageStats.conformed} OK
-                        </span>
-                        {stageStats.divergent > 0 ? (
-                          <span className="px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/40 text-amber-400 font-bold">
-                            {stageStats.divergent} divergência(s)
-                          </span>
-                        ) : null}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {(
+                          [
+                            { id: "all", label: "Todos" },
+                            { id: "confirmed", label: "Confirmados" },
+                            { id: "exception", label: "Exceções" },
+                            { id: "pending", label: "Pendentes" },
+                          ] as const
+                        ).map((chip) => {
+                          const isActive = stageStatusFilter === chip.id;
+                          return (
+                            <button
+                              key={chip.id}
+                              type="button"
+                              onClick={() => setStageStatusFilter(chip.id)}
+                              className={cn(
+                                "px-2.5 py-1 rounded-lg font-mono text-xs transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
+                                isActive
+                                  ? "bg-zinc-700 text-white font-semibold ring-1 ring-zinc-500"
+                                  : "bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60",
+                              )}
+                            >
+                              {isActive ? "● " : ""}{chip.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
 
-                  {/* Lista de Cards do Modo Palco Ordenados pelo RF-11 */}
-                  {stageRiderItems.length === 0 ? (
-                    <div className="p-10 text-center border border-line rounded-2xl bg-card">
-                      <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  {/* Lista de Cards ou Empty States do Modo Palco */}
+                  {riderItems.length === 0 ? (
+                    <div className="p-10 text-center border border-zinc-800 rounded-2xl bg-zinc-950 text-zinc-300">
+                      <p className="font-mono text-xs uppercase tracking-wider text-zinc-500">
                         Nenhum item cadastrado no rider
                       </p>
+                    </div>
+                  ) : stageStats.unchecked === 0 ? (
+                    /* Estado 3: Celebratório - 100% conferido no palco */
+                    <div className="p-8 sm:p-12 text-center rounded-2xl border border-emerald-500/40 bg-zinc-950 text-zinc-100 shadow-lg space-y-4">
+                      <div className="mx-auto size-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <CheckCheck className="size-8" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <h5 className="text-xl sm:text-2xl font-bold text-white tracking-wide">
+                          Tudo conferido no palco!
+                        </h5>
+                        <p className="text-sm text-zinc-400 max-w-md mx-auto">
+                          100% dos equipamentos do show foram auditados presencialmente.
+                        </p>
+                      </div>
+
+                      <div className="inline-flex flex-col sm:flex-row items-center gap-3 py-2 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono">
+                        <span className="text-emerald-400 font-bold">
+                          ✓ {stageStats.conformed} {stageStats.conformed === 1 ? "item recebido conforme" : "itens recebidos conforme"}
+                        </span>
+                        {stageStats.divergent > 0 ? (
+                          <span className="text-amber-400 font-bold">
+                            ⚠ {stageStats.divergent} divergência(s) registrada(s) (avise a produção)
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStagePhysicalFilter("all");
+                            setStageStatusFilter("all");
+                          }}
+                          className="min-h-[48px] px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 transition-all duration-120 touch-manipulation active:scale-[0.97]"
+                        >
+                          Revisar todos os itens do rider ({stageStats.total})
+                        </button>
+                      </div>
+                    </div>
+                  ) : stageRiderItems.length === 0 ? (
+                    /* Estado 2: Interseção Vazia com Pendências Reais (stageStats.unchecked > 0) */
+                    <div className="p-8 sm:p-10 text-center rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-100 shadow-lg space-y-4">
+                      <div className="mx-auto size-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                        <Layers className="size-7" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <h5 className="text-lg sm:text-xl font-bold text-white tracking-wide">
+                          Nenhum item com esta combinação de filtros
+                        </h5>
+                        <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto">
+                          Não há itens nesta seleção aguardando conferência física.
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs font-mono max-w-lg mx-auto flex items-center justify-center gap-2">
+                        <AlertTriangle className="size-4 shrink-0 text-amber-400" />
+                        <span>
+                          <strong>Atenção:</strong> Ainda restam {stageStats.unchecked} item(ns) a conferir no palco com outro status da casa de show.
+                        </span>
+                      </div>
+
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStagePhysicalFilter("unchecked");
+                            setStageStatusFilter("all");
+                          }}
+                          className="min-h-[48px] w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all duration-120 touch-manipulation active:scale-[0.97]"
+                        >
+                          Ver todos os {stageStats.unchecked} itens a conferir no palco
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStagePhysicalFilter("all");
+                            setStageStatusFilter("all");
+                          }}
+                          className="min-h-[48px] w-full sm:w-auto px-5 py-3 rounded-xl font-mono text-xs uppercase tracking-wider text-zinc-400 hover:text-white border border-zinc-800 hover:bg-zinc-900 transition-all duration-120 touch-manipulation active:scale-[0.97]"
+                        >
+                          Ver todos os {stageStats.total} itens do rider
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-4">

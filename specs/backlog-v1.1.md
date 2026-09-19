@@ -66,4 +66,5 @@
 ---
 
 > Desenho de UI/UX do card 'Pessoas com Documentos': specs/design/pessoas-com-documentos-uiux.md
+> Desenho de UI/UX dos filtros nativos do Modo Palco: specs/design/modo-palco-filtros-uiux.md
 
