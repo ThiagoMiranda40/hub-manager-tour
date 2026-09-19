@@ -27,15 +27,30 @@ import {
   CheckCheck,
   RotateCcw,
   Share2,
+  ChevronDown,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AppShell } from "@/components/AppShell";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
   computeShowProgress,
@@ -56,6 +71,8 @@ import {
   type ReimbursementFilter,
   filterDocsByReimbursement,
   type DocsFilter,
+  getCastMembersWithDocs,
+  filterDocsList,
   type ShowRequirement,
   type ShowRiderItem,
   type ShowRiderItemMessage,
@@ -145,6 +162,9 @@ function ShowDetail() {
 
   // Filtro da Listagem de Documentos (Backlog V1.1)
   const [docsFilter, setDocsFilter] = useState<"all" | "reimbursement">("all");
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [isMemberPopoverOpen, setIsMemberPopoverOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const { roles, docTypes } = useCatalog(!!session);
 
@@ -320,8 +340,23 @@ function ShowDetail() {
   }, [riderItems]);
 
   const filteredDocs = useMemo(
-    () => filterDocsByReimbursement(docs, docsFilter),
-    [docs, docsFilter],
+    () => filterDocsList(docs, { docsFilter, selectedMemberId }),
+    [docs, docsFilter, selectedMemberId],
+  );
+
+  const membersWithDocs = useMemo(
+    () => getCastMembersWithDocs(cast, docs),
+    [cast, docs],
+  );
+
+  const selectedMember = useMemo(
+    () => (selectedMemberId ? cast.find((m) => m.id === selectedMemberId) : null),
+    [cast, selectedMemberId],
+  );
+
+  const selectedMemberDocsCount = useMemo(
+    () => (selectedMemberId ? docs.filter((d) => d.cast_member_id === selectedMemberId).length : 0),
+    [docs, selectedMemberId],
   );
 
   const reimbursableDocs = useMemo(() => docs.filter((d) => d.is_reimbursement), [docs]);
@@ -1464,22 +1499,25 @@ function ShowDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                   type="button"
-                  onClick={() => setDocsFilter("all")}
+                  onClick={() => {
+                    setSelectedMemberId(null);
+                    setDocsFilter("all");
+                  }}
                   title={
-                    docsFilter === "all"
+                    docsFilter === "all" && !selectedMemberId
                       ? "Exibindo todos os documentos"
                       : "Filtrar por todos os documentos"
                   }
                   className={cn(
                     "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
-                    docsFilter === "all"
+                    docsFilter === "all" && !selectedMemberId
                       ? "ring-2 ring-primary/80 border-primary/50 shadow-sm"
                       : "border-line hover:border-foreground/30 hover:bg-accent/20",
                   )}
                 >
                   <div className="label-mono text-muted-foreground flex items-center justify-between">
                     <span>Documentos Recebidos</span>
-                    {docsFilter === "all" ? (
+                    {docsFilter === "all" && !selectedMemberId ? (
                       <span className="text-[0.625rem] text-primary font-bold">● Ativo</span>
                     ) : null}
                   </div>
@@ -1489,36 +1527,197 @@ function ShowDetail() {
                   </div>
                 </button>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Pessoas com Documentos</div>
-                  <div className="mt-2 text-3xl font-semibold text-ok">
-                    {progress.peopleWithDocs}
-                  </div>
-                  <div className="mt-1 font-mono text-xs text-muted-foreground">
-                    ao menos 1 arquivo entregue
-                  </div>
-                </div>
+                {(() => {
+                  const memberFilterListContent = (
+                    <div>
+                      <div className="p-3 border-b border-line flex items-center justify-between">
+                        <span className="label-mono font-semibold text-xs text-foreground">
+                          Filtrar por integrante ({membersWithDocs.length})
+                        </span>
+                      </div>
+                      <div className="max-h-72 overflow-y-auto divide-y divide-line/40">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedMemberId(null);
+                            setDocsFilter("all");
+                            setIsMemberPopoverOpen(false);
+                          }}
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-left flex items-center justify-between hover:bg-accent/30 transition-colors min-h-[44px] cursor-pointer",
+                            selectedMemberId === null && "bg-accent/20",
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Users className="size-4 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground">
+                              Todos os integrantes
+                            </span>
+                          </div>
+                          {selectedMemberId === null ? (
+                            <Check className="size-4 text-primary" />
+                          ) : null}
+                        </button>
+
+                        {membersWithDocs.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedMemberId(m.id);
+                              setDocsFilter("all");
+                              setIsMemberPopoverOpen(false);
+                            }}
+                            className={cn(
+                              "w-full px-3.5 py-2.5 text-left flex items-center justify-between hover:bg-accent/30 transition-colors min-h-[44px] cursor-pointer",
+                              selectedMemberId === m.id && "bg-emerald-500/10",
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="size-7 rounded-full bg-accent/60 flex items-center justify-center text-xs font-mono font-bold shrink-0">
+                                {initials(m.name)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">
+                                  {m.name}
+                                </div>
+                                <div className="font-mono text-xs text-muted-foreground truncate">
+                                  {labelFrom(roles, m.role)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="font-mono text-xs text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-md">
+                                {m.docsCount} {m.docsCount === 1 ? "doc" : "docs"}
+                              </span>
+                              {selectedMemberId === m.id ? (
+                                <Check className="size-4 text-emerald-500" />
+                              ) : null}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+
+                  const cardTrigger = (
+                    <button
+                      type="button"
+                      disabled={progress.peopleWithDocs === 0}
+                      aria-haspopup="listbox"
+                      aria-expanded={isMemberPopoverOpen}
+                      title={
+                        progress.peopleWithDocs === 0
+                          ? "Nenhum integrante enviou arquivos ainda"
+                          : selectedMemberId
+                            ? `Filtrado por ${selectedMember?.name}. Clique para trocar.`
+                            : "Filtrar por integrante com documentos"
+                      }
+                      className={cn(
+                        "p-4 rounded-xl bg-card text-left transition-all border active:scale-[0.98] w-full",
+                        progress.peopleWithDocs === 0
+                          ? "border-line opacity-50 cursor-not-allowed"
+                          : selectedMemberId
+                            ? "ring-2 ring-emerald-500/80 border-emerald-500/50 bg-emerald-500/[0.04] shadow-sm cursor-pointer"
+                            : "border-line hover:border-foreground/30 hover:bg-accent/20 cursor-pointer",
+                      )}
+                    >
+                      <div className="label-mono text-muted-foreground flex items-center justify-between">
+                        <span>Pessoas com Documentos</span>
+                        {selectedMemberId ? (
+                          <span className="text-[0.625rem] text-emerald-500 font-bold truncate max-w-[120px]">
+                            ● {selectedMember?.name ?? "Ativo"}
+                          </span>
+                        ) : (
+                          <ChevronDown
+                            className={cn(
+                              "size-3.5 text-muted-foreground transition-transform duration-180",
+                              isMemberPopoverOpen && "rotate-180",
+                            )}
+                          />
+                        )}
+                      </div>
+                      <div className="mt-2 text-3xl font-semibold text-ok">
+                        {selectedMemberId ? selectedMemberDocsCount : progress.peopleWithDocs}
+                      </div>
+                      <div className="mt-1 font-mono text-xs text-muted-foreground flex items-center justify-between">
+                        <span>
+                          {selectedMemberId
+                            ? `docs de ${selectedMember?.name}`
+                            : "ao menos 1 arquivo entregue"}
+                        </span>
+                        {selectedMemberId ? (
+                          <ChevronDown
+                            className={cn(
+                              "size-3 text-emerald-500/70 transition-transform duration-180",
+                              isMemberPopoverOpen && "rotate-180",
+                            )}
+                          />
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+
+                  if (isMobile) {
+                    return (
+                      <Sheet open={isMemberPopoverOpen} onOpenChange={setIsMemberPopoverOpen}>
+                        <SheetTrigger asChild>{cardTrigger}</SheetTrigger>
+                        <SheetContent
+                          side="bottom"
+                          className="p-0 rounded-t-2xl max-h-[80vh] overflow-hidden bg-card border-line"
+                        >
+                          <SheetHeader className="p-4 border-b border-line text-left">
+                            <SheetTitle className="text-base font-semibold">
+                              Filtrar por integrante
+                            </SheetTitle>
+                            <SheetDescription className="text-xs text-muted-foreground">
+                              Selecione um integrante para visualizar apenas seus documentos
+                            </SheetDescription>
+                          </SheetHeader>
+                          <div className="max-h-[60vh] overflow-y-auto">
+                            {memberFilterListContent}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
+                    );
+                  }
+
+                  return (
+                    <Popover open={isMemberPopoverOpen} onOpenChange={setIsMemberPopoverOpen}>
+                      <PopoverTrigger asChild>{cardTrigger}</PopoverTrigger>
+                      <PopoverContent
+                        align="center"
+                        className="w-80 p-0 rounded-xl bg-card border-line shadow-lg overflow-hidden"
+                      >
+                        {memberFilterListContent}
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setDocsFilter((curr) => (curr === "reimbursement" ? "all" : "reimbursement"))
-                  }
+                  onClick={() => {
+                    setSelectedMemberId(null);
+                    setDocsFilter((curr) =>
+                      curr === "reimbursement" ? "all" : "reimbursement",
+                    );
+                  }}
                   title={
-                    docsFilter === "reimbursement"
+                    docsFilter === "reimbursement" && !selectedMemberId
                       ? "Remover filtro (mostrar todos)"
                       : "Filtrar por documentos para reembolso"
                   }
                   className={cn(
                     "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
-                    docsFilter === "reimbursement"
+                    docsFilter === "reimbursement" && !selectedMemberId
                       ? "ring-2 ring-[#9184d9]/80 border-[#9184d9] bg-[#9184d9]/[0.04] shadow-sm"
                       : "border-line hover:border-[#9184d9]/40 hover:bg-[#9184d9]/[0.02]",
                   )}
                 >
                   <div className="label-mono text-muted-foreground flex items-center justify-between">
                     <span>Documentos para Reembolso</span>
-                    {docsFilter === "reimbursement" ? (
+                    {docsFilter === "reimbursement" && !selectedMemberId ? (
                       <span className="text-[0.625rem] text-[#9184d9] font-bold">● Ativo</span>
                     ) : null}
                   </div>
@@ -1537,12 +1736,20 @@ function ShowDetail() {
                   <div className="flex items-center gap-3">
                     <span className="label-mono font-medium text-foreground">
                       Lista de Comprovantes e Vouchers ({filteredDocs.length}
-                      {docsFilter !== "all" ? ` de ${docs.length}` : ""})
+                      {selectedMemberId
+                        ? ` de ${docs.length} — ${selectedMember?.name ?? "Integrante"}`
+                        : docsFilter !== "all"
+                          ? ` de ${docs.length}`
+                          : ""}
+                      )
                     </span>
-                    {docsFilter !== "all" ? (
+                    {selectedMemberId || docsFilter !== "all" ? (
                       <button
                         type="button"
-                        onClick={() => setDocsFilter("all")}
+                        onClick={() => {
+                          setSelectedMemberId(null);
+                          setDocsFilter("all");
+                        }}
                         className="font-mono text-[0.6875rem] text-primary hover:underline cursor-pointer"
                       >
                         Limpar filtro ✕

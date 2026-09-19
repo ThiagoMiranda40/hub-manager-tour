@@ -498,6 +498,62 @@ export function filterDocsByReimbursement<T extends { is_reimbursement?: boolean
   return docs;
 }
 
+export type CastMemberWithDocs = {
+  id: string;
+  name: string;
+  role?: string | null;
+  docsCount: number;
+};
+
+/**
+ * Agrupa integrantes do elenco que possuem ao menos 1 documento entregue no show.
+ * Retorna lista ordenada alfabeticamente pelo nome do integrante.
+ */
+export function getCastMembersWithDocs<
+  TMember extends { id: string; name: string; role?: string | null },
+  TDoc extends { cast_member_id?: string | null },
+>(cast: TMember[], docs: TDoc[]): (TMember & { docsCount: number })[] {
+  const countsByMember = new Map<string, number>();
+  for (const d of docs) {
+    if (d.cast_member_id) {
+      countsByMember.set(d.cast_member_id, (countsByMember.get(d.cast_member_id) ?? 0) + 1);
+    }
+  }
+
+  return cast
+    .filter((m) => (countsByMember.get(m.id) ?? 0) > 0)
+    .map((m) => ({
+      ...m,
+      docsCount: countsByMember.get(m.id) ?? 0,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+}
+
+/**
+ * Filtra documentos combinando as regras de filtro por pessoa OU reembolso (Backlog V1.1 / Decisão 2).
+ * Exclusão mútua: se selectedMemberId estiver ativo, filtra exclusivamente por aquele integrante.
+ * Se docsFilter === "reimbursement", filtra exclusivamente por documentos para reembolso.
+ * Caso contrário ("all" e sem membro selecionado), retorna a lista completa de documentos.
+ */
+export function filterDocsList<
+  TDoc extends { cast_member_id?: string | null; is_reimbursement?: boolean | null },
+>(
+  docs: TDoc[],
+  options: {
+    docsFilter?: DocsFilter;
+    selectedMemberId?: string | null;
+  },
+): TDoc[] {
+  if (options.selectedMemberId) {
+    return docs.filter((d) => d.cast_member_id === options.selectedMemberId);
+  }
+  if (options.docsFilter === "reimbursement") {
+    return docs.filter((d) => Boolean(d.is_reimbursement));
+  }
+  return docs;
+}
+
+
 /** Aplica presets de exigências em lote de forma estritamente idempotente */
 export function applyRequirementPreset(
   existingRequirements: ShowRequirement[],
