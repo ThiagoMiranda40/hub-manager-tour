@@ -19,6 +19,7 @@ import {
   validateRiderMessageAntiAbuse,
   filterRiderItemsByStatus,
   filterReimbursableDocs,
+  filterDocsByReimbursement,
   type ShowRequirement,
   type ShowRiderItem,
 } from "./g3";
@@ -1016,6 +1017,36 @@ describe("filterReimbursableDocs (Filtros Clicáveis na Aba Reembolsos)", () => 
       { id: "4", is_reimbursed: null },
     ];
     expect(filterReimbursableDocs(onlyPending, "reimbursed")).toHaveLength(0);
+  });
+});
+
+describe("filterDocsByReimbursement (Filtros Clicáveis na Aba Documentos)", () => {
+  const sampleDocs = [
+    { id: "1", file_name: "Passagem.pdf", is_reimbursement: false },
+    { id: "2", file_name: "Hotel.pdf", is_reimbursement: null },
+    { id: "3", file_name: "Uber.pdf", is_reimbursement: true },
+    { id: "4", file_name: "Almoco.jpg", is_reimbursement: true },
+    { id: "5", file_name: "Nota.pdf" }, // is_reimbursement ausente
+  ];
+
+  it("filtro 'all' retorna todos os documentos", () => {
+    const result = filterDocsByReimbursement(sampleDocs, "all");
+    expect(result).toHaveLength(5);
+    expect(result.map((d) => d.id)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("filtro 'reimbursement' retorna apenas documentos onde is_reimbursement é true", () => {
+    const result = filterDocsByReimbursement(sampleDocs, "reimbursement");
+    expect(result).toHaveLength(2);
+    expect(result.map((d) => d.id)).toEqual(["3", "4"]);
+  });
+
+  it("retorna array vazio quando nenhum documento é de reembolso", () => {
+    const withoutReimbursements = [
+      { id: "1", is_reimbursement: false },
+      { id: "2", is_reimbursement: null },
+    ];
+    expect(filterDocsByReimbursement(withoutReimbursements, "reimbursement")).toHaveLength(0);
   });
 });
 

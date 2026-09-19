@@ -54,6 +54,8 @@ import {
   filterRiderItemsByStatus,
   filterReimbursableDocs,
   type ReimbursementFilter,
+  filterDocsByReimbursement,
+  type DocsFilter,
   type ShowRequirement,
   type ShowRiderItem,
   type ShowRiderItemMessage,
@@ -140,6 +142,9 @@ function ShowDetail() {
   const [reimbursementFilter, setReimbursementFilter] = useState<
     "all" | "reimbursed" | "pending"
   >("all");
+
+  // Filtro da Listagem de Documentos (Backlog V1.1)
+  const [docsFilter, setDocsFilter] = useState<"all" | "reimbursement">("all");
 
   const { roles, docTypes } = useCatalog(!!session);
 
@@ -313,6 +318,11 @@ function ShowDetail() {
     ).length;
     return { conformed, divergent, unchecked };
   }, [riderItems]);
+
+  const filteredDocs = useMemo(
+    () => filterDocsByReimbursement(docs, docsFilter),
+    [docs, docsFilter],
+  );
 
   const reimbursableDocs = useMemo(() => docs.filter((d) => d.is_reimbursement), [docs]);
   const filteredReimbursableDocs = useMemo(
@@ -1450,15 +1460,34 @@ function ShowDetail() {
              ───────────────────────────────────────────────────────────────── */}
           {activeTab === "docs" ? (
             <div className="mt-6 space-y-6">
-              {/* Resumo de Documentação */}
+              {/* Resumo de Documentação com Filtros Clicáveis (Backlog V1.1) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Documentos Recebidos</div>
+                <button
+                  type="button"
+                  onClick={() => setDocsFilter("all")}
+                  title={
+                    docsFilter === "all"
+                      ? "Exibindo todos os documentos"
+                      : "Filtrar por todos os documentos"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    docsFilter === "all"
+                      ? "ring-2 ring-primary/80 border-primary/50 shadow-sm"
+                      : "border-line hover:border-foreground/30 hover:bg-accent/20",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Documentos Recebidos</span>
+                    {docsFilter === "all" ? (
+                      <span className="text-[0.625rem] text-primary font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold">{docs.length}</div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     de {cast.length} integrantes
                   </div>
-                </div>
+                </button>
 
                 <div className="border border-line p-4 rounded-xl bg-card">
                   <div className="label-mono text-muted-foreground">Pessoas com Documentos</div>
@@ -1470,23 +1499,56 @@ function ShowDetail() {
                   </div>
                 </div>
 
-                <div className="border border-line p-4 rounded-xl bg-card">
-                  <div className="label-mono text-muted-foreground">Comprovantes de Reembolso</div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDocsFilter((curr) => (curr === "reimbursement" ? "all" : "reimbursement"))
+                  }
+                  title={
+                    docsFilter === "reimbursement"
+                      ? "Remover filtro (mostrar todos)"
+                      : "Filtrar por comprovantes de reembolso"
+                  }
+                  className={cn(
+                    "p-4 rounded-xl bg-card text-left transition-all cursor-pointer border active:scale-[0.98]",
+                    docsFilter === "reimbursement"
+                      ? "ring-2 ring-[#9184d9]/80 border-[#9184d9] bg-[#9184d9]/[0.04] shadow-sm"
+                      : "border-line hover:border-[#9184d9]/40 hover:bg-[#9184d9]/[0.02]",
+                  )}
+                >
+                  <div className="label-mono text-muted-foreground flex items-center justify-between">
+                    <span>Comprovantes de Reembolso</span>
+                    {docsFilter === "reimbursement" ? (
+                      <span className="text-[0.625rem] text-[#9184d9] font-bold">● Ativo</span>
+                    ) : null}
+                  </div>
                   <div className="mt-2 text-3xl font-semibold text-[#9184d9]">
                     {reimbursableDocs.length}
                   </div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground">
                     soma: {formatBRL(totalAmount)}
                   </div>
-                </div>
+                </button>
               </div>
 
               {/* Lista dos Documentos */}
               <div className="border border-line rounded-xl overflow-hidden bg-card">
-                <div className="border-b border-line px-5 py-3.5 bg-accent/20">
-                  <span className="label-mono font-medium text-foreground">
-                    Lista de Comprovantes e Vouchers ({docs.length})
-                  </span>
+                <div className="border-b border-line px-5 py-3.5 bg-accent/20 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="label-mono font-medium text-foreground">
+                      Lista de Comprovantes e Vouchers ({filteredDocs.length}
+                      {docsFilter !== "all" ? ` de ${docs.length}` : ""})
+                    </span>
+                    {docsFilter !== "all" ? (
+                      <button
+                        type="button"
+                        onClick={() => setDocsFilter("all")}
+                        className="font-mono text-[0.6875rem] text-primary hover:underline cursor-pointer"
+                      >
+                        Limpar filtro ✕
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 {docs.length === 0 ? (
@@ -1506,9 +1568,22 @@ function ShowDetail() {
                       <Smartphone className="size-3.5" /> Ver Links do Elenco
                     </button>
                   </div>
+                ) : filteredDocs.length === 0 ? (
+                  <div className="p-10 text-center flex flex-col items-center">
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                      Nenhum documento com o filtro selecionado
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setDocsFilter("all")}
+                      className="mt-3 font-mono text-xs text-primary underline cursor-pointer"
+                    >
+                      Mostrar todos os documentos ({docs.length})
+                    </button>
+                  </div>
                 ) : (
                   <div className="divide-y divide-line">
-                    {docs.map((d) => {
+                    {filteredDocs.map((d) => {
                       const member = cast.find((m) => m.id === d.cast_member_id);
                       return (
                         <div

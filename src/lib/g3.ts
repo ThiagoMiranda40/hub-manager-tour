@@ -481,6 +481,23 @@ export function filterReimbursableDocs<T extends { is_reimbursed?: boolean | nul
   return docs;
 }
 
+export type DocsFilter = "all" | "reimbursement";
+
+/**
+ * Filtra documentos recebidos na aba Documentos (Backlog V1.1)
+ * - "all": retorna todos os documentos
+ * - "reimbursement": apenas documentos com is_reimbursement === true
+ */
+export function filterDocsByReimbursement<T extends { is_reimbursement?: boolean | null }>(
+  docs: T[],
+  filter: DocsFilter,
+): T[] {
+  if (filter === "reimbursement") {
+    return docs.filter((d) => Boolean(d.is_reimbursement));
+  }
+  return docs;
+}
+
 /** Aplica presets de exigências em lote de forma estritamente idempotente */
 export function applyRequirementPreset(
   existingRequirements: ShowRequirement[],
