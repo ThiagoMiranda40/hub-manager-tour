@@ -964,26 +964,39 @@ function ShowDetail() {
                   <StatusBadge
                     status="no_requirement"
                     label="Sem exigência configurada"
+                    title="Nenhuma exigência de documento configurada para os integrantes deste show"
                     size="sm"
                   />
                 ) : progress.pendingPeople > 0 ? (
                   <StatusBadge
                     status="pending"
                     label={`${progress.pendingPeople} ${progress.pendingPeople === 1 ? "pendente" : "pendentes"}`}
+                    title={`${progress.pendingPeople} ${progress.pendingPeople === 1 ? "integrante possui documentos pendentes" : "integrantes possuem documentos pendentes"} de envio`}
                     size="sm"
                   />
                 ) : (
-                  <StatusBadge status="confirmed" label="Tudo recebido" size="sm" />
+                  <StatusBadge
+                    status="confirmed"
+                    label="Tudo recebido"
+                    title="Todos os documentos exigidos foram recebidos com sucesso"
+                    size="sm"
+                  />
                 )}
               </div>
 
-              <div className="font-mono text-[0.6875rem] text-muted-foreground text-left sm:text-right">
+              <div
+                title={progress.summaryText}
+                className="font-mono text-[0.6875rem] text-muted-foreground text-left sm:text-right"
+              >
                 {progress.summaryText}
               </div>
 
               {/* Barra de progresso visual */}
               {progress.hasRequirement ? (
-                <div className="w-44 h-1.5 bg-accent/40 rounded-full overflow-hidden">
+                <div
+                  title={`${progress.received} de ${progress.expected} documentos exigidos recebidos (${progress.pct}%)`}
+                  className="w-44 h-1.5 bg-accent/40 rounded-full overflow-hidden"
+                >
                   <div
                     className={cn(
                       "h-full transition-all duration-300",
@@ -999,27 +1012,32 @@ function ShowDetail() {
                 <Link
                   to="/shows/$id/ficha"
                   params={{ id }}
+                  title="Visualizar e imprimir ficha/relatório completo de produção do show"
                   className="border border-line px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation"
                 >
                   Relatório de Produção
                 </Link>
                 <button
+                  type="button"
                   onClick={() => {
                     setEditing((v) => !v);
                     setConfirmDelete(false);
                     setActionError(null);
                   }}
+                  title={editing ? "Fechar formulário de edição" : "Editar informações do show (cidade, local, data, artista e tour)"}
                   className="border border-line px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation"
                 >
                   {editing ? "Fechar edição" : "Editar"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setConfirmDelete((v) => !v);
                     setEditing(false);
                     setConfirmText("");
                     setActionError(null);
                   }}
+                  title="Excluir este show e todos os seus registros associados"
                   className="border border-destructive px-3 py-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-all duration-120 touch-manipulation"
                 >
                   Excluir
@@ -1090,37 +1108,65 @@ function ShowDetail() {
                 active={activeTab === "cast"}
                 onClick={() => setActiveTab("cast")}
                 label="Elenco & Exigências"
+                title="Integrantes escalados, exigências configuradas e controle de pendências"
                 badge={cast.length}
+                badgeTitle={`${cast.length} ${cast.length === 1 ? "integrante escalado" : "integrantes escalados"}`}
                 hasAlert={progress.hasRequirement && progress.pendingPeople > 0}
+                alertTitle={
+                  progress.pendingPeople === 1
+                    ? "1 integrante com pendência de documentos"
+                    : `${progress.pendingPeople} integrantes com pendências de documentos`
+                }
               />
               <TabButton
                 active={activeTab === "docs"}
                 onClick={() => setActiveTab("docs")}
                 label="Documentos"
+                title="Documentos e comprovantes enviados para este show"
                 badge={docs.length}
+                badgeTitle={`${docs.length} ${docs.length === 1 ? "documento enviado" : "documentos enviados"}`}
               />
               <TabButton
                 active={activeTab === "rider"}
                 onClick={() => setActiveTab("rider")}
                 label="Rider Técnico"
+                title="Itens de som, luz, palco e camarim com status de conferência"
                 badge={
                   riderBalance.acceptedWithException > 0
                     ? `${riderBalance.confirmed}/${riderBalance.total} (+${riderBalance.acceptedWithException})`
                     : `${riderBalance.confirmed}/${riderBalance.total}`
                 }
+                badgeTitle={
+                  riderBalance.acceptedWithException > 0
+                    ? `${riderBalance.confirmed} de ${riderBalance.total} itens confirmados (+${riderBalance.acceptedWithException} aceitos com ressalva)`
+                    : `${riderBalance.confirmed} de ${riderBalance.total} itens confirmados`
+                }
                 hasAlert={riderBalance.hasMandatoryPendingOrException || inNegotiationCount > 0}
+                alertTitle={
+                  inNegotiationCount > 0
+                    ? "Existem itens com pendências, exceções ou em negociação"
+                    : "Existem itens inegociáveis pendentes ou com exceção"
+                }
               />
               <TabButton
                 active={activeTab === "reimbursements"}
                 onClick={() => setActiveTab("reimbursements")}
                 label="Reembolsos"
+                title="Comprovantes de despesas, pagamentos via Pix e controle de liquidação"
                 badge={reimbursableDocs.length}
+                badgeTitle={`${reimbursableDocs.length} ${reimbursableDocs.length === 1 ? "comprovante de reembolso" : "comprovantes de reembolso"}`}
                 hasAlert={pendingReimbursementDocs.length > 0}
+                alertTitle={
+                  pendingReimbursementDocs.length === 1
+                    ? "1 reembolso pendente de pagamento"
+                    : `${pendingReimbursementDocs.length} reembolsos pendentes de pagamento`
+                }
               />
               <TabButton
                 active={activeTab === "quick_actions"}
                 onClick={() => setActiveTab("quick_actions")}
                 label="Ações Rápidas & Links"
+                title="Links públicos de acesso, envio de documentos e atalhos rápidos"
               />
             </nav>
             <div className="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center pr-0.5 sm:hidden">
@@ -1154,6 +1200,11 @@ function ShowDetail() {
                       type="button"
                       disabled={applyBandPreset.isPending}
                       onClick={() => applyBandPreset.mutate()}
+                      title={
+                        selectedMemberIds.length > 0
+                          ? `Aplicar exigências de Passagem Aérea e Hotel para os ${selectedMemberIds.length} integrantes selecionados`
+                          : "Aplicar exigências padrão de Passagem Aérea e Hotel para os músicos do elenco (ou todo o elenco se não houver músicos)"
+                      }
                       className="inline-flex items-center gap-2 bg-[#9184d9] text-white px-4 py-2 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#8072c9] active:scale-[0.97] transition-all duration-120 touch-manipulation shadow-sm disabled:opacity-50"
                     >
                       <Sparkles className="size-3.5" />
@@ -1169,6 +1220,7 @@ function ShowDetail() {
                         type="button"
                         disabled={clearRequirementsBatch.isPending}
                         onClick={() => clearRequirementsBatch.mutate()}
+                        title={`Remover todas as exigências de documentos dos ${selectedMemberIds.length} integrantes selecionados`}
                         className="border border-line px-3 py-2 font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-120 touch-manipulation rounded-lg"
                       >
                         Dispensar selecionados ({selectedMemberIds.length})
@@ -1189,6 +1241,11 @@ function ShowDetail() {
                           setSelectedMemberIds(cast.map((m) => m.id));
                         }
                       }}
+                      title={
+                        selectedMemberIds.length === cast.length
+                          ? "Desmarcar todos os integrantes selecionados"
+                          : `Selecionar todos os ${cast.length} integrantes do elenco para ações em lote`
+                      }
                       className="text-muted-foreground hover:text-foreground underline underline-offset-2"
                     >
                       {selectedMemberIds.length === cast.length
@@ -1212,6 +1269,7 @@ function ShowDetail() {
                           .map((m) => m.id);
                         setSelectedMemberIds(musicians);
                       }}
+                      title="Selecionar automaticamente os integrantes com função de músico ou banda"
                       className="text-muted-foreground hover:text-foreground underline underline-offset-2"
                     >
                       Selecionar apenas músicos
@@ -1278,7 +1336,16 @@ function ShowDetail() {
                                 );
                               }}
                               className="shrink-0 text-muted-foreground hover:text-foreground touch-manipulation"
-                              title="Selecionar para lote"
+                              title={
+                                isSelected
+                                  ? `Desmarcar ${m.name} do lote`
+                                  : `Selecionar ${m.name} para ações em lote`
+                              }
+                              aria-label={
+                                isSelected
+                                  ? `Desmarcar ${m.name} do lote`
+                                  : `Selecionar ${m.name} para ações em lote`
+                              }
                             >
                               {isSelected ? (
                                 <CheckSquare className="size-5 text-[#9184d9]" />
@@ -1293,7 +1360,9 @@ function ShowDetail() {
 
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium truncate">{m.name}</span>
+                                <span title={m.name} className="text-sm font-medium truncate">
+                                  {m.name}
+                                </span>
                                 {memberPerson?.pix_key ? (
                                   <span
                                     title={`Chave Pix cadastrada (${memberPerson.pix_type ?? "Pix"})`}
@@ -1592,16 +1661,19 @@ function ShowDetail() {
                                 {initials(m.name)}
                               </div>
                               <div className="min-w-0">
-                                <div className="text-sm font-medium text-foreground truncate">
+                                <div className="text-sm font-medium text-foreground truncate" title={m.name}>
                                   {m.name}
                                 </div>
-                                <div className="font-mono text-xs text-muted-foreground truncate">
+                                <div className="font-mono text-xs text-muted-foreground truncate" title={labelFrom(roles, m.role)}>
                                   {labelFrom(roles, m.role)}
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="font-mono text-xs text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-md">
+                              <span
+                                title={`${m.docsCount} ${m.docsCount === 1 ? "documento enviado" : "documentos enviados"} por ${m.name}`}
+                                className="font-mono text-xs text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-md"
+                              >
                                 {m.docsCount} {m.docsCount === 1 ? "doc" : "docs"}
                               </span>
                               {selectedMemberId === m.id ? (
@@ -1813,22 +1885,30 @@ function ShowDetail() {
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">
+                              <span className="font-medium text-sm" title={member?.name}>
                                 {member?.name ?? "Integrante avulso"}
                               </span>
-                              <span className="border border-ok bg-ok/10 text-ok px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded">
+                              <span
+                                title={`Tipo do documento: ${labelFrom(docTypes, d.doc_type)}`}
+                                className="border border-ok bg-ok/10 text-ok px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded"
+                              >
                                 {labelFrom(docTypes, d.doc_type)}
                               </span>
                               {d.is_reimbursement ? (
-                                <span className="border border-[#9184d9] bg-[#9184d9]/10 text-[#9184d9] px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded">
+                                <span
+                                  title="Comprovante sujeito a reembolso de despesa"
+                                  className="border border-[#9184d9] bg-[#9184d9]/10 text-[#9184d9] px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider rounded"
+                                >
                                   Reembolso
                                 </span>
                               ) : null}
                             </div>
                             <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                               <button
+                                type="button"
                                 onClick={() => openDocument(d.file_path)}
-                                className="font-mono underline underline-offset-2 hover:text-foreground flex items-center gap-1"
+                                title={`Abrir ${d.file_name ?? "comprovante"} em nova aba`}
+                                className="font-mono underline underline-offset-2 hover:text-foreground flex items-center gap-1 cursor-pointer"
                               >
                                 {d.file_name ?? "Visualizar comprovante"}
                                 <ExternalLink className="size-3" />
@@ -2009,7 +2089,12 @@ function ShowDetail() {
                   <button
                     type="button"
                     onClick={handleCopyRiderLink}
-                    className="inline-flex items-center gap-1.5 bg-emerald-600 text-white px-4 py-2 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-all"
+                    title={
+                      copiedRiderLink
+                        ? "Link copiado para a área de transferência!"
+                        : "Copiar link de acesso público do rider para a casa de show"
+                    }
+                    className="inline-flex items-center gap-1.5 bg-emerald-600 text-white px-4 py-2 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-all cursor-pointer"
                   >
                     <Copy className="size-3.5" />
                     {copiedRiderLink ? "Copiado!" : "Copiar Link do Rider"}
@@ -2019,6 +2104,7 @@ function ShowDetail() {
                       href={riderPublicUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      title="Abrir página pública do rider em nova aba"
                       className="border border-line px-3 py-2 font-mono text-xs uppercase tracking-wider hover:bg-accent rounded-lg flex items-center gap-1"
                     >
                       Abrir <ExternalLink className="size-3" />
@@ -2052,9 +2138,15 @@ function ShowDetail() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    aria-pressed={isStageMode}
                     onClick={() => setIsStageMode((v) => !v)}
+                    title={
+                      isStageMode
+                        ? "Sair do Modo Palco e voltar para a visão padrão da prancheta"
+                        : "Ativar Modo Palco para conferência física presencial"
+                    }
                     className={cn(
-                      "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-120 touch-manipulation active:scale-[0.97]",
+                      "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                       isStageMode
                         ? "bg-[#9184d9] text-white shadow-lg shadow-[#9184d9]/25 ring-2 ring-[#9184d9]/50"
                         : "border border-line bg-secondary/80 hover:bg-secondary text-foreground",
@@ -2099,6 +2191,8 @@ function ShowDetail() {
                         <button
                           type="button"
                           onClick={() => setStagePhysicalFilter("all")}
+                          aria-pressed={stagePhysicalFilter === "all"}
+                          title="Mostrar todos os itens na conferência do palco"
                           className={cn(
                             "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                             stagePhysicalFilter === "all"
@@ -2116,6 +2210,8 @@ function ShowDetail() {
                         <button
                           type="button"
                           onClick={() => setStagePhysicalFilter("unchecked")}
+                          aria-pressed={stagePhysicalFilter === "unchecked"}
+                          title="Filtrar itens aguardando conferência presencial no palco"
                           className={cn(
                             "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                             stagePhysicalFilter === "unchecked"
@@ -2131,6 +2227,8 @@ function ShowDetail() {
                         <button
                           type="button"
                           onClick={() => setStagePhysicalFilter("conformed")}
+                          aria-pressed={stagePhysicalFilter === "conformed"}
+                          title="Filtrar itens conferidos e recebidos conforme no palco"
                           className={cn(
                             "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                             stagePhysicalFilter === "conformed"
@@ -2146,6 +2244,8 @@ function ShowDetail() {
                         <button
                           type="button"
                           onClick={() => setStagePhysicalFilter("divergent")}
+                          aria-pressed={stagePhysicalFilter === "divergent"}
+                          title="Filtrar itens com divergência física identificada no palco"
                           className={cn(
                             "min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold inline-flex items-center gap-1.5 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                             stagePhysicalFilter === "divergent"
@@ -2172,6 +2272,7 @@ function ShowDetail() {
                               setStagePhysicalFilter("all");
                               setStageStatusFilter("all");
                             }}
+                            title="Redefinir filtros de conferência e status da casa"
                             className="font-mono text-[0.6875rem] text-[#9184d9] hover:underline cursor-pointer flex items-center gap-1 py-0.5"
                           >
                             Limpar filtros ✕
@@ -2182,10 +2283,10 @@ function ShowDetail() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         {(
                           [
-                            { id: "all", label: "Todos" },
-                            { id: "confirmed", label: "Confirmados" },
-                            { id: "exception", label: "Exceções" },
-                            { id: "pending", label: "Pendentes" },
+                            { id: "all", label: "Todos", title: "Todos os status de resposta da casa" },
+                            { id: "confirmed", label: "Confirmados", title: "Itens confirmados ou aceitos com ressalva pela casa" },
+                            { id: "exception", label: "Exceções", title: "Itens com exceção sinalizada ou em negociação" },
+                            { id: "pending", label: "Pendentes", title: "Itens aguardando resposta da casa de show" },
                           ] as const
                         ).map((chip) => {
                           const isActive = stageStatusFilter === chip.id;
@@ -2194,6 +2295,8 @@ function ShowDetail() {
                               key={chip.id}
                               type="button"
                               onClick={() => setStageStatusFilter(chip.id)}
+                              title={chip.title}
+                              aria-pressed={isActive}
                               className={cn(
                                 "px-2.5 py-1 rounded-lg font-mono text-xs transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                                 isActive
@@ -2335,17 +2438,26 @@ function ShowDetail() {
                                   </span>
 
                                   {item.is_mandatory ? (
-                                    <span className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-destructive/50 bg-destructive/20 text-destructive font-bold">
+                                    <span
+                                      title="Item inegociável: indispensável para a apresentação"
+                                      className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-destructive/50 bg-destructive/20 text-destructive font-bold"
+                                    >
                                       Inegociável
                                     </span>
                                   ) : (
-                                    <span className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-400">
+                                    <span
+                                      title="Item desejável: recomendação técnica sem impedimento do show"
+                                      className="font-mono text-[0.6875rem] uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-400"
+                                    >
                                       Desejável
                                     </span>
                                   )}
 
                                   {isMandatoryUrgent ? (
-                                    <span className="font-mono text-[0.625rem] uppercase tracking-wider px-2 py-0.5 rounded bg-destructive text-white font-bold animate-pulse">
+                                    <span
+                                      title="Item inegociável pendente ou com divergência física"
+                                      className="font-mono text-[0.625rem] uppercase tracking-wider px-2 py-0.5 rounded bg-destructive text-white font-bold animate-pulse"
+                                    >
                                       Atenção Prioritária
                                     </span>
                                   ) : null}
@@ -2399,15 +2511,24 @@ function ShowDetail() {
                               {/* Badge de conferência física atual */}
                               <div>
                                 {isConformed ? (
-                                  <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                                  <span
+                                    title="Item auditado e conferido presencialmente no palco"
+                                    className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                  >
                                     ✓ Conforme no Palco
                                   </span>
                                 ) : isDivergent ? (
-                                  <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                                  <span
+                                    title={`Divergência presencial: ${item.physical_divergence_note || "Registrada no Modo Palco"}`}
+                                    className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                                  >
                                     ⚠ Divergência Registrada
                                   </span>
                                 ) : (
-                                  <span className="font-mono text-xs px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                  <span
+                                    title="Item aguardando auditoria física presencial no palco"
+                                    className="font-mono text-xs px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700"
+                                  >
                                     A conferir
                                   </span>
                                 )}
@@ -2429,7 +2550,8 @@ function ShowDetail() {
                                     setDivergenceNoteEditingId(item.id);
                                     setDivergenceNoteText(item.physical_divergence_note || "");
                                   }}
-                                  className="text-[0.6875rem] font-mono underline hover:text-white"
+                                  title="Editar anotação de divergência física"
+                                  className="text-[0.6875rem] font-mono underline hover:text-white cursor-pointer"
                                 >
                                   Editar
                                 </button>
@@ -2456,7 +2578,7 @@ function ShowDetail() {
                                       setDivergenceNoteEditingId(null);
                                       setDivergenceNoteText("");
                                     }}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-400 hover:text-white border border-zinc-700"
+                                    className="px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-400 hover:text-white border border-zinc-700 cursor-pointer"
                                   >
                                     Cancelar
                                   </button>
@@ -2470,7 +2592,7 @@ function ShowDetail() {
                                       });
                                     }}
                                     disabled={updatePhysicalCheck.isPending}
-                                    className="px-4 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider font-semibold bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-[0.97]"
+                                    className="px-4 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider font-semibold bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-[0.97] cursor-pointer"
                                   >
                                     Salvar Divergência
                                   </button>
@@ -2490,8 +2612,13 @@ function ShowDetail() {
                                   });
                                 }}
                                 disabled={updatePhysicalCheck.isPending}
+                                title={
+                                  isConformed
+                                    ? "Item já conferido e recebido conforme no palco"
+                                    : "Confirmar que o item foi recebido presencialmente conforme especificado"
+                                }
                                 className={cn(
-                                  "min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-120 touch-manipulation active:scale-[0.97]",
+                                  "min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                                   isConformed
                                     ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/40 ring-2 ring-emerald-400"
                                     : "bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300",
@@ -2513,8 +2640,13 @@ function ShowDetail() {
                                   }
                                 }}
                                 disabled={updatePhysicalCheck.isPending}
+                                title={
+                                  isDivergent
+                                    ? "Editar a anotação de divergência presencial deste item"
+                                    : "Registrar divergência física identificada no palco"
+                                }
                                 className={cn(
-                                  "min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-120 touch-manipulation active:scale-[0.97]",
+                                  "min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-120 touch-manipulation active:scale-[0.97] cursor-pointer",
                                   isDivergent
                                     ? "bg-amber-600 text-white shadow-lg shadow-amber-900/40 ring-2 ring-amber-400"
                                     : "bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/40 text-amber-300",
@@ -2537,7 +2669,8 @@ function ShowDetail() {
                                       note: null,
                                     });
                                   }}
-                                  className="text-[0.6875rem] font-mono text-zinc-500 hover:text-zinc-300 underline"
+                                  title="Desfazer conferência e retornar o item para 'A conferir'"
+                                  className="text-[0.6875rem] font-mono text-zinc-500 hover:text-zinc-300 underline cursor-pointer"
                                 >
                                   Desmarcar conferência física
                                 </button>
@@ -2638,11 +2771,17 @@ function ShowDetail() {
                                     x{item.quantity}
                                   </span>
                                   {item.is_mandatory ? (
-                                    <span className="text-[0.625rem] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium">
+                                    <span
+                                      title="Item inegociável: indispensável para a apresentação"
+                                      className="text-[0.625rem] font-mono border border-destructive/30 text-destructive bg-destructive/5 px-1.5 py-0.2 rounded font-medium"
+                                    >
                                       Inegociável
                                     </span>
                                   ) : (
-                                    <span className="text-[0.625rem] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded">
+                                    <span
+                                      title="Item desejável: recomendação técnica sem impedimento do show"
+                                      className="text-[0.625rem] font-mono border border-line text-muted-foreground px-1.5 py-0.2 rounded"
+                                    >
                                       Desejável
                                     </span>
                                   )}
@@ -2673,13 +2812,16 @@ function ShowDetail() {
 
                               <div className="flex flex-wrap items-center gap-2">
                                 {item.physical_check === "conformed" ? (
-                                  <span className="font-mono text-[0.625rem] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold">
+                                  <span
+                                    title="Item auditado e conferido presencialmente no palco"
+                                    className="font-mono text-[0.625rem] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold"
+                                  >
                                     Palco: OK ✓
                                   </span>
                                 ) : item.physical_check === "divergent" ? (
                                   <span
                                     className="font-mono text-[0.625rem] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-semibold"
-                                    title={item.physical_divergence_note || ""}
+                                    title={`Divergência no palco: ${item.physical_divergence_note || "Registrada no Modo Palco"}`}
                                   >
                                     Palco: Divergência ⚠
                                   </span>
@@ -2696,6 +2838,17 @@ function ShowDetail() {
                                           : isException
                                             ? "exception"
                                             : "pending"
+                                  }
+                                  title={
+                                    isConfirmed
+                                      ? "Confirmado pelo espaço"
+                                      : isAcceptedWithException
+                                        ? "Aceito com ressalva pela produção"
+                                        : isInNegotiation
+                                          ? "Em negociação ativa com a casa"
+                                          : isException
+                                            ? "Exceção sinalizada pela casa"
+                                            : "Pendente de resposta da casa"
                                   }
                                   size="sm"
                                 />
@@ -3083,8 +3236,10 @@ function ShowDetail() {
                                 {labelFrom(docTypes, d.doc_type)}
                               </span>
                               <button
+                                type="button"
                                 onClick={() => openDocument(d.file_path)}
-                                className="font-mono underline underline-offset-2 hover:text-foreground inline-flex items-center gap-1"
+                                title={`Abrir ${d.file_name ?? "recibo"} em nova aba`}
+                                className="font-mono underline underline-offset-2 hover:text-foreground inline-flex items-center gap-1 cursor-pointer"
                               >
                                 {d.file_name ?? "Abrir recibo"}
                                 <ExternalLink className="size-3" />
@@ -3110,7 +3265,10 @@ function ShowDetail() {
                             <div className="text-xs text-muted-foreground label-mono">Chave Pix</div>
                             {hasPix ? (
                               <div className="mt-0.5 flex items-center gap-2">
-                                <span className="font-mono text-xs truncate max-w-44 bg-accent/40 px-2 py-1 rounded border border-line">
+                                <span
+                                  title={person?.pix_key ?? undefined}
+                                  className="font-mono text-xs truncate max-w-44 bg-accent/40 px-2 py-1 rounded border border-line"
+                                >
                                   {person?.pix_key}
                                 </span>
                                 <button
@@ -3157,8 +3315,13 @@ function ShowDetail() {
                                 })
                               }
                               disabled={toggleReimbursed.isPending}
+                              title={
+                                d.is_reimbursed
+                                  ? "Clique para reverter o status para pendente de reembolso"
+                                  : "Clique para marcar esta despesa como reembolsada/paga"
+                              }
                               className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-lg border active:scale-[0.97] transition-all touch-manipulation",
+                                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-lg border active:scale-[0.97] transition-all touch-manipulation cursor-pointer",
                                 d.is_reimbursed
                                   ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
                                   : "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20",
@@ -3245,14 +3408,17 @@ function ShowDetail() {
                             >
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm truncate text-foreground">
+                                  <span className="font-medium text-sm truncate text-foreground" title={m.name}>
                                     {m.name}
                                   </span>
                                   <span className="text-[0.625rem] font-mono uppercase tracking-wider text-muted-foreground bg-accent/40 px-2 py-0.5 rounded-full shrink-0">
                                     {memberRoleName}
                                   </span>
                                 </div>
-                                <div className="mt-1 font-mono text-[0.6875rem] text-muted-foreground/80 truncate">
+                                <div
+                                  className="mt-1 font-mono text-[0.6875rem] text-muted-foreground/80 truncate"
+                                  title={memberUrl || "Token pendente"}
+                                >
                                   {memberUrl || "Token pendente"}
                                 </div>
                               </div>
@@ -3349,7 +3515,12 @@ function ShowDetail() {
                     <button
                       type="button"
                       onClick={handleCopyRiderLink}
-                      className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 px-4 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-all touch-manipulation shadow-sm"
+                      title={
+                        copiedRiderLink
+                          ? "Link copiado para a área de transferência!"
+                          : "Copiar link de acesso público do rider para a casa de show"
+                      }
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 px-4 font-mono text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-all touch-manipulation shadow-sm cursor-pointer"
                     >
                       <Copy className="size-4" />
                       {copiedRiderLink ? "Link Copiado!" : "Copiar Link do Rider"}
@@ -3406,13 +3577,26 @@ interface TabButtonProps {
   label: string;
   badge?: number | string;
   hasAlert?: boolean;
+  title?: string;
+  badgeTitle?: string;
+  alertTitle?: string;
 }
 
-function TabButton({ active, onClick, label, badge, hasAlert }: TabButtonProps) {
+function TabButton({
+  active,
+  onClick,
+  label,
+  badge,
+  hasAlert,
+  title,
+  badgeTitle,
+  alertTitle,
+}: TabButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      title={title}
       className={cn(
         "inline-flex items-center gap-2 px-4 py-3 font-mono text-xs uppercase tracking-wider whitespace-nowrap min-h-[44px] transition-all duration-120 touch-manipulation",
         active
@@ -3423,6 +3607,7 @@ function TabButton({ active, onClick, label, badge, hasAlert }: TabButtonProps) 
       <span>{label}</span>
       {badge !== undefined ? (
         <span
+          title={badgeTitle}
           className={cn(
             "text-[0.625rem] px-1.5 py-0.2 rounded-full",
             active ? "bg-[#9184d9] text-white" : "bg-accent text-muted-foreground",
@@ -3431,7 +3616,14 @@ function TabButton({ active, onClick, label, badge, hasAlert }: TabButtonProps) 
           {badge}
         </span>
       ) : null}
-      {hasAlert ? <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" /> : null}
+      {hasAlert ? (
+        <span
+          role="img"
+          aria-label={alertTitle ?? "Atenção necessária"}
+          title={alertTitle}
+          className="size-1.5 rounded-full bg-amber-500 animate-pulse"
+        />
+      ) : null}
     </button>
   );
 }

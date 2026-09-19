@@ -388,7 +388,7 @@ function PublicUpload() {
             <div className="text-[0.6875rem] font-mono uppercase tracking-wider text-[#9184d9] font-semibold">
               Checklist Pessoal
             </div>
-            <div className="text-sm font-semibold truncate text-foreground">
+            <div className="text-sm font-semibold truncate text-foreground" title={activeMember.name}>
               {activeMember.name}
             </div>
             <div className="text-[0.6875rem] font-mono text-muted-foreground">
@@ -461,7 +461,7 @@ function PublicUpload() {
 
                       {isReceived ? (
                         <div className="mt-1 text-xs text-muted-foreground font-mono truncate">
-                          <span className="truncate">{submitted?.fileName ?? "Arquivo enviado"}</span>
+                          <span className="truncate" title={submitted?.fileName ?? undefined}>{submitted?.fileName ?? "Arquivo enviado"}</span>
                           <span className="mx-1">·</span>
                           <span>{formatSubmissionDate(submitted!.createdAt)}</span>
                         </div>
@@ -527,7 +527,7 @@ function PublicUpload() {
                       <div className="flex items-center gap-2 truncate">
                         <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
                         <span className="font-medium">{docType?.name ?? "Documento"}</span>
-                        <span className="text-muted-foreground truncate">
+                        <span className="text-muted-foreground truncate" title={d.fileName ?? "arquivo"}>
                           ({d.fileName ?? "arquivo"})
                         </span>
                       </div>
@@ -667,8 +667,8 @@ function PublicUpload() {
                 {isDragging ? (
                   "Solte o arquivo aqui"
                 ) : file ? (
-                  <span className="flex items-center gap-1.5">
-                    <Check className="size-4" /> {file.name}
+                  <span className="flex items-center gap-1.5 truncate max-w-full" title={file.name}>
+                    <Check className="size-4 shrink-0" /> <span className="truncate">{file.name}</span>
                   </span>
                 ) : (
                   "Toque ou arraste foto ou PDF"
@@ -724,8 +724,9 @@ function PublicUpload() {
                   <button
                     type="button"
                     onClick={() => setAiDismissed(true)}
-                    className="text-xs text-muted-foreground hover:text-foreground p-1 rounded hover:bg-background/40 touch-manipulation"
+                    className="text-xs text-muted-foreground hover:text-foreground p-1 rounded hover:bg-background/40 touch-manipulation cursor-pointer"
                     title="Dispensar sugestão"
+                    aria-label="Dispensar sugestão"
                   >
                     <X className="size-3.5" />
                   </button>
@@ -785,7 +786,7 @@ function PublicUpload() {
                         : "Documento de turnê (sem reembolso)"}
                     </p>
                     {aiSuggestion.note ? (
-                      <p className="text-[0.6875rem] text-muted-foreground truncate">
+                      <p className="text-[0.6875rem] text-muted-foreground truncate" title={aiSuggestion.note}>
                         {aiSuggestion.note}
                       </p>
                     ) : null}

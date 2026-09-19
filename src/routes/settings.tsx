@@ -420,6 +420,7 @@ function DeleteButton({
         <button
           type="button"
           onClick={() => setWarn(true)}
+          title={`Não é possível excluir: ${blockedMessage}.`}
           className="border border-line px-3 py-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground active:scale-[0.97] transition-all duration-120 touch-manipulation"
         >
           Excluir
@@ -1111,6 +1112,7 @@ function RiderCatalogSection({
                         <button
                           type="button"
                           onClick={() => setEditingItemId(item.id)}
+                          title={`Editar especificação de ${item.item_name}`}
                           className="border border-line px-3 py-1.5 font-mono text-xs uppercase tracking-wider hover:bg-accent rounded-lg flex items-center gap-1 text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all"
                         >
                           <Edit2 className="size-3.5" /> Editar

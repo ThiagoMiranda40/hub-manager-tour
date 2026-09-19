@@ -408,8 +408,11 @@ function PeoplePage() {
               />
               {search ? (
                 <button
+                  type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  title="Limpar campo de busca"
+                  aria-label="Limpar campo de busca"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <X className="size-4" />
                 </button>
@@ -530,8 +533,10 @@ function PeoplePage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={() => openEditModal(person)}
-                          title="Editar pessoa"
+                          title={`Editar cadastro de ${person.name}`}
+                          aria-label={`Editar cadastro de ${person.name}`}
                           className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-nocturne touch-feedback cursor-pointer"
                         >
                           <Edit2 className="size-4" />
@@ -578,7 +583,7 @@ function PeoplePage() {
                         </div>
                       ) : null}
                       {person.email ? (
-                        <div className="flex items-center gap-2 truncate">
+                        <div className="flex items-center gap-2 truncate" title={person.email}>
                           <Mail className="size-3.5 shrink-0 opacity-70" />
                           <span className="truncate">{person.email}</span>
                         </div>
@@ -600,14 +605,19 @@ function PeoplePage() {
                               <div className="text-[0.625rem] uppercase font-mono tracking-wider text-muted-foreground">
                                 Pix ({person.pix_type ?? "Chave"})
                               </div>
-                              <div className="text-xs font-mono font-medium text-foreground truncate">
+                              <div
+                                className="text-xs font-mono font-medium text-foreground truncate"
+                                title={person.pix_key}
+                              >
                                 {person.pix_key}
                               </div>
                             </div>
                           </div>
                           <button
+                            type="button"
                             onClick={() => copyPix(person)}
-                            title="Copiar Chave Pix"
+                            title={`Copiar chave Pix de ${person.name}`}
+                            aria-label={`Copiar chave Pix de ${person.name}`}
                             className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-nocturne touch-feedback cursor-pointer"
                           >
                             {copiedId === person.id ? (
@@ -643,8 +653,11 @@ function PeoplePage() {
                 {formData.id ? "Editar Pessoa" : "Cadastrar Nova Pessoa"}
               </h2>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
-                className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-nocturne"
+                title="Fechar modal de pessoa"
+                aria-label="Fechar modal de pessoa"
+                className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-nocturne cursor-pointer"
               >
                 <X className="size-5" />
               </button>

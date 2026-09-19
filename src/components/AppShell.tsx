@@ -50,6 +50,7 @@ export function AppShell({
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
+            title="Ir para a Agenda"
             className="flex items-center transition-nocturne hover:opacity-85 touch-nav"
           >
             <img
@@ -70,6 +71,7 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              title={mobileMenuOpen ? "Fechar menu de navegação" : "Abrir menu de navegação"}
               aria-label={mobileMenuOpen ? "Fechar menu de navegação" : "Abrir menu de navegação"}
               className="flex size-9 items-center justify-center rounded-md border border-line text-muted-foreground transition-nocturne hover:text-foreground hover:bg-accent/40 active:scale-[0.97] cursor-pointer"
             >
@@ -101,7 +103,10 @@ export function AppShell({
 
             <div className="border-t border-line pt-3 flex items-center justify-between">
               {email ? (
-                <span className="font-mono text-[0.6875rem] text-muted-foreground truncate max-w-[200px]">
+                <span
+                  className="font-mono text-[0.6875rem] text-muted-foreground truncate max-w-[200px]"
+                  title={email}
+                >
                   {email}
                 </span>
               ) : <div />}
@@ -140,6 +145,7 @@ export function AppShell({
               >
                 <Link
                   to="/"
+                  title="Ir para a Agenda"
                   className="flex items-center transition-nocturne hover:opacity-85 touch-nav"
                 >
                   {isCollapsed ? (
@@ -241,7 +247,10 @@ export function AppShell({
               </div>
 
               {!isCollapsed && email ? (
-                <p className="label-mono text-[0.625rem] text-muted-foreground truncate px-1">
+                <p
+                  className="label-mono text-[0.625rem] text-muted-foreground truncate px-1"
+                  title={email}
+                >
                   {email}
                 </p>
               ) : null}
@@ -286,6 +295,7 @@ export function AppShell({
             <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-6 px-6">
               <Link
                 to="/"
+                title="Ir para a Agenda"
                 className="flex items-center transition-nocturne hover:opacity-85 touch-nav"
               >
                 {/* Tema claro */}
@@ -318,7 +328,10 @@ export function AppShell({
                 <FontSizeToggle />
                 <ThemeToggle />
                 {email ? (
-                  <span className="hidden font-mono text-[0.6875rem] text-muted-foreground sm:inline">
+                  <span
+                    className="hidden font-mono text-[0.6875rem] text-muted-foreground sm:inline truncate max-w-[200px]"
+                    title={email}
+                  >
                     {email}
                   </span>
                 ) : null}
