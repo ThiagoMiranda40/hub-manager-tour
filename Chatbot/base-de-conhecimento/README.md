@@ -7,7 +7,6 @@ Esta pasta guarda os textos que ensinam o agente de suporte (Chatbase) a explica
 |---|---|
 | `00-instrucoes-do-agente-chatbase.md` | **Instruções do agente** (colar no campo de instruções; não subir como fonte de treino) |
 | `01` a `12` (`.md`) | **Fontes de treino** (subir como arquivo `.txt`, veja abaixo) |
-| `hub-manager-tour-base-de-conhecimento-completa.md` | Alternativa: os arquivos 01 a 12 num arquivo só |
 
 ## Regras de conteúdo
 - Somente conteúdo de **uso do sistema** para o produtor (e o que integrante e casa de show veem). Escrito em português, com os **nomes exatos** de menus, abas, botões e mensagens da interface.

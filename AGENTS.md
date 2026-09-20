@@ -31,3 +31,7 @@
 
 ## Autorização Explícita Antes de Codar
 Ao entregar um desenho de arquitetura, UI/UX, ou plano técnico para revisão, NUNCA prosseguir automaticamente para a implementação de código sem uma mensagem explícita de aprovação do Thiago no chat — mesmo que o desenho pareça completo ou você tenha alta confiança nele. Isso vale mesmo dentro da mesma sessão/tarefa. A entrega da fase de design/planejamento é sempre o fim do turno; aguardar confirmação antes de qualquer commit de código subsequente.
+
+## Base de Conhecimento e Q&A do Agente de Suporte
+Toda entrega que altere nomes de botões, abas, mensagens, caminhos de navegação ou regras visíveis ao usuário DEVE atualizar os arquivos correspondentes em Chatbot/base-de-conhecimento/ (00 a 12) e, quando afetar uma pergunta já respondida, Chatbot/qa-chatbase-hub-manager-tour.md, e declarar no relatório de entrega quais arquivos foram atualizados ou 'Sem impacto na base'. A base contém apenas uso do sistema: nunca incluir links com token, dados de clientes, chaves, arquitetura ou estratégia de negócio. Não manter cópias consolidadas dos arquivos.
+
