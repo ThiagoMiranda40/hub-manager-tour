@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { useChatbaseWidget } from "@/lib/chatbase";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
+  useChatbaseWidget();
   const router = useRouter();
   const { session } = useSession();
   const [mode, setMode] = useState<"signin" | "signup">("signin");

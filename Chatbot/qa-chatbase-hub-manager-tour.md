@@ -112,6 +112,21 @@ Perguntas:
 
 Resposta: A pessoa não tem chave Pix no cadastro. Clique em (Cadastrar) ou vá a Pessoas & Equipe, edite a pessoa e preencha Tipo de Chave e Chave Pix.
 
+## Criar conta e primeiro acesso
+Perguntas:
+- Como crio minha conta?
+- Como faço meu primeiro cadastro?
+- Como me cadastro no sistema?
+
+Resposta: Na tela de login, clique em Não tem conta? Criar conta, informe e-mail e uma senha de pelo menos 6 caracteres e clique em Criar conta. Depois abra o e-mail recebido e confirme o cadastro pelo link. Só então o login por e-mail e senha funciona. Também é possível usar Entrar com Google.
+
+## Não consigo entrar depois de criar a conta
+Perguntas:
+- Criei a conta e não consigo entrar.
+- Por que o login por e-mail e senha não funciona?
+
+Resposta: Confirme se você clicou no link de confirmação enviado por e-mail (veja também a caixa de spam). Sem essa confirmação, o login por e-mail e senha não funciona.
+
 ## Esqueci a senha
 Perguntas:
 - Esqueci minha senha. O que faço?
@@ -166,7 +181,7 @@ Perguntas:
 - Onde fica o botão de ajuda?
 - Como falo com o assistente?
 
-Resposta: Fica no canto inferior direito das telas do sistema (Agenda, Pessoas & Equipe, Configurações, prancheta do show e Relatório de Produção). Ele não acessa a sua conta nem os seus dados.
+Resposta: Fica no canto inferior direito das telas do sistema (Agenda, Pessoas & Equipe, Configurações, prancheta do show e Relatório de Produção) e também na tela de login. Ele não acessa a sua conta nem os seus dados.
 
 ## Voltar ao sistema no celular
 Perguntas:

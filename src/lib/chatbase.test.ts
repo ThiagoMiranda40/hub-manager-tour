@@ -183,11 +183,10 @@ describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
     expect(() => resetChatbaseConversation({ chatbase: "not-a-function" })).not.toThrow();
   });
 
-  it("T8 __root.tsx, auth.tsx, p.$token.tsx e r.$token.tsx continuam sem 'chatbase', e shows.$id_.ficha.tsx chama useChatbaseWidget", () => {
+  it("T8 __root.tsx, p.$token.tsx e r.$token.tsx continuam sem 'chatbase', e auth.tsx, shows.$id_.ficha.tsx e AppShell.tsx chamam useChatbaseWidget", () => {
     const routesDir = path.resolve(__dirname, "../routes");
     const forbiddenFiles = [
       "__root.tsx",
-      "auth.tsx",
       "p.$token.tsx",
       "r.$token.tsx",
     ];
@@ -202,12 +201,19 @@ describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
       ).toBe(false);
     }
 
-    // shows.$id_.ficha.tsx sai da lista de proibidos e deve chamar useChatbaseWidget
-    const fichaPath = path.join(routesDir, "shows.$id_.ficha.tsx");
-    expect(fs.existsSync(fichaPath)).toBe(true);
-    const fichaContent = fs.readFileSync(fichaPath, "utf-8");
-    expect(fichaContent).toContain("useChatbaseWidget");
-    expect(fichaContent).toMatch(/useChatbaseWidget\s*\(\s*\)/);
+    // auth.tsx, shows.$id_.ficha.tsx e AppShell.tsx devem chamar useChatbaseWidget
+    const requiredFiles = [
+      path.join(routesDir, "auth.tsx"),
+      path.join(routesDir, "shows.$id_.ficha.tsx"),
+      path.resolve(__dirname, "../components/AppShell.tsx"),
+    ];
+
+    for (const filePath of requiredFiles) {
+      expect(fs.existsSync(filePath), `Arquivo ${filePath} deve existir`).toBe(true);
+      const content = fs.readFileSync(filePath, "utf-8");
+      expect(content).toContain("useChatbaseWidget");
+      expect(content).toMatch(/useChatbaseWidget\s*\(\s*\)/);
+    }
   });
 
   it("T9 AppShell.tsx chama useChatbaseWidget", () => {
