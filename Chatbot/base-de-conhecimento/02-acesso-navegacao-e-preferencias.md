@@ -67,7 +67,7 @@ Ao abrir o sistema, aparece uma animação curta com a marca (barras de equaliza
 O sistema pode ser usado como um aplicativo instalado. Isso é feito pelo menu do navegador (por exemplo, "Instalar aplicativo" ou "Adicionar à tela inicial"). Não existe, dentro do sistema, um botão próprio de instalação. Depois de instalado, ele abre em tela cheia, sem a barra do navegador. Ele continua precisando de internet para funcionar.
 
 ## Botão de ajuda (assistente de IA)
-Fica no canto inferior direito das telas do sistema (Agenda, Pessoas & Equipe, Configurações, prancheta do show e Relatório de Produção). Abre um assistente que tira dúvidas de uso. Ele não acessa a conta nem os dados do usuário e não aparece nas páginas do integrante nem da casa de show. No celular, o chat ocupa a tela inteira: para voltar ao sistema, toque no X no topo do chat. Evite o botão Voltar do celular, que pode sair do sistema. Ao sair da conta, a conversa é apagada.
+Fica no canto inferior direito das telas do sistema (Agenda, Pessoas & Equipe, Configurações, prancheta do show e Relatório de Produção). Abre um assistente que tira dúvidas de uso. Ele não acessa a conta nem os dados do usuário e não aparece nas páginas do integrante nem da casa de show. No celular, o chat ocupa a tela inteira: para voltar ao sistema, toque no X no topo do chat. Evite o botão Voltar do celular, que pode sair do sistema. Ao sair da conta, o chat recomeça em branco.
 
 ## Dicas de uso
 - **Explicações ao passar o mouse:** no computador, passe o cursor sobre botões, contadores, abas e selos coloridos: aparece uma pequena explicação (tooltip). No celular não existe "passar o mouse"; os textos dos botões já indicam a ação.
