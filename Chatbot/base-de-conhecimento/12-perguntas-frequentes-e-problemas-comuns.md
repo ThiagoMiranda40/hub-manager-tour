@@ -23,6 +23,9 @@ Cada conta é independente e isolada: um produtor não vê os dados de outro.
 **O sistema funciona no celular?**
 Sim. Ele se adapta ao celular (menu no ícone de três linhas), pode ser instalado como aplicativo pelo menu do navegador e tem o Modo Palco pensado para uso no celular. Precisa de internet.
 
+**Onde fica o botão de ajuda?**
+Fica no canto inferior direito das telas do sistema (Agenda, Pessoas & Equipe, Configurações e a prancheta do show) e abre um assistente que tira dúvidas de uso. Ele não acessa a conta nem os dados do usuário e não aparece nas páginas do integrante nem da casa de show.
+
 ## Primeiros passos
 
 **Por onde começo?**
