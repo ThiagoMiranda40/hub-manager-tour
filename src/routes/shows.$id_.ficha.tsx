@@ -6,6 +6,7 @@ import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FontSizeToggle } from "@/components/FontSizeToggle";
+import { useChatbaseWidget } from "@/lib/chatbase";
 import {
   computeShowProgress,
   computeMemberRequirementStatus,
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/shows/$id_/ficha")({
 });
 
 function FichaProducao() {
+  useChatbaseWidget();
   const { id } = Route.useParams();
   const router = useRouter();
   const { session, loading } = useSession();
@@ -252,61 +254,63 @@ function FichaProducao() {
                   <div className="border-b border-line pb-1 font-mono text-[0.6875rem] uppercase tracking-[0.18em] font-semibold">
                     {g.role} · {g.people.length}
                   </div>
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {g.people.map((m) => {
-                        const person = m.person_id ? peopleMap.get(m.person_id) : null;
-                        const reqStatus = computeMemberRequirementStatus(
-                          m.id,
-                          requirements,
-                          docs,
-                        );
-                        const mine = docs.filter((d) => d.cast_member_id === m.id);
+                  <div className="overflow-x-auto print:overflow-visible -mx-1 px-1">
+                    <table className="w-full min-w-[32rem] print:min-w-0 text-sm">
+                      <tbody>
+                        {g.people.map((m) => {
+                          const person = m.person_id ? peopleMap.get(m.person_id) : null;
+                          const reqStatus = computeMemberRequirementStatus(
+                            m.id,
+                            requirements,
+                            docs,
+                          );
+                          const mine = docs.filter((d) => d.cast_member_id === m.id);
 
-                        return (
-                          <tr key={m.id} className="border-b border-line align-top">
-                            <td className="w-2/5 py-2 pr-3">
-                              <span className="font-medium text-foreground block">{m.name}</span>
-                              {person ? (
-                                <span className="font-mono text-[0.625rem] text-muted-foreground print:text-black block">
-                                  {[
-                                    person.phone,
-                                    person.email,
-                                    person.pix_key && `Pix: ${person.pix_key}`,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ")}
-                                </span>
-                              ) : null}
-                            </td>
-                            <td className="py-2 pr-3 font-mono text-[0.6875rem]">
-                              {mine.length
-                                ? mine.map((d) => labelFrom(docTypes, d.doc_type)).join(" · ")
-                                : "nada enviado"}
-                            </td>
-                            <td className="w-48 py-2 text-right font-mono text-[0.6875rem]">
-                              {reqStatus.isUnrequired ? (
-                                <span className="text-muted-foreground print:text-black">
-                                  sem exigência
-                                </span>
-                              ) : reqStatus.isComplete ? (
-                                <span className="text-ok font-semibold">
-                                  ✓ completo ({reqStatus.receivedCount}/{reqStatus.expectedCount})
-                                </span>
-                              ) : (
-                                <span className="text-signal font-semibold">
-                                  falta{" "}
-                                  {reqStatus.missingDocTypeIds
-                                    .map((id) => labelFrom(docTypes, id))
-                                    .join(", ")}
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          return (
+                            <tr key={m.id} className="border-b border-line align-top">
+                              <td className="w-2/5 py-2 pr-3">
+                                <span className="font-medium text-foreground block">{m.name}</span>
+                                {person ? (
+                                  <span className="font-mono text-[0.625rem] text-muted-foreground print:text-black block">
+                                    {[
+                                      person.phone,
+                                      person.email,
+                                      person.pix_key && `Pix: ${person.pix_key}`,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </span>
+                                ) : null}
+                              </td>
+                              <td className="py-2 pr-3 font-mono text-[0.6875rem]">
+                                {mine.length
+                                  ? mine.map((d) => labelFrom(docTypes, d.doc_type)).join(" · ")
+                                  : "nada enviado"}
+                              </td>
+                              <td className="w-48 py-2 text-right font-mono text-[0.6875rem]">
+                                {reqStatus.isUnrequired ? (
+                                  <span className="text-muted-foreground print:text-black">
+                                    sem exigência
+                                  </span>
+                                ) : reqStatus.isComplete ? (
+                                  <span className="text-ok font-semibold">
+                                    ✓ completo ({reqStatus.receivedCount}/{reqStatus.expectedCount})
+                                  </span>
+                                ) : (
+                                  <span className="text-signal font-semibold">
+                                    falta{" "}
+                                    {reqStatus.missingDocTypeIds
+                                      .map((id) => labelFrom(docTypes, id))
+                                      .join(", ")}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))
             )}
@@ -369,7 +373,7 @@ function FichaProducao() {
               </p>
             ) : (
               <div className="overflow-x-auto print:overflow-visible -mx-1 px-1">
-                <table className="w-full text-sm border-collapse">
+                <table className="w-full min-w-[32rem] print:min-w-0 text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-foreground text-left font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground print:text-black">
                       <th className="py-2 pr-3 w-2/5">Item & Especificação</th>
@@ -485,21 +489,23 @@ function FichaProducao() {
                   <div className="border-b border-line pb-1 font-mono text-[0.6875rem] uppercase tracking-[0.18em] font-semibold">
                     {g.type} · {g.items.length}
                   </div>
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {g.items.map((d) => (
-                        <tr key={d.id} className="border-b border-line">
-                          <td className="w-1/3 py-2 pr-3">{memberName(d.cast_member_id)}</td>
-                          <td className="py-2 pr-3 font-mono text-[0.6875rem] break-all">
-                            {formatDocumentDescription(d)}
-                          </td>
-                          <td className="w-32 py-2 text-right font-mono text-[0.6875rem]">
-                            {d.amount != null ? formatBRL(Number(d.amount)) : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="overflow-x-auto print:overflow-visible -mx-1 px-1">
+                    <table className="w-full min-w-[32rem] print:min-w-0 text-sm">
+                      <tbody>
+                        {g.items.map((d) => (
+                          <tr key={d.id} className="border-b border-line">
+                            <td className="w-1/3 py-2 pr-3">{memberName(d.cast_member_id)}</td>
+                            <td className="py-2 pr-3 font-mono text-[0.6875rem] break-words">
+                              {formatDocumentDescription(d)}
+                            </td>
+                            <td className="w-32 py-2 text-right font-mono text-[0.6875rem]">
+                              {d.amount != null ? formatBRL(Number(d.amount)) : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))
             )}
@@ -521,39 +527,41 @@ function FichaProducao() {
             </div>
 
             {withAmount.length > 0 ? (
-              <table className="mt-4 w-full text-sm">
-                <tbody>
-                  {cast.map((m) => {
-                    const person = m.person_id ? peopleMap.get(m.person_id) : null;
-                    const items = withAmount.filter((d) => d.cast_member_id === m.id);
-                    if (items.length === 0) return null;
-                    const subtotal = items.reduce((s, d) => s + Number(d.amount ?? 0), 0);
-                    return (
-                      <tr key={m.id} className="border-b border-line align-top">
-                        <td className="w-1/3 py-2 pr-3">
-                          <span className="font-medium block">{m.name}</span>
-                          {person?.pix_key ? (
-                            <span className="font-mono text-[0.625rem] text-muted-foreground print:text-black">
-                              Pix ({person.pix_type ?? "chave"}): {person.pix_key}
-                            </span>
-                          ) : null}
-                        </td>
-                        <td className="py-2 pr-3 font-mono text-[0.6875rem]">
-                          {items
-                            .map(
-                              (d) =>
-                                `${labelFrom(docTypes, d.doc_type)} ${formatBRL(Number(d.amount))}${d.is_reimbursed ? " (pago)" : ""}`,
-                            )
-                            .join(" · ")}
-                        </td>
-                        <td className="w-32 py-2 text-right font-mono text-[0.6875rem]">
-                          {formatBRL(subtotal)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="mt-4 overflow-x-auto print:overflow-visible -mx-1 px-1">
+                <table className="w-full min-w-[32rem] print:min-w-0 text-sm">
+                  <tbody>
+                    {cast.map((m) => {
+                      const person = m.person_id ? peopleMap.get(m.person_id) : null;
+                      const items = withAmount.filter((d) => d.cast_member_id === m.id);
+                      if (items.length === 0) return null;
+                      const subtotal = items.reduce((s, d) => s + Number(d.amount ?? 0), 0);
+                      return (
+                        <tr key={m.id} className="border-b border-line align-top">
+                          <td className="w-1/3 py-2 pr-3">
+                            <span className="font-medium block">{m.name}</span>
+                            {person?.pix_key ? (
+                              <span className="font-mono text-[0.625rem] text-muted-foreground print:text-black">
+                                Pix ({person.pix_type ?? "chave"}): {person.pix_key}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="py-2 pr-3 font-mono text-[0.6875rem]">
+                            {items
+                              .map(
+                                (d) =>
+                                  `${labelFrom(docTypes, d.doc_type)} ${formatBRL(Number(d.amount))}${d.is_reimbursed ? " (pago)" : ""}`,
+                              )
+                              .join(" · ")}
+                          </td>
+                          <td className="w-32 py-2 text-right font-mono text-[0.6875rem]">
+                            {formatBRL(subtotal)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="mt-3 font-mono text-[0.6875rem] text-muted-foreground">
                 Nenhum valor informado até agora.

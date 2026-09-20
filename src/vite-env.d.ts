@@ -8,3 +8,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  chatbase?: ((...args: any[]) => any) & {
+    q?: any[];
+    [key: string]: any;
+  };
+}

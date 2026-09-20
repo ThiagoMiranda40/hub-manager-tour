@@ -23,6 +23,12 @@ Cada conta é independente e isolada: um produtor não vê os dados de outro.
 **O sistema funciona no celular?**
 Sim. Ele se adapta ao celular (menu no ícone de três linhas), pode ser instalado como aplicativo pelo menu do navegador e tem o Modo Palco pensado para uso no celular. Precisa de internet.
 
+**Onde fica o botão de ajuda?**
+Fica no canto inferior direito das telas do sistema (Agenda, Pessoas & Equipe, Configurações, prancheta do show e Relatório de Produção). Abre um assistente que tira dúvidas de uso. Ele não acessa a conta nem os dados do usuário e não aparece nas páginas do integrante nem da casa de show. No celular, o chat ocupa a tela inteira: para voltar ao sistema, toque no X no topo do chat. Evite o botão Voltar do celular, que pode sair do sistema. Ao sair da conta, o chat recomeça em branco.
+
+**Como volto ao sistema no celular quando o chat está aberto?**
+Toque no X no topo do chat. Evite o botão Voltar do celular, porque ele pode sair do sistema.
+
 ## Primeiros passos
 
 **Por onde começo?**

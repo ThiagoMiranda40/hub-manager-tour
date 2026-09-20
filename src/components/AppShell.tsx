@@ -15,6 +15,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavModeToggle } from "@/components/NavModeToggle";
 import { FontSizeToggle } from "@/components/FontSizeToggle";
 import { useNavigationMode } from "@/hooks/useNavigationMode";
+import { useChatbaseWidget, resetChatbaseConversation } from "@/lib/chatbase";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -30,13 +31,15 @@ export function AppShell({
   children: ReactNode;
   email?: string | null | undefined;
 }) {
+  useChatbaseWidget();
   const router = useRouter();
   const { isSidebar, isCollapsed, toggleCollapsed } = useNavigationMode();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   async function signOut() {
     await supabase.auth.signOut();
-    router.navigate({ to: "/auth" });
+    resetChatbaseConversation();
+    window.location.assign("/auth");
   }
 
   return (
