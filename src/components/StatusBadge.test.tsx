@@ -45,4 +45,44 @@ describe("StatusBadge Component (Nocturne)", () => {
     const html2 = renderToStaticMarkup(<StatusBadge status="no_requirement" />);
     expect(html2).toContain("Sem exigência configurada");
   });
+
+  it("renderiza o atributo title quando informado", () => {
+    const html = renderToStaticMarkup(
+      <StatusBadge status="confirmed" title="Todos os documentos recebidos" />,
+    );
+    expect(html).toContain('title="Todos os documentos recebidos"');
+
+    const htmlPending = renderToStaticMarkup(
+      <StatusBadge status="pending" title="Pendência documental" />,
+    );
+    expect(htmlPending).toContain('title="Pendência documental"');
+
+    const htmlException = renderToStaticMarkup(
+      <StatusBadge status="exception" title="Exceção do rider" />,
+    );
+    expect(htmlException).toContain('title="Exceção do rider"');
+
+    const htmlAccepted = renderToStaticMarkup(
+      <StatusBadge status="accepted_with_exception" title="Aceito com ressalva" />,
+    );
+    expect(htmlAccepted).toContain('title="Aceito com ressalva"');
+
+    const htmlNegotiation = renderToStaticMarkup(
+      <StatusBadge status="in_negotiation" title="Em negociação ativa" />,
+    );
+    expect(htmlNegotiation).toContain('title="Em negociação ativa"');
+
+    const htmlNone = renderToStaticMarkup(
+      <StatusBadge status="no_requirement" title="Sem pendências cadastradas" />,
+    );
+    expect(htmlNone).toContain('title="Sem pendências cadastradas"');
+  });
+
+  it("não renderiza o atributo title quando omitido", () => {
+    const html = renderToStaticMarkup(<StatusBadge status="confirmed" />);
+    expect(html).not.toContain("title=");
+
+    const htmlNone = renderToStaticMarkup(<StatusBadge status="sem_exigencia" />);
+    expect(htmlNone).not.toContain("title=");
+  });
 });

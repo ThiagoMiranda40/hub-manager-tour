@@ -658,6 +658,11 @@ function PublicRiderPage() {
                           type="button"
                           onClick={() => handleConfirm(item)}
                           disabled={updateMutation.isPending}
+                          title={
+                            isConfirmed
+                              ? "Item confirmado pelo espaço"
+                              : "Confirmar que o espaço atenderá esta especificação técnica"
+                          }
                           className={cn(
                             "px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-[0.97]",
                             isConfirmed
@@ -676,6 +681,11 @@ function PublicRiderPage() {
                           type="button"
                           onClick={() => handleOpenException(item)}
                           disabled={updateMutation.isPending}
+                          title={
+                            isException
+                              ? "Editar a justificativa de exceção ou alternativa proposta"
+                              : "Sinalizar que o espaço não atende e propor alternativa"
+                          }
                           className={cn(
                             "px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-[0.97]",
                             isException
@@ -697,6 +707,7 @@ function PublicRiderPage() {
                           onClick={() => handleRevertToPending(item)}
                           disabled={updateMutation.isPending}
                           title="Reverter para pendente"
+                          aria-label="Reverter para pendente"
                           className="p-1.5 border border-line text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors active:scale-[0.95]"
                         >
                           <RotateCcw className="size-3.5" />

@@ -256,7 +256,9 @@ function Dashboard() {
             </span>
           </div>
           <button
+            type="button"
             onClick={() => setOpen((v) => !v)}
+            title={open ? "Fechar formulário de novo show" : "Cadastrar uma nova data de show na temporada"}
             className="inline-flex items-center gap-2 bg-foreground px-4 py-2.5 rounded-lg font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-background transition-all duration-120 hover:bg-[#9184d9] hover:text-white active:scale-[0.96] active:opacity-90 touch-manipulation cursor-pointer shadow-xs"
           >
             {open ? (
@@ -310,20 +312,29 @@ function Dashboard() {
           <div className="sm:col-span-3">
             <label className="label-mono block text-muted-foreground">Status de Documentação</label>
             <div className="mt-1.5 flex rounded-lg border border-line p-0.5 bg-background/60">
-              {(["all", "pending", "complete"] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setStatusFilter(key)}
-                  className={`flex-1 rounded-md px-2 py-1.5 font-mono text-[0.625rem] uppercase tracking-wider transition-all duration-120 active:scale-[0.95] touch-manipulation cursor-pointer ${
-                    statusFilter === key
-                      ? "bg-[#9184d9] text-white font-medium shadow-2xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {key === "all" ? "Todos" : key === "pending" ? "Pendentes" : "100%"}
-                </button>
-              ))}
+              {(["all", "pending", "complete"] as const).map((key) => {
+                const titles = {
+                  all: "Exibir todos os shows da temporada",
+                  pending: "Filtrar shows com documentos pendentes",
+                  complete: "Filtrar shows com 100% dos documentos entregues",
+                };
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setStatusFilter(key)}
+                    title={titles[key]}
+                    aria-pressed={statusFilter === key}
+                    className={`flex-1 rounded-md px-2 py-1.5 font-mono text-[0.625rem] uppercase tracking-wider transition-all duration-120 active:scale-[0.95] touch-manipulation cursor-pointer ${
+                      statusFilter === key
+                        ? "bg-[#9184d9] text-white font-medium shadow-2xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {key === "all" ? "Todos" : key === "pending" ? "Pendentes" : "100%"}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -376,7 +387,10 @@ function Dashboard() {
                       <div className="font-mono text-[0.6875rem] text-muted-foreground uppercase">
                         {formatShowDate(show.show_date)}
                       </div>
-                      <div className="mt-0.5 flex items-center gap-1 font-mono text-[0.625rem] text-muted-foreground">
+                      <div
+                        className="mt-0.5 flex items-center gap-1 font-mono text-[0.625rem] text-muted-foreground"
+                        title={`${memberCount} ${memberCount === 1 ? "integrante escalado neste show" : "integrantes escalados neste show"}`}
+                      >
                         <Users className="size-3 text-[#9184d9]" />
                         <span>
                           {memberCount} {memberCount === 1 ? "integrante" : "integrantes"}
@@ -401,7 +415,9 @@ function Dashboard() {
                       {show.venue ? (
                         <>
                           <span className="text-line">·</span>
-                          <span className="truncate">{show.venue}</span>
+                          <span className="truncate" title={show.venue}>
+                            {show.venue}
+                          </span>
                         </>
                       ) : null}
                     </div>
@@ -412,20 +428,38 @@ function Dashboard() {
                     <div className="mb-1.5 flex items-center justify-between gap-1.5">
                       <span className="label-mono text-[0.625rem] text-muted-foreground">Docs</span>
                       {!hasRequirement ? (
-                        <StatusBadge status="no_requirement" label="Sem exigência" size="sm" />
+                        <StatusBadge
+                          status="no_requirement"
+                          label="Sem exigência"
+                          size="sm"
+                          title="Nenhum requisito de documento configurado para os integrantes deste show"
+                        />
                       ) : done ? (
-                        <StatusBadge status="confirmed" label="100% Entregue" size="sm" />
+                        <StatusBadge
+                          status="confirmed"
+                          label="100% Entregue"
+                          size="sm"
+                          title="Todos os documentos exigidos foram recebidos"
+                        />
                       ) : (
                         <StatusBadge
                           status="pending"
                           label={`${expected - received} pendente${expected - received === 1 ? "" : "s"}`}
                           size="sm"
+                          title={`${expected - received} ${expected - received === 1 ? "documento exigido pendente de envio" : "documentos exigidos pendentes de envio"} (${progress.pendingPeople} ${progress.pendingPeople === 1 ? "pessoa com pendência" : "pessoas com pendência"})`}
                         />
                       )}
                     </div>
 
                     {/* Barra de Progresso Docs */}
-                    <div className="h-1.5 w-full rounded-full bg-line/80 overflow-hidden">
+                    <div
+                      title={
+                        hasRequirement
+                          ? `${received} de ${expected} arquivos recebidos (${pct}%)`
+                          : "Sem exigências de documentos configuradas"
+                      }
+                      className="h-1.5 w-full rounded-full bg-line/80 overflow-hidden"
+                    >
                       {hasRequirement ? (
                         <div
                           className={`h-full transition-all duration-300 ${
@@ -441,7 +475,10 @@ function Dashboard() {
                         {hasRequirement ? `${received}/${expected} arquivos` : `${memberCount} no elenco`}
                       </span>
                       {hasRequirement && unrequiredPeople > 0 ? (
-                        <span className="italic text-[0.5625rem] text-muted-foreground/80">
+                        <span
+                          title={`${unrequiredPeople} ${unrequiredPeople === 1 ? "integrante dispensado de documentação" : "integrantes dispensados de documentação"}`}
+                          className="italic text-[0.5625rem] text-muted-foreground/80"
+                        >
                           {unrequiredPeople} dispensado{unrequiredPeople === 1 ? "" : "s"}
                         </span>
                       ) : null}
@@ -453,26 +490,45 @@ function Dashboard() {
                     <div className="mb-1.5 flex items-center justify-between gap-1.5">
                       <span className="label-mono text-[0.625rem] text-muted-foreground">Rider</span>
                       {rider.total === 0 ? (
-                        <StatusBadge status="no_requirement" label="Sem rider" size="sm" />
+                        <StatusBadge
+                          status="no_requirement"
+                          label="Sem rider"
+                          size="sm"
+                          title="Nenhum item de rider técnico instanciado para este show"
+                        />
                       ) : rider.isComplete ? (
-                        <StatusBadge status="confirmed" label="Rider OK" size="sm" />
+                        <StatusBadge
+                          status="confirmed"
+                          label="Rider OK"
+                          size="sm"
+                          title="Todos os itens do rider foram confirmados pelo espaço"
+                        />
                       ) : rider.hasExceptions ? (
                         <StatusBadge
                           status="exception"
                           label={`${rider.exceptions} exc.`}
                           size="sm"
+                          title={`${rider.exceptions} ${rider.exceptions === 1 ? "exceção técnica sinalizada pelo espaço" : "exceções técnicas sinalizadas pelo espaço"}`}
                         />
                       ) : (
                         <StatusBadge
                           status="pending"
                           label={`${rider.pending} pend.`}
                           size="sm"
+                          title={`${rider.pending} ${rider.pending === 1 ? "item do rider pendente de confirmação da casa" : "itens do rider pendentes de confirmação da casa"}`}
                         />
                       )}
                     </div>
 
                     {/* Barra de Progresso Rider */}
-                    <div className="h-1.5 w-full rounded-full bg-line/80 overflow-hidden">
+                    <div
+                      title={
+                        rider.total > 0
+                          ? `${rider.confirmed} de ${rider.total} itens do rider confirmados (${rider.pct}%)`
+                          : "Sem itens de rider cadastrados"
+                      }
+                      className="h-1.5 w-full rounded-full bg-line/80 overflow-hidden"
+                    >
                       {rider.total > 0 ? (
                         <div
                           className={`h-full transition-all duration-300 ${

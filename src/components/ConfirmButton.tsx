@@ -13,6 +13,7 @@ export function ConfirmButton({
   disabled,
   title,
   timeoutMs = 4000,
+  defaultArmed = false,
 }: {
   onConfirm: () => void;
   label?: string;
@@ -22,18 +23,23 @@ export function ConfirmButton({
   disabled?: boolean;
   title?: string;
   timeoutMs?: number;
+  defaultArmed?: boolean;
 }) {
-  const [armed, setArmed] = useState(false);
+  const [armed, setArmed] = useState(defaultArmed);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
   }, []);
 
+  const currentTitle = armed
+    ? "Clique novamente para confirmar. A confirmação expira em alguns segundos."
+    : (title ?? "Clique para excluir. Será pedida uma segunda confirmação.");
+
   return (
     <button
       type="button"
-      title={title}
+      title={currentTitle}
       disabled={disabled}
       onClick={() => {
         if (!armed) {

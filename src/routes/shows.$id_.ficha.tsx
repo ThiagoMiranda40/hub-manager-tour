@@ -517,7 +517,7 @@ function FichaProducao() {
                 value={String(reimbursableDocs.length - withAmount.length)}
               />
               <Stat label="Soma declarada" value={formatBRL(totalAmount)} />
-              <Stat label="Total liquidado" value={formatBRL(reimbursedAmount)} />
+              <Stat label="Total pago" value={formatBRL(reimbursedAmount)} />
             </div>
 
             {withAmount.length > 0 ? (
