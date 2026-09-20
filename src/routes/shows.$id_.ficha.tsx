@@ -6,6 +6,7 @@ import { useSession } from "@/hooks/useSession";
 import { useCatalog } from "@/hooks/useCatalog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FontSizeToggle } from "@/components/FontSizeToggle";
+import { useChatbaseWidget } from "@/lib/chatbase";
 import {
   computeShowProgress,
   computeMemberRequirementStatus,
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/shows/$id_/ficha")({
 });
 
 function FichaProducao() {
+  useChatbaseWidget();
   const { id } = Route.useParams();
   const router = useRouter();
   const { session, loading } = useSession();

@@ -15,7 +15,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavModeToggle } from "@/components/NavModeToggle";
 import { FontSizeToggle } from "@/components/FontSizeToggle";
 import { useNavigationMode } from "@/hooks/useNavigationMode";
-import { useChatbaseWidget } from "@/lib/chatbase";
+import { useChatbaseWidget, resetChatbaseConversation } from "@/lib/chatbase";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -38,7 +38,8 @@ export function AppShell({
 
   async function signOut() {
     await supabase.auth.signOut();
-    router.navigate({ to: "/auth" });
+    resetChatbaseConversation();
+    window.location.assign("/auth");
   }
 
   return (

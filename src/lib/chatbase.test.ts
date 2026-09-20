@@ -1,17 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import * as chatbaseModule from "./chatbase";
 import {
   CHATBASE_AGENT_ID,
   CHATBASE_DOMAIN,
   CHATBASE_EMBED_SRC,
   CHATBASE_ENABLED,
   installChatbase,
-  removeChatbase,
-  acquireChatbase,
-  releaseChatbase,
-  resetChatbaseStateForTesting,
-  setChatbaseEnabledForTesting,
+  resetChatbaseConversation,
+  resetChatbaseInstalledForTesting,
 } from "./chatbase";
 
 function createMockDom({ readyState = "complete" }: { readyState?: string } = {}) {
@@ -88,14 +86,10 @@ function createMockDom({ readyState = "complete" }: { readyState?: string } = {}
 
 describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
   beforeEach(() => {
-    resetChatbaseStateForTesting();
+    resetChatbaseInstalledForTesting();
   });
 
-  afterEach(() => {
-    resetChatbaseStateForTesting();
-  });
-
-  it("T1 install injeta exatamente 1 script com src, id e domain corretos", () => {
+  it("T1 install cria exatamente 1 script com src, id e domain corretos", () => {
     const { win, doc, bodyChildren } = createMockDom();
 
     installChatbase(win, doc);
@@ -106,7 +100,6 @@ describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
     expect(script.id).toBe(CHATBASE_AGENT_ID);
     expect(script.domain).toBe(CHATBASE_DOMAIN);
 
-    // Verifica que window.chatbase foi configurado com Proxy e fila q
     expect(typeof win.chatbase).toBe("function");
     expect(win.chatbase.q).toBeDefined();
 
@@ -115,7 +108,7 @@ describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
     expect(win.chatbase.q[0]).toEqual(["customAction", { key: "value" }]);
   });
 
-  it("T2 chamar duas vezes não duplica", () => {
+  it("T2 duas chamadas não duplicam", () => {
     const { win, doc, bodyChildren } = createMockDom();
 
     installChatbase(win, doc);
@@ -135,127 +128,71 @@ describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
 
     installChatbase(win, doc);
 
-    // Ainda não deve ter injetado enquanto loading
     expect(bodyChildren.length).toBe(0);
 
-    // Dispara o evento load na janela
     win.trigger("load");
 
     expect(bodyChildren.length).toBe(1);
     expect(bodyChildren[0].id).toBe(CHATBASE_AGENT_ID);
   });
 
-  it("T5 remove tira script e elementos 'chatbase*', apaga window.chatbase, chama resetChat quando existe e não lança quando não existe", () => {
+  it("T5 a flag de módulo impede nova injeção mesmo se o script for removido do DOM", () => {
     const { win, doc, bodyChildren } = createMockDom();
 
     installChatbase(win, doc);
+    expect(bodyChildren.length).toBe(1);
 
-    // Adiciona elementos extras com prefixo chatbase
-    const bubble = doc.createElement("div");
-    bubble.id = "chatbase-bubble";
-    doc.body.appendChild(bubble);
-
-    const frame = doc.createElement("iframe");
-    frame.id = "chatbase-message-container";
-    doc.body.appendChild(frame);
-
-    expect(bodyChildren.length).toBe(3);
-
-    let resetChatCalled = false;
-    win.chatbase = vi.fn((cmd: string) => {
-      if (cmd === "resetChat") resetChatCalled = true;
-    });
-
-    removeChatbase(win, doc);
-
-    expect(resetChatCalled).toBe(true);
+    // Remove manualmente o script do DOM
+    bodyChildren[0].remove();
+    expect(bodyChildren.length).toBe(0);
     expect(doc.getElementById(CHATBASE_AGENT_ID)).toBeNull();
-    expect(doc.getElementById("chatbase-bubble")).toBeNull();
-    expect(doc.getElementById("chatbase-message-container")).toBeNull();
-    expect(bodyChildren.length).toBe(0);
-    expect(win.chatbase).toBeUndefined();
 
-    // Verificação de tolerância a nulos/vazios (não deve lançar erro)
-    expect(() => removeChatbase(undefined, undefined)).not.toThrow();
-    expect(() => removeChatbase({}, {})).not.toThrow();
-  });
-
-  it("T6 contador (fake timers): acquire, acquire, release não remove; release final remove após o adiamento; acquire entre release e o timer cancela a remoção", () => {
-    vi.useFakeTimers();
-
-    const { win, doc, bodyChildren } = createMockDom();
-
-    // 1) acquire, acquire
-    acquireChatbase(win, doc);
-    expect(bodyChildren.length).toBe(1);
-
-    acquireChatbase(win, doc);
-    expect(bodyChildren.length).toBe(1);
-
-    // 2) release (refCount ainda é 1) -> não remove
-    releaseChatbase(win, doc, 1000);
-    expect(bodyChildren.length).toBe(1);
-
-    vi.advanceTimersByTime(1500);
-    expect(bodyChildren.length).toBe(1);
-
-    // 3) release final (refCount vai a 0) -> adiado por 1000ms
-    releaseChatbase(win, doc, 1000);
-    // Imediatamente após release, ainda NÃO removeu
-    expect(bodyChildren.length).toBe(1);
-
-    // Após o timer disparar, deve remover
-    vi.advanceTimersByTime(1000);
-    expect(bodyChildren.length).toBe(0);
-
-    // 4) acquire entre release e o timer cancela a remoção
-    acquireChatbase(win, doc);
-    expect(bodyChildren.length).toBe(1);
-
-    releaseChatbase(win, doc, 1000);
-    expect(bodyChildren.length).toBe(1);
-
-    // Avança 500ms (ainda não disparou)
-    vi.advanceTimersByTime(500);
-    expect(bodyChildren.length).toBe(1);
-
-    // Novo acquire cancela o timer de remoção
-    acquireChatbase(win, doc);
-
-    // Avança mais 1000ms
-    vi.advanceTimersByTime(1000);
-    // Permanece presente
-    expect(bodyChildren.length).toBe(1);
-
-    vi.useRealTimers();
-  });
-
-  it("T7 CHATBASE_ENABLED=false não instala", () => {
-    const { win, doc, bodyChildren } = createMockDom();
-
-    installChatbase(win, doc, false);
-
-    expect(bodyChildren.length).toBe(0);
-    expect(win.chatbase).toBeUndefined();
-
-    // Também testa via helper de configuração de teste
-    setChatbaseEnabledForTesting(false);
+    // Nova chamada a installChatbase na mesma sessão de módulo não reinjeta
     installChatbase(win, doc);
     expect(bodyChildren.length).toBe(0);
-    setChatbaseEnabledForTesting(true);
   });
 
-  it("T8 (leitura do código-fonte) __root.tsx, auth.tsx, p.$token.tsx, r.$token.tsx e shows.$id_.ficha.tsx não contêm 'chatbase'", () => {
+  it("T6 o módulo NÃO exporta removeChatbase nem releaseChatbase", () => {
+    const mod = chatbaseModule as Record<string, unknown>;
+    expect(mod["removeChatbase"]).toBeUndefined();
+    expect(mod["releaseChatbase"]).toBeUndefined();
+    expect(mod["acquireChatbase"]).toBeUndefined();
+  });
+
+  it("T7 useChatbaseWidget não contém função de limpeza (leitura do código-fonte)", () => {
+    const chatbaseTsPath = path.resolve(__dirname, "chatbase.ts");
+    const content = fs.readFileSync(chatbaseTsPath, "utf-8");
+
+    const hookMatch = content.match(/function\s+useChatbaseWidget\s*\(\s*\)[\s\S]*?\n\}/);
+    expect(hookMatch).not.toBeNull();
+    const hookBody = hookMatch?.[0] ?? "";
+
+    expect(hookBody).not.toMatch(/return\s*\(\s*\)\s*=>/);
+    expect(hookBody).not.toMatch(/return\s+function/);
+  });
+
+  it("T7b resetChatbaseConversation chama resetChat e não lança se window.chatbase não existir", () => {
+    const winWithChatbase: any = {
+      chatbase: vi.fn(),
+    };
+    resetChatbaseConversation(winWithChatbase);
+    expect(winWithChatbase.chatbase).toHaveBeenCalledWith("resetChat");
+
+    expect(() => resetChatbaseConversation(undefined)).not.toThrow();
+    expect(() => resetChatbaseConversation({})).not.toThrow();
+    expect(() => resetChatbaseConversation({ chatbase: "not-a-function" })).not.toThrow();
+  });
+
+  it("T8 __root.tsx, auth.tsx, p.$token.tsx e r.$token.tsx continuam sem 'chatbase', e shows.$id_.ficha.tsx chama useChatbaseWidget", () => {
     const routesDir = path.resolve(__dirname, "../routes");
-    const filesToCheck = [
+    const forbiddenFiles = [
       "__root.tsx",
       "auth.tsx",
       "p.$token.tsx",
       "r.$token.tsx",
-      "shows.$id_.ficha.tsx",
     ];
 
-    for (const file of filesToCheck) {
+    for (const file of forbiddenFiles) {
       const filePath = path.join(routesDir, file);
       expect(fs.existsSync(filePath), `Arquivo ${file} deve existir`).toBe(true);
       const content = fs.readFileSync(filePath, "utf-8");
@@ -264,6 +201,13 @@ describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
         `Arquivo ${file} NÃO pode conter 'chatbase'`,
       ).toBe(false);
     }
+
+    // shows.$id_.ficha.tsx sai da lista de proibidos e deve chamar useChatbaseWidget
+    const fichaPath = path.join(routesDir, "shows.$id_.ficha.tsx");
+    expect(fs.existsSync(fichaPath)).toBe(true);
+    const fichaContent = fs.readFileSync(fichaPath, "utf-8");
+    expect(fichaContent).toContain("useChatbaseWidget");
+    expect(fichaContent).toMatch(/useChatbaseWidget\s*\(\s*\)/);
   });
 
   it("T9 AppShell.tsx chama useChatbaseWidget", () => {
@@ -273,5 +217,13 @@ describe("Chatbase Widget Module (src/lib/chatbase.ts)", () => {
 
     expect(content).toContain("useChatbaseWidget");
     expect(content).toMatch(/useChatbaseWidget\s*\(\s*\)/);
+  });
+
+  it("T10 AppShell.tsx contém window.location.assign('/auth') e chama resetChatbaseConversation", () => {
+    const appShellPath = path.resolve(__dirname, "../components/AppShell.tsx");
+    const content = fs.readFileSync(appShellPath, "utf-8");
+
+    expect(content).toContain('window.location.assign("/auth")');
+    expect(content).toMatch(/resetChatbaseConversation\s*\(\s*\)/);
   });
 });
